@@ -12,8 +12,38 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 6 — ✅ CONCLUÍDA (2026-07-05). FASES 0–5 ✅.
+- **Fase atual**: FASE 7 — ✅ CONCLUÍDA (2026-07-05). FASES 0–6 ✅.
+  Próximo passo: FASE 8 — restante do catálogo (aguardando OK do usuário).
 - **Última atualização**: 2026-07-05
+- **FASE 7 entregue** (Corrida Pop — PvP com client-side prediction, o
+  "boss final técnico"):
+  - **Física compartilhada determinista** (`shared/src/racing.ts`): pista
+    de 16 waypoints com chicane (CHECKPOINTS a cada 4, ROAD_HALF_WIDTH 46,
+    canvas 960×620), `stepCar(car, input, dt)` puro e idêntico nos dois
+    lados — aceleração automática (ACCEL 240, MAX_SPEED 265), drift
+    (Shift) reduz grip lateral (7.5→1.6) e CARREGA o boost quando
+    |vLateral|>40, boost (espaço) eleva o teto para 390 mas corta a
+    esterçada (3.1→1.5 rad/s), grama desacelera forte. `raceProgress`
+    ordena o pelotão (volta + checkpoint + distância ao próximo).
+  - **Servidor autoritativo** (`backend/src/games/racing.ts`): countdown
+    3.5s → racing → finished; valida checkpoints em sequência (anti-corte
+    de caminho), guarda de seq obsoleto em `applyRacingInput`, timer de
+    20s após o 1º a completar; não-finalizados ranqueados por progresso.
+    Realtime tick 33ms, broadcast a cada 2 ticks. Env RACE_LAPS p/ testes.
+  - **Client-side prediction + reconciliação** (`racingClient.ts`): cada
+    input ganha `seq` e vai para um histórico; a cada snapshot o cliente
+    parte do carro AUTORITATIVO, descarta inputs ≤ lastAck e REAPLICA os
+    pendentes com o mesmo `stepCar` — zero lag no próprio carro, rivais
+    interpolados. Marcas de derrapagem persistentes, HUD volta/posição,
+    barra de boost, botões toque ◀▶/DRIFT/BOOST (lg:hidden).
+  - 110 testes (7 novos de física/regras: aceleração na reta, drift
+    carrega boost, boost estoura teto, grama freia, checkpoint em ordem,
+    volta completa, seq obsoleto ignorado). Testes posicionam o carro na
+    RETA (`carOnStraight`) — no gramado a velocidade de equilíbrio é ~87.
+  - Demo real (2 navegadores): largada com countdown, drift na chicane,
+    volta 3/3 e "Piquetinho venceu" — bots seguem waypoints via
+    window.__game. Lição: fim de corrida derruba RacingGame (room →
+    FINISHED) e mostra o overlay genérico de vitória do RoomPage.
 - **FASE 6 entregue** (jogos autorais):
   - **Fazenda Pop** (`routes/farm.ts` + model Farm com plots/upgrades/
     animals em Json): economia 100% validada no servidor — crescimento
