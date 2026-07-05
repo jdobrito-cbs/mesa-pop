@@ -8,12 +8,14 @@ import type {
   GameEndView,
   OneAction,
   OneView,
+  RacingSnapshot,
   RoomView,
 } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
 import CoopGame from '../components/CoopGame'
+import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
 import SeatPicker from '../components/SeatPicker'
@@ -246,6 +248,13 @@ export default function RoomPage() {
               {room.gameSlug === 'esquadrao-coop' && (
                 <CoopGame
                   snapshot={game.state as CoopSnapshot}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'corrida' && (
+                <RacingGame
+                  snapshot={game.state as RacingSnapshot}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

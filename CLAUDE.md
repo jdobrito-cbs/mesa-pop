@@ -213,9 +213,11 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 7 (boss final técnico:
-  Corrida Pop PvP em tempo real com client-side prediction/reconciliação,
-  drift + boost) e aguardar OK do usuário.
+- **PENDÊNCIA (2026-07-05)**: o usuário achou a fazenda "ainda duvidosa"
+  visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
+  pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
+  isometria leve, mais densidade de decoração.
+- **Próximo passo**: FASE 7 em andamento (Corrida Pop PvP).
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
