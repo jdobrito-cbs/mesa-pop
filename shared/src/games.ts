@@ -49,10 +49,10 @@ export const GAME_CATALOG: GameDef[] = [
   // FASE 8
   { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis — com espectadores e fila.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: true },
   { slug: 'truco', name: 'Truco', description: 'Blefe, grite truco e vire a mesa.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🂡', phase: 8, enabled: false },
-  { slug: 'stop', name: 'Stop!', description: 'Adedanha com os amigos: pense rápido!', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-yellow', icon: '✏️', phase: 8, enabled: false },
+  { slug: 'stop', name: 'Stop!', description: 'Adedanha com os amigos: pense rápido!', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-yellow', icon: '✏️', phase: 8, enabled: true },
   { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Desenhe a palavra secreta em 3 min — quem acerta, pontua.', family: 'PARTY', minPlayers: 3, maxPlayers: 6, color: 'pop-green', icon: '🎨', phase: 8, enabled: true },
   { slug: 'campo-minado', name: 'Campo Minado', description: 'Lógica pura: revele tudo sem pisar numa mina.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '💣', phase: 8, enabled: true },
-  { slug: 'termo-diario', name: 'Palavra do Dia', description: 'Uma palavra por dia. Compare com os amigos.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🔤', phase: 8, enabled: false },
+  { slug: 'termo-diario', name: 'Palavra do Dia', description: 'Uma palavra por dia. Compare com os amigos.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🔤', phase: 8, enabled: true },
   { slug: 'snake', name: 'Snake', description: 'Coma, cresça, não se morda. Clássico eterno.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🐍', phase: 8, enabled: true },
   { slug: 'paciencia', name: 'Paciência', description: 'O clássico solitário de cartas para relaxar.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-magenta', icon: '🃑', phase: 8, enabled: false },
   { slug: 'puzzle', name: 'Puzzle', description: 'Monte o quebra-cabeça no menor tempo.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🧩', phase: 8, enabled: false },
@@ -60,5 +60,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'pega-ladrao', name: 'Pega-Ladrão', description: 'Persiga o ladrão pelos andares da loja antes que ele fuja.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '👮', phase: 8, enabled: true },
   { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: true },
   { slug: 'invasores', name: 'Invasores', description: 'Segure as fileiras alienígenas antes que desçam até você.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '👾', phase: 8, enabled: true },
-  { slug: 'duelo-palavras', name: 'Duelo de Palavras', description: 'A mesma palavra secreta para todos — quem acerta primeiro leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-cyan', icon: '🔠', phase: 8, enabled: false },
+  { slug: 'duelo-palavras', name: 'Duelo de Palavras', description: 'A mesma palavra secreta para todos — quem acerta primeiro leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-cyan', icon: '🔠', phase: 8, enabled: true },
 ]

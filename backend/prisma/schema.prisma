@@ -63,6 +63,7 @@ model User {
   hostedRooms   Room[]         @relation("RoomHost")
   farm          Farm?
   favorites     FavoriteRoom[]
+  termoPlays    TermoPlay[]
 }
 
 model RefreshToken {
@@ -130,6 +131,22 @@ model Room {
   favorites FavoriteRoom[]
 
   @@index([gameId, status])
+}
+
+/// Palavra do Dia: UMA partida por usuário por dia (a palavra fica no servidor)
+model TermoPlay {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String // 'YYYY-MM-DD'
+  attempts  Json // [{palpite, feedback}]
+  done      Boolean  @default(false)
+  won       Boolean  @default(false)
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, date])
+  @@index([date, won])
 }
 
 /// sala pública favoritada por um usuário (fixa no topo do lobby dele)

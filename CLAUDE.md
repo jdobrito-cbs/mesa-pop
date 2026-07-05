@@ -12,13 +12,45 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 8 — EM ANDAMENTO. Lote 1: Xadrez ✅. Lote 2:
-  Snake/Campo Minado/Invasores ✅. Lote 3: Come-Come/Pega-Ladrão/Missão
-  Elevador ✅. Lote 4: CONVIDADO + username + favoritos/compartilhar +
-  Desenha & Adivinha + AdSlots ✅ (2026-07-05). FASES 0–7 ✅.
-  **17 jogos jogáveis; faltam 6 do catálogo** (Palavra do Dia, Duelo de
-  Palavras, Stop!, Truco, Paciência, Puzzle). Próximo lote: aguardando OK.
+- **Fase atual**: FASE 8 — EM ANDAMENTO. Lotes 1–4 ✅. Lote 5: Palavra
+  do Dia + Duelo de Palavras + Stop! ✅ (2026-07-05). FASES 0–7 ✅.
+  **20 jogos jogáveis; faltam 3 do catálogo** (Truco, Paciência, Puzzle).
+  Próximo lote: aguardando OK.
 - **Última atualização**: 2026-07-05
+- **FASE 8 · lote 5 entregue — JOGOS DE PALAVRA** (2026-07-05):
+  - `backend/lib/palavras5.ts`: ~300 palavras-alvo de 5 letras pt-BR sem
+    acento; `palavraDoDia(date)` determinística (hash da data);
+    `avaliaPalpite` estilo termo (verde/amarelo/cinza com tratamento
+    correto de letras repetidas — amarelos consomem sobras). Palpites
+    aceitam QUALQUER 5 letras (dicionário de aceitas = melhoria futura).
+  - **Palavra do Dia** (solo diário, FORA do esqueleto solo/PLAUSIBILITY):
+    a palavra vive NO SERVIDOR (o cliente só recebe cores — impossível
+    espiar). Model `TermoPlay` (userId+date PK, attempts Json, migração
+    `termo`): UMA partida por dia; pontos 100/80/60/45/30/20 por
+    tentativa. Rotas /api/termo/hoje|/palpite|/ranking (ranking do DIA,
+    sem convidados; convidado JOGA mas fica fora). `TermoPage` com grade
+    6×5, teclado virtual colorido pelo melhor feedback + teclado físico.
+  - **Duelo de Palavras** (2–6, realtime 250ms): mesma palavra p/ todos;
+    MÃO ESCONDIDA — rivais recebem SÓ as cores (letras nunca trafegam;
+    teste de serialização). Acertou → vence NA HORA (empate por menos
+    tentativas); tempo 240s esgotado → melhor progresso (verdes×10+
+    amarelos). `DueloGame` com grade própria + mini-grades coloridas dos
+    rivais.
+  - **Stop!/Adedanha** (2–6, realtime): letra sorteada (sem K/W/X/Y/Z...),
+    7 categorias fixas (Nome/Animal/Fruta/Cor/Objeto/Lugar/Profissão),
+    4 rodadas com letras diferentes; respostas ficam OCULTAS no servidor
+    até o STOP (rivais veem só progresso x/7); STOP exige tudo
+    preenchido; pontos 10 única/5 repetida/0 inválida-vazia (valida
+    inicial normalizada — "babá" vale como "baba"). Validação de
+    dicionário/votação = melhoria futura anotada. `StopGame` com letra
+    gigante, inputs com envio periódico (400ms) e tabela de resultado.
+  - **CORREÇÃO DE PLATAFORMA importante**: módulos realtime transmitiam
+    UM snapshot p/ todos (otimização dos eventos consumíveis do co-op) —
+    quebrava mão escondida em realtime. Novo `realtime.perSeatView`:
+    Desenha & Adivinha, Duelo e Stop transmitem visão POR ASSENTO
+    (sem eventos consumíveis); co-op/corrida seguem no snapshot único.
+  - 144 testes (10 novos). Demos reais dos três (rivais só com cores no
+    duelo; "fulana gritou STOP!" com tabela 10/5/0).
 - **FASE 8 · lote 4 entregue — PLATAFORMA (pedidos do usuário de
   2026-07-05, TODOS implementados)**:
   1. **MODO CONVIDADO** ("jogar sem conta", nome OBRIGATÓRIO): conta-

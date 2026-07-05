@@ -6,6 +6,7 @@ import type {
   ChessState,
   CoopSnapshot,
   DesenhaView,
+  DueloView,
   DominoAction,
   DominoView,
   GameEndView,
@@ -13,12 +14,15 @@ import type {
   OneView,
   RacingSnapshot,
   RoomView,
+  StopView,
 } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
 import DesenhaGame from '../components/DesenhaGame'
+import DueloGame from '../components/DueloGame'
+import StopGame from '../components/StopGame'
 import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
@@ -329,6 +333,20 @@ export default function RoomPage() {
               {room.gameSlug === 'desenha-adivinha' && (
                 <DesenhaGame
                   view={game.state as DesenhaView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'duelo-palavras' && (
+                <DueloGame
+                  view={game.state as DueloView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'stop' && (
+                <StopGame
+                  view={game.state as StopView}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

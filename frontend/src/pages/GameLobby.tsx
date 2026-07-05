@@ -5,6 +5,7 @@ import { useFetch } from '../lib/useFetch'
 import { emitAck } from '../lib/socket'
 import SoloGamePage, { SOLO_GAMES } from './SoloGamePage'
 import FarmPage from './FarmPage'
+import TermoPage from './TermoPage'
 import { FavoriteStar, RoomPeople } from './Mesa'
 import { useAuth } from '../lib/auth'
 import AdSlot from '../components/AdSlot'
@@ -27,6 +28,7 @@ interface RoomRow {
 export default function GameLobby() {
   const { slug } = useParams<{ slug: string }>()
   if (slug === 'fazenda') return <FarmPage />
+  if (slug === 'termo-diario') return <TermoPage />
   const solo = slug ? SOLO_GAMES[slug] : undefined
   if (solo) return <SoloGamePage key={solo.slug} def={solo} />
   return <MultiplayerLobby slug={slug} />

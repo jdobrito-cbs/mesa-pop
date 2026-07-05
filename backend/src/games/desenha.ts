@@ -185,7 +185,7 @@ export const desenhaModule: GameModule<DesenhaState, DesenhaAction> = {
   minPlayers: 3,
   maxPlayers: 6,
   allowSpectators: true,
-  realtime: { tickMs: 100, broadcastEvery: 2 },
+  realtime: { tickMs: 100, broadcastEvery: 2, perSeatView: true },
 
   init(playerCount) {
     return initialDesenhaState(playerCount)

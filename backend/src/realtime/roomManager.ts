@@ -119,7 +119,7 @@ export class RoomManager {
 
   private sendState(room: LiveRoom) {
     if (room.state === null) return
-    if (room.module.realtime) {
+    if (room.module.realtime && !room.module.realtime.perSeatView) {
       // realtime: um snapshot único (eventos são consumidos uma só vez)
       const snapshot = room.module.getStateFor(room.state, -1)
       for (const p of room.players.values()) {

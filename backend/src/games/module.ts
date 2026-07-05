@@ -15,9 +15,12 @@ export interface GameModule<S = unknown, A = unknown> {
   /**
    * jogo em TEMPO REAL: o manager roda tick() a cada tickMs e transmite o
    * snapshot a cada `broadcastEvery` ticks. Ações não são retransmitidas
-   * individualmente.
+   * individualmente. `perSeatView` = getStateFor filtra por assento (mão
+   * escondida) e NÃO usa eventos consumíveis — cada jogador recebe a sua
+   * visão (Desenha & Adivinha, Duelo, Stop). Sem a flag, um snapshot
+   * único é enviado a todos (co-op, corrida — eventos consumidos 1×).
    */
-  realtime?: { tickMs: number; broadcastEvery: number }
+  realtime?: { tickMs: number; broadcastEvery: number; perSeatView?: boolean }
   /** estado inicial para N jogadores (opções vêm da criação da sala) */
   init(playerCount: number, options?: Record<string, unknown>): S
   /** valida e aplica a ação do seat; retorna erro OU novo estado */
