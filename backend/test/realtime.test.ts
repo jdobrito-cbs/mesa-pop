@@ -45,7 +45,7 @@ async function registerUser(suffix: string) {
   const res = await app.inject({
     method: 'POST',
     url: '/api/auth/register',
-    body: { email, name: `Player ${suffix}`, phone: '11987654321', password, passwordConfirm: password },
+    body: { email, name: `Player ${suffix}`, phone: '11987654321', username: `u${runId}${suffix}`, password, passwordConfirm: password },
   })
   return res.json().accessToken as string
 }
@@ -154,7 +154,7 @@ describe('salas + damas em tempo real', () => {
 
     const msg = await received
     expect(msg.text).toBe('boa sorte!') // sanitizada (trim + espaços)
-    expect(msg.displayName).toBe('Player a')
+    expect(msg.displayName).toBe(`u${runId}a`)
 
     // flood imediato é barrado
     const flood = await emitAck(sockA, 'chat:send', { text: 'spam' })

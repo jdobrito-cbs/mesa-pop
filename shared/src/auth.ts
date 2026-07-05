@@ -38,9 +38,19 @@ export const nameSchema = z
   .min(2, 'Nome curto demais')
   .max(80, 'Nome longo demais')
 
+/** nome de usuário ÚNICO da plataforma — aparece nos rankings e jogos */
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, 'Nome de usuário precisa de 3+ caracteres')
+  .max(20, 'Nome de usuário longo demais')
+  .regex(/^[a-z0-9_.]+$/, 'Use apenas letras, números, ponto e _')
+
 export const registerSchema = z
   .object({
     email: emailSchema,
+    username: usernameSchema,
     name: nameSchema,
     phone: phoneSchema,
     password: passwordSchema,

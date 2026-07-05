@@ -92,8 +92,9 @@ export default async function rankingsAdminRoutes(app: FastifyInstance) {
       pairs = grouped.map((g) => ({ userId: g.userId, value: g._count._all }))
     }
 
+    // convidados nunca aparecem em rankings
     const users = await app.prisma.user.findMany({
-      where: { id: { in: pairs.map((p) => p.userId) } },
+      where: { id: { in: pairs.map((p) => p.userId) }, isGuest: false },
       select: { id: true, displayName: true, email: true },
     })
     const byId = new Map(users.map((u) => [u.id, u]))

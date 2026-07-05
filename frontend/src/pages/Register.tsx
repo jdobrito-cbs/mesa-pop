@@ -11,6 +11,7 @@ export default function Register() {
   const navigate = useNavigate()
   const [form, setForm] = useState<RegisterInput>({
     email: '',
+    username: '',
     name: '',
     phone: '',
     password: '',
@@ -51,7 +52,8 @@ export default function Register() {
   }
 
   const fields = [
-    { key: 'name' as const, label: 'Nome', type: 'text', placeholder: 'Como te chamamos na mesa?', autoComplete: 'name' },
+    { key: 'name' as const, label: 'Nome', type: 'text', placeholder: 'Seu nome completo', autoComplete: 'name' },
+    { key: 'username' as const, label: 'Nome de usuário', type: 'text', placeholder: 'único na mesa — aparece nos rankings', autoComplete: 'username' },
     { key: 'email' as const, label: 'E-mail', type: 'email', placeholder: 'voce@exemplo.com', autoComplete: 'email' },
     { key: 'phone' as const, label: 'Telefone', type: 'tel', placeholder: '(11) 98765-4321', autoComplete: 'tel' },
     { key: 'password' as const, label: 'Senha', type: 'password', placeholder: 'Mínimo 8, com maiúscula, minúscula e número', autoComplete: 'new-password' },

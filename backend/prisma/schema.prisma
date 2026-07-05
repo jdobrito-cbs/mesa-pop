@@ -38,6 +38,8 @@ enum MatchStatus {
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
+  /// nome de usuário ÚNICO na plataforma — usado em rankings e jogos
+  username     String?   @unique
   name         String
   displayName  String
   phone        String
@@ -45,6 +47,8 @@ model User {
   role         Role      @default(USER)
   avatarUrl    String?
   isActive     Boolean   @default(true)
+  /// conta-sombra do "jogar sem conta" — fora de chat, saves e rankings
+  isGuest      Boolean   @default(false)
   bannedUntil  DateTime?
   banReason    String?
   emailVerifiedAt DateTime?
@@ -58,6 +62,7 @@ model User {
   scores        Score[]
   hostedRooms   Room[]         @relation("RoomHost")
   farm          Farm?
+  favorites     FavoriteRoom[]
 }
 
 model RefreshToken {
@@ -120,10 +125,22 @@ model Room {
   createdAt  DateTime   @default(now())
   closedAt   DateTime?
 
-  players RoomPlayer[]
-  matches Match[]
+  players   RoomPlayer[]
+  matches   Match[]
+  favorites FavoriteRoom[]
 
   @@index([gameId, status])
+}
+
+/// sala pública favoritada por um usuário (fixa no topo do lobby dele)
+model FavoriteRoom {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, roomId])
 }
 
 model RoomPlayer {

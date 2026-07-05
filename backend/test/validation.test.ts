@@ -30,6 +30,7 @@ describe('phoneSchema', () => {
 describe('registerSchema', () => {
   const base = {
     email: 'Jogador@Exemplo.com',
+    username: 'jogador_um',
     name: 'Jogador Um',
     phone: '(11) 98765-4321',
     password: 'Senha123',

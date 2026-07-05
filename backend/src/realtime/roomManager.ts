@@ -18,6 +18,8 @@ const CHAT_MIN_INTERVAL_MS = 500
 export interface RoomUser {
   id: string
   displayName: string
+  /** convidado: joga, mas não usa o chat da mesa */
+  isGuest?: boolean
 }
 
 interface LivePlayer {
@@ -25,12 +27,14 @@ interface LivePlayer {
   displayName: string
   socketId: string | null
   seat: number | null
+  isGuest?: boolean
 }
 
 interface LiveSpectator {
   userId: string
   displayName: string
   socketId: string | null
+  isGuest?: boolean
 }
 
 export interface LiveRoom {
@@ -203,7 +207,7 @@ export class RoomManager {
       maxPlayers: module.maxPlayers,
       status: 'WAITING',
       players: new Map([
-        [user.id, { userId: user.id, displayName: user.displayName, socketId, seat: null }],
+        [user.id, { userId: user.id, displayName: user.displayName, socketId, seat: null, isGuest: user.isGuest }],
       ]),
       spectators: new Map(),
       module,
@@ -277,6 +281,7 @@ export class RoomManager {
         displayName: user.displayName,
         socketId,
         seat: null,
+        isGuest: user.isGuest,
       })
       this.roomCodeByUser.set(user.id, room.code)
       socket?.join(room.id)
@@ -297,6 +302,7 @@ export class RoomManager {
         userId: user.id,
         displayName: user.displayName,
         socketId,
+        isGuest: user.isGuest,
       })
       this.roomCodeByUser.set(user.id, room.code)
       socket?.join(room.id)
@@ -470,6 +476,7 @@ export class RoomManager {
     const room = this.roomOf(userId)
     const member = room?.players.get(userId) ?? room?.spectators.get(userId)
     if (!room || !member) throw new Error('Você não está numa sala')
+    if (member.isGuest) throw new Error('Crie sua conta para conversar no chat da mesa')
 
     const text = String(rawText ?? '')
       .replace(/\s+/g, ' ')

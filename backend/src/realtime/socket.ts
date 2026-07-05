@@ -11,6 +11,7 @@ import { oneModule } from '../games/one'
 import { esquadraoCoopModule } from '../games/esquadraoCoop'
 import { racingModule } from '../games/racing'
 import { chessModule } from '../games/chess'
+import { desenhaModule } from '../games/desenha'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -25,6 +26,7 @@ registerGame(oneModule)
 registerGame(esquadraoCoopModule)
 registerGame(racingModule)
 registerGame(chessModule)
+registerGame(desenhaModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {
@@ -56,7 +58,11 @@ export default fp(async (app) => {
       const payload = verifyAccessToken(token)
       const user = await app.prisma.user.findUnique({ where: { id: payload.sub } })
       if (!user || !user.isActive) return next(new Error('UNAUTHORIZED'))
-      socket.data.user = { id: user.id, displayName: user.displayName } satisfies RoomUser
+      socket.data.user = {
+        id: user.id,
+        displayName: user.displayName,
+        isGuest: user.isGuest,
+      } satisfies RoomUser
       next()
     } catch {
       next(new Error('UNAUTHORIZED'))

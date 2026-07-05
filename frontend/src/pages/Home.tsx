@@ -57,9 +57,20 @@ export default function Home() {
                 >
                   Já tenho conta
                 </Link>
+                <Link
+                  to="/entrar"
+                  className="btn-pop px-7 py-3.5 ring-2 ring-pop-cyan/50 hover:ring-pop-cyan"
+                >
+                  🎟️ Jogar sem conta
+                </Link>
               </>
             )}
           </div>
+          {!user && (
+            <p className="mt-3 max-w-md text-xs text-text-muted">
+              Sem conta você joga tudo — mas chat, fazenda, favoritos e ranking pedem cadastro.
+            </p>
+          )}
         </div>
 
         {/* a mesa: ficha central + fichas de jogos flutuando */}

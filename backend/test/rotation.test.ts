@@ -55,7 +55,7 @@ async function registerUser(i: number) {
   const res = await app.inject({
     method: 'POST',
     url: '/api/auth/register',
-    body: { email, name: `Jogador ${i}`, phone: '11987654321', password, passwordConfirm: password },
+    body: { email, name: `Jogador ${i}`, phone: '11987654321', username: `u${runId}p${i}`, password, passwordConfirm: password },
   })
   return res.json().accessToken as string
 }
@@ -108,13 +108,13 @@ describe('dominó: assentos, espectador e rotação', () => {
     // 3 escolhe a dupla 0 — cheia → vai automaticamente para a dupla 1 (assento 3)
     const overflow = await emitAck<RoomView>(sockets[3]!, 'room:seat', { team: 0 })
     expect(overflow.ok).toBe(true)
-    const me3 = overflow.data!.players.find((p) => p.displayName === 'Jogador 3')
+    const me3 = overflow.data!.players.find((p) => p.displayName === `u${runId}p3`)
     expect(me3?.seat).toBe(3)
 
     // 5º entra: mesa cheia → vira espectador (fila)
     const spect = await emitAck<RoomView>(sockets[4]!, 'room:join', { code })
     expect(spect.ok).toBe(true)
-    expect(spect.data!.spectators.map((s) => s.displayName)).toContain('Jogador 4')
+    expect(spect.data!.spectators.map((s) => s.displayName)).toContain(`u${runId}p4`)
     expect(spect.data!.features).toEqual({ seatPicking: true, spectators: true, rotation: true })
   })
 
@@ -181,7 +181,7 @@ describe('dominó: assentos, espectador e rotação', () => {
       expect(room.players.some((p) => p.userId === id)).toBe(true)
     }
     // o antigo espectador (Jogador 4) foi chamado para a mesa
-    expect(room.players.some((p) => p.displayName === 'Jogador 4')).toBe(true)
+    expect(room.players.some((p) => p.displayName === `u${runId}p4`)).toBe(true)
     // um dos perdedores está na fila agora
     expect(room.spectators.length).toBeGreaterThanOrEqual(1)
   })

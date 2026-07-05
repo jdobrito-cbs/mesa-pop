@@ -126,6 +126,7 @@ async function registerUser(i: number) {
     body: {
       email: `${runId}-p${i}@teste.mesapop.local`,
       name: `Piloto ${i}`,
+      username: `u${runId}p${i}`,
       phone: '11987654321',
       password,
       passwordConfirm: password,

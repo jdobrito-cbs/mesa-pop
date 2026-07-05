@@ -20,6 +20,7 @@ beforeAll(async () => {
     body: {
       email: `${runId}@teste.mesapop.local`,
       name: 'Fazendeira Teste',
+      username: `u${runId}fz`,
       phone: '11987654321',
       password,
       passwordConfirm: password,

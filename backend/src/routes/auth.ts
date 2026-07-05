@@ -1,4 +1,6 @@
+import crypto from 'node:crypto'
 import type { FastifyInstance, FastifyReply } from 'fastify'
+import { z } from 'zod'
 import { loginSchema, registerSchema } from '@mesapop/shared'
 import { hashPassword, verifyPassword } from '../lib/password'
 import {
@@ -34,12 +36,17 @@ export default async function authRoutes(app: FastifyInstance) {
     if (existing) {
       return reply.code(409).send({ error: 'EMAIL_TAKEN', message: 'Este e-mail já está cadastrado' })
     }
+    const usernameTaken = await app.prisma.user.findUnique({ where: { username: input.username } })
+    if (usernameTaken) {
+      return reply.code(409).send({ error: 'USERNAME_TAKEN', message: 'Este nome de usuário já existe — escolha outro' })
+    }
 
     const user = await app.prisma.user.create({
       data: {
         email: input.email,
+        username: input.username,
         name: input.name,
-        displayName: input.name,
+        displayName: input.username,
         phone: input.phone,
         passwordHash: await hashPassword(input.password),
       },
@@ -54,13 +61,43 @@ export default async function authRoutes(app: FastifyInstance) {
     })
   })
 
+  /**
+   * "Jogar sem conta": cria uma conta-sombra de convidado com o NOME
+   * informado (obrigatório — é o nome usado nos jogos). Convidados não
+   * têm chat, saves nem ranking; para isso, conta de verdade.
+   */
+  app.post('/api/auth/guest', authRateLimit, async (req, reply) => {
+    const { name } = z
+      .object({ name: z.string().trim().min(2, 'Diga como quer ser chamado').max(30) })
+      .parse(req.body)
+
+    const user = await app.prisma.user.create({
+      data: {
+        email: `convidado-${crypto.randomUUID()}@guest.mesapop.local`,
+        name,
+        displayName: name,
+        phone: '',
+        passwordHash: '!guest', // nunca é um hash argon2 válido → login impossível
+        isGuest: true,
+      },
+    })
+    await audit(app.prisma, 'user.guest', { userId: user.id, req })
+
+    const refresh = await createRefreshToken(app.prisma, user.id)
+    setRefreshCookie(reply, refresh.token, refresh.expiresAt)
+    return reply.code(201).send({
+      user: toPublicUser(user),
+      accessToken: signAccessToken(user.id, user.role, true),
+    })
+  })
+
   app.post('/api/auth/login', authRateLimit, async (req, reply) => {
     const input = loginSchema.parse(req.body)
     const invalid = () =>
       reply.code(401).send({ error: 'INVALID_CREDENTIALS', message: 'E-mail ou senha incorretos' })
 
     const user = await app.prisma.user.findUnique({ where: { email: input.email } })
-    if (!user) return invalid()
+    if (!user || user.isGuest) return invalid()
 
     const ok = await verifyPassword(user.passwordHash, input.password)
     if (!ok) {
@@ -99,7 +136,7 @@ export default async function authRoutes(app: FastifyInstance) {
     setRefreshCookie(reply, rotated.token, rotated.expiresAt)
     return {
       user: toPublicUser(rotated.user),
-      accessToken: signAccessToken(rotated.user.id, rotated.user.role),
+      accessToken: signAccessToken(rotated.user.id, rotated.user.role, rotated.user.isGuest),
     }
   })
 

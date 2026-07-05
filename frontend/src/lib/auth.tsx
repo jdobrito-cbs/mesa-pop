@@ -15,6 +15,8 @@ interface AuthContextValue {
   restoring: boolean
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  /** "jogar sem conta": cria sessão de convidado com o nome informado */
+  guest: (name: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -51,6 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
+  const guest = useCallback(
+    async (name: string) => {
+      applySession(await api<AuthResponse>('/api/auth/guest', { body: { name } }))
+    },
+    [applySession],
+  )
+
   const logout = useCallback(async () => {
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {})
     setAccessToken(null)
@@ -58,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, restoring, login, register, logout }}>
+    <AuthContext.Provider value={{ user, restoring, login, register, guest, logout }}>
       {children}
     </AuthContext.Provider>
   )

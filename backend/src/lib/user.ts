@@ -5,11 +5,13 @@ export function toPublicUser(user: User): UserPublic {
   return {
     id: user.id,
     email: user.email,
+    username: user.username,
     name: user.name,
     displayName: user.displayName,
     phone: user.phone,
     role: user.role,
     avatarUrl: user.avatarUrl,
+    isGuest: user.isGuest,
     createdAt: user.createdAt.toISOString(),
   }
 }

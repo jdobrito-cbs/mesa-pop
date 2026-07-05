@@ -7,10 +7,12 @@ import { config } from '../config'
 export interface AccessTokenPayload {
   sub: string
   role: Role
+  /** conta convidada ("jogar sem conta"): sem chat, saves ou ranking */
+  guest?: boolean
 }
 
-export function signAccessToken(userId: string, role: Role): string {
-  return jwt.sign({ sub: userId, role } satisfies AccessTokenPayload, config.accessSecret, {
+export function signAccessToken(userId: string, role: Role, guest = false): string {
+  return jwt.sign({ sub: userId, role, guest } satisfies AccessTokenPayload, config.accessSecret, {
     expiresIn: config.accessTtl as jwt.SignOptions['expiresIn'],
   })
 }
@@ -20,7 +22,8 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
   if (typeof payload === 'string' || !payload.sub) {
     throw new Error('Token inválido')
   }
-  return { sub: payload.sub, role: (payload as jwt.JwtPayload).role as Role }
+  const p = payload as jwt.JwtPayload
+  return { sub: payload.sub, role: p.role as Role, guest: Boolean(p.guest) }
 }
 
 /** Refresh tokens são opacos: aleatórios, guardados apenas como hash SHA-256. */

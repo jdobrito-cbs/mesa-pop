@@ -40,7 +40,16 @@ export default function Header() {
                 title={user.displayName}
               >
                 {user.displayName}
+                {user.isGuest && <span className="ml-1 text-xs font-bold text-pop-yellow">· convidado</span>}
               </span>
+              {user.isGuest && (
+                <Link
+                  to="/criar-conta"
+                  className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-4 py-2 text-sm text-white shadow-lg shadow-pop-purple/25"
+                >
+                  Criar conta
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-magenta"

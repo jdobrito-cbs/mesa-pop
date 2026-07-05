@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -20,6 +20,7 @@ import { Chip } from './components/Logo'
 
 function RequireAuth() {
   const { user, restoring } = useAuth()
+  const location = useLocation()
   if (restoring) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center" aria-label="Carregando">
@@ -29,7 +30,8 @@ function RequireAuth() {
       </div>
     )
   }
-  return user ? <Outlet /> : <Navigate to="/entrar" replace />
+  // link compartilhado de sala → volta para lá depois de entrar (ou como convidado)
+  return user ? <Outlet /> : <Navigate to="/entrar" replace state={{ from: location.pathname }} />
 }
 
 export default function App() {

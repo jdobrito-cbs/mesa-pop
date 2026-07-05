@@ -81,22 +81,35 @@ export default function RoomChat({ className = '' }: { className?: string }) {
 
       {error && <p className="px-4 pb-1 text-xs font-semibold text-pop-orange">{error}</p>}
 
-      <form onSubmit={send} className="flex gap-2 border-t border-ink-700 p-3">
-        <input
-          className="field flex-1 py-2 text-sm"
-          placeholder="Mensagem para a mesa…"
-          maxLength={300}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="Mensagem do chat"
-        />
-        <button
-          disabled={!text.trim()}
-          className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Enviar
-        </button>
-      </form>
+      {user?.isGuest ? (
+        // convidados leem o chat, mas conversar pede conta
+        <div className="border-t border-ink-700 p-3 text-center">
+          <p className="text-xs text-text-muted">
+            Você está jogando como convidado.{' '}
+            <a href="/criar-conta" className="font-bold text-pop-cyan hover:underline">
+              Crie sua conta
+            </a>{' '}
+            para conversar com a mesa 💬
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={send} className="flex gap-2 border-t border-ink-700 p-3">
+          <input
+            className="field flex-1 py-2 text-sm"
+            placeholder="Mensagem para a mesa…"
+            maxLength={300}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            aria-label="Mensagem do chat"
+          />
+          <button
+            disabled={!text.trim()}
+            className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            Enviar
+          </button>
+        </form>
+      )}
     </div>
   )
 }

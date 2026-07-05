@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
+import AdSlot from '../components/AdSlot'
 import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
 import { EsquadraoGame, ESQ_W, ESQ_H } from '../games/esquadrao'
@@ -187,6 +189,8 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
 
 export default function SoloGamePage({ def }: { def: SoloGameDef }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isGuest = !!user?.isGuest
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<SoloGame | null>(null)
   const matchIdRef = useRef<string | null>(null)
@@ -240,22 +244,27 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
     const stop = startLoop(canvas, game)
 
     // abre a partida no servidor (mede a duração de lá)
+    // convidados jogam sem registrar pontuação — ranking pede conta
     setResult(null)
     setSubmitError('')
-    void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: def.slug } })
-      .then((r) => {
-        matchIdRef.current = r.matchId
-      })
-      .catch(() => {
-        matchIdRef.current = null
-      })
+    if (isGuest) {
+      matchIdRef.current = null
+    } else {
+      void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: def.slug } })
+        .then((r) => {
+          matchIdRef.current = r.matchId
+        })
+        .catch(() => {
+          matchIdRef.current = null
+        })
+    }
 
     return () => {
       stop()
       game.input.detach()
       gameRef.current = null
     }
-  }, [phase, runNumber, def, finish])
+  }, [phase, runNumber, def, finish, isGuest])
 
   const start = () => {
     setPhase('playing')
@@ -373,6 +382,15 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
                 </p>
               )}
               {submitError && <p className="text-sm font-semibold text-pop-orange">{submitError}</p>}
+              {isGuest && (
+                <p className="max-w-xs text-sm text-text-muted">
+                  Jogando como convidado — sua pontuação não entra no ranking.{' '}
+                  <Link to="/criar-conta" className="font-bold text-pop-cyan hover:underline">
+                    Crie sua conta
+                  </Link>{' '}
+                  para competir!
+                </p>
+              )}
               <div className="mt-2 flex gap-3">
                 <button
                   onClick={start}
@@ -416,6 +434,7 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
           <p className="mt-4 text-xs text-text-muted">
             Pontuações são validadas no servidor — jogadas impossíveis não entram no ranking.
           </p>
+          <AdSlot className="mt-4" />
         </div>
       </div>
     </main>

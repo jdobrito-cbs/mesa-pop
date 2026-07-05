@@ -4,11 +4,15 @@ export type Role = 'USER' | 'ADMIN'
 export interface UserPublic {
   id: string
   email: string
+  /** nome de usuário único (contas registradas; null para convidados) */
+  username: string | null
   name: string
   displayName: string
   phone: string
   role: Role
   avatarUrl: string | null
+  /** conta convidada ("jogar sem conta"): sem chat, saves ou ranking */
+  isGuest: boolean
   createdAt: string
 }
 

@@ -30,6 +30,10 @@ const finishBody = z.object({
 
 export default async function soloRoutes(app: FastifyInstance) {
   app.post('/api/solo/start', { preHandler: [app.authenticate] }, async (req, reply) => {
+    // convidado joga, mas não pontua no ranking — conta obrigatória
+    if (req.auth!.guest) {
+      return reply.code(403).send({ error: 'LOGIN_REQUIRED', message: 'Crie sua conta para pontuar no ranking' })
+    }
     const { gameSlug } = startBody.parse(req.body)
     const userId = req.auth!.sub
 
@@ -59,6 +63,9 @@ export default async function soloRoutes(app: FastifyInstance) {
   })
 
   app.post('/api/solo/finish', { preHandler: [app.authenticate] }, async (req, reply) => {
+    if (req.auth!.guest) {
+      return reply.code(403).send({ error: 'LOGIN_REQUIRED', message: 'Crie sua conta para pontuar no ranking' })
+    }
     const { matchId, points } = finishBody.parse(req.body)
     const userId = req.auth!.sub
 
@@ -143,12 +150,13 @@ export default async function soloRoutes(app: FastifyInstance) {
       _max: { points: true },
     })
     bests.sort((a, b) => (b._max.points ?? 0) - (a._max.points ?? 0))
-    const top = bests.slice(0, 20)
-    const users = await app.prisma.user.findMany({
-      where: { id: { in: top.map((b) => b.userId) } },
-      select: { id: true, displayName: true },
+    // convidados nunca entram no ranking
+    const rankedUsers = await app.prisma.user.findMany({
+      where: { id: { in: bests.map((b) => b.userId) }, isGuest: false },
+      select: { id: true, displayName: true, username: true },
     })
-    const nameOf = new Map(users.map((u) => [u.id, u.displayName]))
+    const nameOf = new Map(rankedUsers.map((u) => [u.id, u.username ?? u.displayName]))
+    const top = bests.filter((b) => nameOf.has(b.userId)).slice(0, 20)
 
     return {
       days: q.days,

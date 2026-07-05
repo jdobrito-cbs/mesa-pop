@@ -22,6 +22,7 @@ beforeAll(async () => {
       email: `${runId}@teste.mesapop.local`,
       name: 'Piloto Teste',
       phone: '11987654321',
+      username: `u${runId}so`,
       password,
       passwordConfirm: password,
     },
@@ -124,6 +125,6 @@ describe('partida solo com score validado', () => {
     const lb = await app.inject({ method: 'GET', url: '/api/leaderboards/nave-espacial' })
     expect(lb.statusCode).toBe(200)
     const rows = lb.json().rows as Array<{ displayName: string; points: number }>
-    expect(rows.some((r) => r.displayName === 'Piloto Teste' && r.points === 30)).toBe(true)
+    expect(rows.some((r) => r.displayName === `u${runId}so` && r.points === 30)).toBe(true)
   })
 })

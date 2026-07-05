@@ -103,6 +103,18 @@ const asAnimals = (v: unknown) => (v ?? []) as Animal[]
 const asJson = (v: unknown) => v as Prisma.InputJsonValue
 
 export default async function farmRoutes(app: FastifyInstance) {
+  // a fazenda É um save persistente — convidado não tem acesso
+  app.addHook('preHandler', async (req, reply) => {
+    await app.authenticate(req, reply)
+    if (reply.sent) return
+    if (req.auth?.guest) {
+      return reply.code(403).send({
+        error: 'LOGIN_REQUIRED',
+        message: 'A fazenda salva seu progresso — crie sua conta para cultivar',
+      })
+    }
+  })
+
   async function loadFarm(userId: string) {
     let farm = await app.prisma.farm.findUnique({ where: { userId } })
     if (!farm) {

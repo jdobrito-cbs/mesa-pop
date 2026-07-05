@@ -59,6 +59,7 @@ async function main() {
   await prisma.user.create({
     data: {
       email,
+      username: process.env.ADMIN_USERNAME ?? 'admin',
       name: process.env.ADMIN_NAME ?? 'Administrador',
       displayName: process.env.ADMIN_NAME ?? 'Administrador',
       phone: '0000000000',

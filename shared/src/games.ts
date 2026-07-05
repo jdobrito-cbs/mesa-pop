@@ -50,7 +50,7 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis — com espectadores e fila.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: true },
   { slug: 'truco', name: 'Truco', description: 'Blefe, grite truco e vire a mesa.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🂡', phase: 8, enabled: false },
   { slug: 'stop', name: 'Stop!', description: 'Adedanha com os amigos: pense rápido!', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-yellow', icon: '✏️', phase: 8, enabled: false },
-  { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Desenhe a palavra secreta em 3 min — quem acerta no chat, vence.', family: 'PARTY', minPlayers: 3, maxPlayers: 6, color: 'pop-green', icon: '🎨', phase: 8, enabled: false },
+  { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Desenhe a palavra secreta em 3 min — quem acerta, pontua.', family: 'PARTY', minPlayers: 3, maxPlayers: 6, color: 'pop-green', icon: '🎨', phase: 8, enabled: true },
   { slug: 'campo-minado', name: 'Campo Minado', description: 'Lógica pura: revele tudo sem pisar numa mina.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '💣', phase: 8, enabled: true },
   { slug: 'termo-diario', name: 'Palavra do Dia', description: 'Uma palavra por dia. Compare com os amigos.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🔤', phase: 8, enabled: false },
   { slug: 'snake', name: 'Snake', description: 'Coma, cresça, não se morda. Clássico eterno.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🐍', phase: 8, enabled: true },

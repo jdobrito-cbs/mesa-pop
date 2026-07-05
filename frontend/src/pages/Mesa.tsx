@@ -1,5 +1,8 @@
+import { Link } from 'react-router-dom'
 import { GAME_CATALOG, type AnnouncementView, type GameDef, type GameView } from '@mesapop/shared'
+import AdSlot from '../components/AdSlot'
 import GameCard from '../components/GameCard'
+import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 
@@ -9,8 +12,39 @@ interface RoomRow {
   players: number
   maxPlayers: number
   playerNames: string[]
+  isFavorite: boolean
   game: { slug: string; name: string; icon: string; color: string }
   host: { displayName: string }
+}
+
+interface Standing {
+  guest: boolean
+  globalRank: number | null
+  globalWins: number
+  topGame: { slug: string; name: string; icon: string; plays: number; rank: number | null; metric: string } | null
+}
+
+/** estrela de favoritar sala pública (contas registradas) */
+export function FavoriteStar({
+  room,
+  onToggled,
+  disabled,
+}: {
+  room: { id: string; isFavorite: boolean }
+  onToggled: () => void
+  disabled?: boolean
+}) {
+  if (disabled) return null
+  return (
+    <button
+      onClick={() => void api(`/api/rooms/${room.id}/favorite`, { method: 'POST' }).then(onToggled).catch(() => {})}
+      aria-label={room.isFavorite ? 'Remover dos favoritos' : 'Favoritar sala'}
+      title={room.isFavorite ? 'Remover dos favoritos' : 'Favoritar sala'}
+      className={`btn-pop px-2 py-1 text-xl ${room.isFavorite ? 'text-pop-yellow' : 'text-text-muted/50 hover:text-pop-yellow'}`}
+    >
+      {room.isFavorite ? '★' : '☆'}
+    </button>
+  )
 }
 
 /** quem já está sentado na sala de espera + lugares livres */
@@ -47,8 +81,9 @@ const toGameDef = (g: GameView): GameDef => ({ ...g, enabled: g.isEnabled })
 export default function Mesa() {
   const { user } = useAuth()
   const { data: gamesData, loading: loadingGames } = useFetch<{ games: GameView[] }>('/api/games')
-  const { data: roomsData } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
+  const { data: roomsData, reload: reloadRooms } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
   const { data: annData } = useFetch<{ announcements: AnnouncementView[] }>('/api/announcements')
+  const { data: standing } = useFetch<Standing>('/api/me/standing')
 
   if (!user) return null
   const firstName = user.displayName.split(' ')[0]
@@ -62,6 +97,54 @@ export default function Mesa() {
       <h1 className="text-4xl font-extrabold">
         E aí, <span className="text-pop-cyan">{firstName}</span>! 👋
       </h1>
+
+      {/* sua posição nos rankings */}
+      {user.isGuest ? (
+        <div className="card mt-6 flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-pop-cyan p-4">
+          <p className="text-sm text-text-muted">
+            🎟️ Você está jogando como <strong className="text-text">convidado</strong> — chat,
+            fazenda, favoritos e ranking pedem conta.
+          </p>
+          <Link
+            to="/criar-conta"
+            className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-5 py-2.5 text-sm text-white"
+          >
+            Criar minha conta
+          </Link>
+        </div>
+      ) : (
+        standing &&
+        !standing.guest && (
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="card flex items-center gap-4 p-4">
+              <span className="text-3xl" aria-hidden="true">🌍</span>
+              <div>
+                <p className="font-display font-bold">Ranking global</p>
+                <p className="text-sm text-text-muted">
+                  {standing.globalRank
+                    ? <>Você é o <strong className="text-pop-yellow">{standing.globalRank}º</strong> em vitórias ({standing.globalWins})</>
+                    : 'Vença sua primeira partida para entrar no ranking!'}
+                </p>
+              </div>
+            </div>
+            <div className="card flex items-center gap-4 p-4">
+              <span className="text-3xl" aria-hidden="true">{standing.topGame?.icon ?? '🎮'}</span>
+              <div>
+                <p className="font-display font-bold">
+                  {standing.topGame ? `Seu jogo: ${standing.topGame.name}` : 'Seu jogo favorito'}
+                </p>
+                <p className="text-sm text-text-muted">
+                  {standing.topGame
+                    ? standing.topGame.rank
+                      ? <><strong className="text-pop-cyan">{standing.topGame.rank}º</strong> no ranking de {standing.topGame.metric} · {standing.topGame.plays} partidas</>
+                      : `${standing.topGame.plays} partidas jogadas — pontue para ranquear!`
+                    : 'Jogue qualquer coisa e ele aparece aqui.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      )}
 
       {/* avisos do admin */}
       {!!annData?.announcements.length && (
@@ -117,11 +200,14 @@ export default function Mesa() {
                 </p>
                 <RoomPeople names={r.playerNames} maxPlayers={r.maxPlayers} />
               </div>
+              <FavoriteStar room={r} onToggled={() => void reloadRooms()} disabled={user.isGuest} />
               <span className="font-mono text-sm font-bold text-pop-cyan">{r.code}</span>
             </div>
           ))}
         </div>
       )}
+
+      <AdSlot className="mt-10" />
 
       {/* em breve */}
       {comingSoon.length > 0 && (

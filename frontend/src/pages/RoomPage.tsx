@@ -5,6 +5,7 @@ import type {
   ChessMove,
   ChessState,
   CoopSnapshot,
+  DesenhaView,
   DominoAction,
   DominoView,
   GameEndView,
@@ -17,12 +18,14 @@ import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
+import DesenhaGame from '../components/DesenhaGame'
 import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
 import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
+import AdSlot from '../components/AdSlot'
 import { Chip } from '../components/Logo'
 
 interface GamePayload {
@@ -128,6 +131,22 @@ export default function RoomPage() {
     showToast('Código copiado!')
   }
 
+  /** compartilha o LINK da sala (amigos entram direto, até sem conta) */
+  async function shareRoom() {
+    const url = `${window.location.origin}/sala/${code}`
+    const title = `Vem jogar ${room?.gameName ?? ''} comigo na Mesa Pop!`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url })
+        return
+      } catch {
+        // usuário cancelou — cai para o clipboard
+      }
+    }
+    void navigator.clipboard?.writeText(url)
+    showToast('Link da sala copiado — manda para a galera! 🔗')
+  }
+
   if (error) {
     return (
       <main className="mx-auto max-w-xl px-4 py-16 text-center">
@@ -179,9 +198,17 @@ export default function RoomPage() {
             </span>
           )}
         </h1>
-        <button onClick={() => void leave()} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-          Sair da sala
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => void shareRoom()}
+            className="btn-pop px-4 py-2 text-sm ring-1 ring-pop-cyan/50 hover:ring-pop-cyan"
+          >
+            🔗 Compartilhar
+          </button>
+          <button onClick={() => void leave()} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+            Sair da sala
+          </button>
+        </div>
       </div>
 
       {toast && (
@@ -190,7 +217,12 @@ export default function RoomPage() {
         </p>
       )}
 
-      <div className="mt-6 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
+      {/* Desenha & Adivinha tem chat PRÓPRIO (RESPOSTAS) — o geral sai de cena na partida */}
+      <div
+        className={`mt-6 grid items-start gap-4 ${
+          room.gameSlug === 'desenha-adivinha' && playing ? '' : 'lg:grid-cols-[1fr_320px]'
+        }`}
+      >
         <div>
           {/* SALA DE ESPERA */}
           {room.status === 'WAITING' && !playing && (
@@ -294,12 +326,24 @@ export default function RoomPage() {
                   players={seatedPlayers}
                 />
               )}
+              {room.gameSlug === 'desenha-adivinha' && (
+                <DesenhaGame
+                  view={game.state as DesenhaView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
             </>
           )}
         </div>
 
         {/* chat geral da mesa — jogadores e espectadores */}
-        <RoomChat className="h-80 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)] lg:max-h-[640px]" />
+        {!(room.gameSlug === 'desenha-adivinha' && playing) && (
+          <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+            <RoomChat className="h-80 lg:h-[calc(100vh-14rem)] lg:max-h-[560px]" />
+            <AdSlot />
+          </div>
+        )}
       </div>
 
       {/* FIM DE JOGO */}

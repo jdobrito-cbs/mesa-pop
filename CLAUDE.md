@@ -14,33 +14,64 @@ Base sólida primeiro; os jogos plugam nela.
 
 - **Fase atual**: FASE 8 — EM ANDAMENTO. Lote 1: Xadrez ✅. Lote 2:
   Snake/Campo Minado/Invasores ✅. Lote 3: Come-Come/Pega-Ladrão/Missão
-  Elevador ✅ (2026-07-05). FASES 0–7 ✅. **16 jogos jogáveis; faltam 7
-  do catálogo.** Próximo: lote 4 = MODO CONVIDADO + Desenha & Adivinha
-  (pedidos novos do usuário, ver adendos) — plano proposto, aguardando OK.
+  Elevador ✅. Lote 4: CONVIDADO + username + favoritos/compartilhar +
+  Desenha & Adivinha + AdSlots ✅ (2026-07-05). FASES 0–7 ✅.
+  **17 jogos jogáveis; faltam 6 do catálogo** (Palavra do Dia, Duelo de
+  Palavras, Stop!, Truco, Paciência, Puzzle). Próximo lote: aguardando OK.
 - **Última atualização**: 2026-07-05
-- **ADENDOS NOVOS do usuário (2026-07-05, ainda NÃO implementados)**:
-  1. **MODO CONVIDADO**: dá para JOGAR SEM LOGIN; convidado NÃO pode:
-     usar chat, salvar estado de jogo p/ continuar depois (ex.: fazenda),
-     participar de ranking/sistema de pontos — para isso conta+login são
-     OBRIGATÓRIOS.
-  2. **Desenha & Adivinha** (clone do gartic.io; ver tb garticphone.com):
-     tem CHAT PRÓPRIO de respostas ("RESPOSTAS") e esse é o ÚNICO chat
-     liberado nesse jogo (o chat geral da sala fica oculto). Tela estilo
-     gartic: lista de jogadores com pts (lápis marca o desenhista), DICA
-     com tracinhos, painel REGISTROS (entrou/saiu). **Ao acertar, NÃO
-     mostrar a palavra acertada — aparece só "✓ Fulana acertou!" em verde
-     (e o input do acertador vira "Você acertou!").**
-  3. **Salas: favoritos e compartilhamento**: salas PÚBLICAS podem ser
-     FAVORITADAS; TODAS as salas (públicas e privadas) ganham opção de
-     COMPARTILHAR O LINK da sala para amigos/família entrarem direto.
-  4. **Google Ads (2026-07-05)**: no fim, TODA página terá propaganda via
-     Google Ads — a plataforma deve ser PREPARADA para isso: componente
-     `AdSlot` reservando os espaços (lobby, páginas de jogo, salas),
-     carregamento do script só quando configurado (env com client ID),
-     banner de consentimento (LGPD) antes de ativar. ⚠️ ATENÇÃO: o rodapé
-     hoje diz "sem rastreadores" e a visão prometia privacidade sem CDN —
-     Google Ads conflita; ao ativar, revisar o texto do rodapé e a
-     política de privacidade (trade-off sinalizado ao usuário).
+- **FASE 8 · lote 4 entregue — PLATAFORMA (pedidos do usuário de
+  2026-07-05, TODOS implementados)**:
+  1. **MODO CONVIDADO** ("jogar sem conta", nome OBRIGATÓRIO): conta-
+     sombra (User.isGuest, migração `guests`; email sintético; hash
+     '!guest' impede login; claim `guest` no access token). POST
+     /api/auth/guest. Convidado JOGA TUDO (inclusive senta em salas
+     multiplayer e DESENHA no gartic), mas: chat da mesa bloqueado
+     (manager + UI com CTA), fazenda bloqueada (hook preHandler no plugin
+     + página CTA "guarda seu progresso"), solo start/finish 403
+     LOGIN_REQUIRED (client pula as chamadas e mostra CTA no game over),
+     favoritos bloqueados, e NUNCA aparece em rankings (leaderboards +
+     admin + standing filtram isGuest). Header mostra "· convidado" +
+     botão Criar conta. Landing com "🎟️ Jogar sem conta".
+     **Link compartilhado sem sessão** → /entrar com `state.from` →
+     formulário de convidado (nome) → volta DIRETO para a sala.
+  2. **USERNAME único** (migração `usernames`, `User.username @unique`,
+     minúsculo [a-z0-9_.] 3–20): campo novo no cadastro (registerSchema),
+     409 USERNAME_TAKEN, `displayName = username` (rankings e jogos usam
+     o nome de usuário). Seed: admin recebe ADMIN_USERNAME ?? 'admin'.
+     **Minha mesa** ganhou GET /api/me/standing: card "Ranking global"
+     (posição por vitórias) + card "Seu jogo mais jogado" (posição por
+     pontos se solo, vitórias se multiplayer).
+  3. **Salas**: botão 🔗 COMPARTILHAR em toda sala (navigator.share →
+     fallback clipboard, URL /sala/CODE); FAVORITAR salas públicas
+     (model FavoriteRoom, migração `favorites`, POST /api/rooms/:id/
+     favorite alterna; GET /api/rooms com auth OPCIONAL devolve
+     isFavorite e ordena favoritas no topo; estrela ★ na Mesa e no lobby).
+  4. **DESENHA & ADIVINHA completo** (`shared/desenha.ts` +
+     `backend/games/desenha.ts` + `DesenhaGame.tsx`): realtime 5Hz,
+     fases escolhendo(45s)→desenhando(180s)→revelação(5s), rodadas =
+     jogadores×2, desenhista digita a palavra (2–30) e desenha (traços
+     [x,y...] normalizados 0..1000, lotes ~10Hz, desenhista renderiza
+     traços LOCAIS p/ zero lag), palpite normalizado (minúsculas/sem
+     acento) — **acerto NUNCA ecoa a palavra** (respostas.text=null →
+     "✓ fulana acertou!"; input vira "Você acertou!"), pontos 100/80/60…
+     por ordem + 25/acerto p/ desenhista, dica ganha letras aos 120s/60s,
+     tela estilo gartic (lista c/ lápis e ✔, DICA, paleta 8 cores +
+     borracha + 3 pinceis + limpar, barra de tempo) e chat RESPOSTAS =
+     ÚNICO chat (RoomChat oculto durante a partida). Espectadores
+     assistem. 9 testes (incl. vazamento por serialização). Timeout do
+     desenhista escolhendo = passa a vez.
+  5. **Google Ads SEM consentimento** (decisão do usuário: "todos os
+     sites de jogos mostram ads sem consentimento; o gartic abre com
+     ads"): `AdSlot.tsx` (VITE_ADSENSE_CLIENT/SLOT no env; sem client →
+     nada em prod, marcador tracejado em dev) posicionado em Mesa, lobby,
+     página solo e sala. **Rodapé REVISADO** (saiu "sem rastreadores";
+     entrou "exibe anúncios para se manter no ar; seus dados de jogo
+     ficam no nosso próprio servidor").
+  - **LIÇÕES**: PowerShell Set-Content grava BOM que quebra migration.sql
+    (usar a ferramenta Write); `prisma migrate dev` recusa terminal
+    não-interativo → criar pasta de migração manual + `migrate deploy`;
+    gate de convidado em página com hooks → componente porteiro separado
+    (regra dos hooks).
 - **FASE 8 · lote 3 entregue — RETRÔS (Come-Come, Pega-Ladrão, Missão
   Elevador)** (2026-07-05), todos no esqueleto solo:
   - **Come-Come** (`games/comeCome.ts`, labirinto 19×17 em string-art com

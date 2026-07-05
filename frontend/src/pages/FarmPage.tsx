@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
+import { useAuth } from '../lib/auth'
 
 /**
  * Fazenda Pop — uma CENA viva: canteiros de terra onde a planta cresce
@@ -76,7 +77,38 @@ const TREELINE = [
   { icon: '🌳', size: 32 },
 ]
 
+/** porteiro: a fazenda É um save persistente — convidado precisa de conta */
 export default function FarmPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  if (user?.isGuest) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16 text-center">
+        <p className="text-6xl" aria-hidden="true">🌾</p>
+        <h1 className="mt-4 text-3xl font-extrabold">A fazenda guarda seu progresso</h1>
+        <p className="mx-auto mt-3 max-w-md text-text-muted">
+          Plantações crescem e animais produzem mesmo com você offline — por isso a
+          fazenda precisa de uma conta para salvar tudo. Convidados podem jogar os
+          outros jogos à vontade!
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link
+            to="/criar-conta"
+            className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3.5 text-white shadow-lg shadow-pop-purple/25"
+          >
+            Criar minha conta
+          </Link>
+          <button onClick={() => navigate('/mesa')} className="btn-pop px-6 py-3.5 ring-2 ring-ink-700 hover:ring-pop-cyan">
+            Voltar à mesa
+          </button>
+        </div>
+      </main>
+    )
+  }
+  return <FarmInner />
+}
+
+function FarmInner() {
   const navigate = useNavigate()
   const [farm, setFarm] = useState<FarmView | null>(null)
   const [picker, setPicker] = useState<number | null>(null)

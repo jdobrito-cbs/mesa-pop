@@ -5,7 +5,9 @@ import { useFetch } from '../lib/useFetch'
 import { emitAck } from '../lib/socket'
 import SoloGamePage, { SOLO_GAMES } from './SoloGamePage'
 import FarmPage from './FarmPage'
-import { RoomPeople } from './Mesa'
+import { FavoriteStar, RoomPeople } from './Mesa'
+import { useAuth } from '../lib/auth'
+import AdSlot from '../components/AdSlot'
 
 interface RoomRow {
   id: string
@@ -13,6 +15,7 @@ interface RoomRow {
   players: number
   maxPlayers: number
   playerNames: string[]
+  isFavorite: boolean
   game: { slug: string; name: string; icon: string }
   host: { displayName: string }
 }
@@ -32,6 +35,7 @@ export default function GameLobby() {
 /** Lobby de um jogo multiplayer: criar sala, entrar por código ou sentar. */
 function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { data: gamesData } = useFetch<{ games: GameView[] }>('/api/games')
   const { data: roomsData, reload } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
   const [code, setCode] = useState('')
@@ -211,6 +215,7 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
                 <p className="text-sm text-text-muted">{r.players}/{r.maxPlayers} jogadores</p>
                 <RoomPeople names={r.playerNames} maxPlayers={r.maxPlayers} />
               </div>
+              <FavoriteStar room={r} onToggled={() => void reload()} disabled={!!user?.isGuest} />
               <button
                 onClick={() => {
                   setCode(r.code)
@@ -226,6 +231,8 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
           ))}
         </div>
       )}
+
+      <AdSlot className="mt-8" />
     </main>
   )
 }

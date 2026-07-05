@@ -1,14 +1,18 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { loginSchema } from '@mesapop/shared'
 import { ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, guest } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // link compartilhado (ex.: /sala/ABC123) → volta para lá depois de entrar
+  const from = (location.state as { from?: string } | null)?.from ?? '/mesa'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [guestName, setGuestName] = useState('')
   const [error, setError] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -23,7 +27,25 @@ export default function Login() {
     setSending(true)
     try {
       await login({ email, password })
-      navigate('/mesa')
+      navigate(from)
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : 'Algo deu errado. Tente de novo.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function handleGuest(e: FormEvent) {
+    e.preventDefault()
+    if (guestName.trim().length < 2) {
+      setError('Diga como quer ser chamado (2+ letras)')
+      return
+    }
+    setError('')
+    setSending(true)
+    try {
+      await guest(guestName.trim())
+      navigate(from)
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : 'Algo deu errado. Tente de novo.')
     } finally {
@@ -79,6 +101,34 @@ export default function Login() {
           Criar conta
         </Link>
       </p>
+
+      {/* jogar sem conta: só precisa de um nome */}
+      <form onSubmit={handleGuest} className="card mt-6 flex flex-col gap-3 p-5" noValidate>
+        <p className="text-center font-display font-bold">
+          🎟️ Ou jogue sem conta
+        </p>
+        <div className="flex gap-2">
+          <input
+            className="field flex-1"
+            type="text"
+            value={guestName}
+            placeholder="Como quer ser chamado?"
+            maxLength={30}
+            onChange={(e) => setGuestName(e.target.value)}
+            aria-label="Nome de convidado"
+          />
+          <button
+            type="submit"
+            disabled={sending}
+            className="btn-pop bg-ink-900 px-5 py-2.5 text-sm ring-2 ring-pop-cyan/50 hover:ring-pop-cyan disabled:opacity-60"
+          >
+            Jogar!
+          </button>
+        </div>
+        <p className="text-center text-xs text-text-muted">
+          Convidados jogam à vontade — mas chat, fazenda e ranking pedem conta.
+        </p>
+      </form>
     </main>
   )
 }

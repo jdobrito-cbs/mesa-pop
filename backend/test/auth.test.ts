@@ -15,6 +15,7 @@ const registerBody = {
   email,
   name: 'Usuário de Teste',
   phone: '11987654321',
+  username: `u${runId}`,
   password,
   passwordConfirm: password,
 }
