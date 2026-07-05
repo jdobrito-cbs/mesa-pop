@@ -12,8 +12,33 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 3 — ✅ CONCLUÍDA (2026-07-04). FASES 0, 1 e 2 ✅.
-- **Última atualização**: 2026-07-04
+- **Fase atual**: FASE 4 — ✅ CONCLUÍDA (2026-07-05). FASES 0–3 ✅.
+- **Última atualização**: 2026-07-05
+- **FASE 4 entregue** (engine 2D + primeiros jogos de ação + leaderboard):
+  - `frontend/src/engine/core.ts`: engine de canvas reutilizável — loop com
+    dt limitado, Input unificado (setas/WASD + arrastar dedo/mouse),
+    circleHit, Starfield parallax, Particles. Sem dependências.
+  - **Desvio Estelar** (`games/desvio.ts`, slug nave-espacial): endless de
+    desvio puro (1 toque = fim), asteroides/cometas/naves alienígenas,
+    densidade e velocidade crescentes, 10 pts/segundo.
+  - **Esquadrão 42** (`games/esquadrao.ts`, slug esquadrao-1942): shoot'em
+    up com fogo automático e 5 armas — reto (infinito), espalhado (40),
+    laser (feixe, 90), míssil teleguiado (16), bomba de tela (espaço/B,
+    máx 3) —, power-ups caindo + drops de tanque, 4 tipos de inimigo
+    (batedor/onda/caçador/tanque que atira), 3 vidas com invencibilidade.
+    maxPlayers ajustado para 1 (co-op vira modo próprio na Fase 5).
+  - **Leaderboard validado no servidor** (`routes/solo.ts`): fluxo
+    start→finish com o SERVIDOR medindo a duração; teto de pontos/segundo
+    por jogo (PLAUSIBILITY map) + mínimo de duração; score implausível →
+    422 e partida descartada (sem replay). Usa Match/MatchPlayer/Score →
+    alimenta rankings do admin. GET /api/leaderboards/:slug (melhor por
+    usuário, top 20).
+  - `SoloGamePage`: canvas + HUD (pontos/vidas/arma/bombas) + telas de
+    início e game over (recorde/posição) + ranking ao lado. Rota
+    /jogos/:slug decide solo (registry SOLO_GAMES) vs lobby multiplayer.
+  - 89 testes passando (4 novos: score implausível rejeitado, partida não
+    reaproveitável, plausível entra no ranking). Demo real: bot jogou os
+    dois jogos, 1950 pts no Esquadrão aceitos → 1º no ranking.
 - **FASE 3 entregue** (mão escondida: Dominó e One + adendos):
   - `/shared/domino.ts`: regras completas (duplo-seis, 4p em duplas 0+2 vs
     1+3, abre com [6|6], captura de pontas com orientação, passe só sem
@@ -124,9 +149,9 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 4 (engine 2D top-down
-  em canvas + Esquadrão 42 single-player + Desvio Estelar + leaderboards)
-  e aguardar OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 5 (Esquadrão 42 co-op
+  em tempo real tolerante — modos "sobrevive junto" e "lado a lado por
+  pontos") e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
