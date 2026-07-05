@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
 
 /**
- * Fazenda Pop — o servidor calcula o crescimento (funciona offline);
- * aqui só apresentamos com countdowns ao vivo e muito capricho.
+ * Fazenda Pop — uma CENA viva: canteiros de terra onde a planta cresce
+ * visualmente, animais passeando pelo cercado com bolhas de produto para
+ * coletar, árvores e cercas. O servidor calcula o crescimento (offline).
  */
 
 interface CropInfo {
@@ -63,10 +64,22 @@ const fmtTime = (secs: number) => {
   return `${Math.max(Math.ceil(secs), 0)}s`
 }
 
+/** decoração fixa da cena (posições em %) */
+const DECOR = [
+  { icon: '🌳', left: 2, top: 4, size: 44 },
+  { icon: '🌳', left: 90, top: 2, size: 40 },
+  { icon: '🏡', left: 80, top: 0, size: 52 },
+  { icon: '🌻', left: 30, top: 2, size: 24 },
+  { icon: '🌼', left: 45, top: 5, size: 18 },
+  { icon: '🌷', left: 62, top: 3, size: 20 },
+  { icon: '🪨', left: 12, top: 8, size: 18 },
+]
+
 export default function FarmPage() {
   const navigate = useNavigate()
   const [farm, setFarm] = useState<FarmView | null>(null)
   const [picker, setPicker] = useState<number | null>(null)
+  const [animalOpen, setAnimalOpen] = useState<number | null>(null)
   const [toast, setToast] = useState('')
   const [, forceTick] = useState(0)
 
@@ -93,9 +106,9 @@ export default function FarmPage() {
     }
   }, [load])
 
-  async function call(path: string, body: unknown, okMsg?: (r: FarmView & { harvested?: { name: string; icon: string; sell: number } }) => string) {
+  async function call(path: string, body: unknown, okMsg?: (r: Record<string, unknown>) => string) {
     try {
-      const r = await api<FarmView & { harvested?: { name: string; icon: string; sell: number } }>(path, { body })
+      const r = await api<FarmView & Record<string, unknown>>(path, { body })
       setFarm(r)
       if (okMsg) showToast(okMsg(r))
     } catch (err) {
@@ -104,9 +117,10 @@ export default function FarmPage() {
   }
 
   const now = Date.now()
+  const openAnimal = farm?.animals.find((a) => a.id === animalOpen) ?? null
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🌾</span> Fazenda Pop
@@ -121,7 +135,7 @@ export default function FarmPage() {
         </div>
       </div>
       <p className="mt-1 text-sm text-text-muted">
-        Suas plantações crescem no servidor — até com você offline. Plante agora, colha depois.
+        Sua fazenda vive no servidor — plante, crie e volte depois: tudo continua crescendo.
       </p>
 
       {toast && (
@@ -130,200 +144,259 @@ export default function FarmPage() {
         </p>
       )}
 
-      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[1fr_280px]">
+      {/* ============ A CENA ============ */}
+      <div
+        className="relative mt-5 overflow-hidden rounded-card ring-2 ring-[#3E7A2F]"
+        style={{ background: 'linear-gradient(180deg, #8CCB5E 0%, #6FB548 45%, #5CA23C 100%)' }}
+      >
+        {/* decoração */}
+        {DECOR.map((d, i) => (
+          <span
+            key={i}
+            aria-hidden="true"
+            className="pointer-events-none absolute select-none"
+            style={{ left: `${d.left}%`, top: `${d.top}%`, fontSize: d.size }}
+          >
+            {d.icon}
+          </span>
+        ))}
+
         {/* canteiros */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="relative z-10 flex flex-wrap justify-center gap-3 px-4 pt-16 pb-4 sm:justify-start sm:pl-6">
           {farm?.plots.map((plot) => {
             const readyAt = plot.readyAt ? new Date(plot.readyAt).getTime() : null
+            const plantedAt = plot.plantedAt ? new Date(plot.plantedAt).getTime() : null
             const remaining = readyAt !== null ? (readyAt - now) / 1000 : null
             const ready = readyAt !== null && remaining !== null && remaining <= 0
+            const progress =
+              readyAt !== null && plantedAt !== null
+                ? Math.min((now - plantedAt) / Math.max(readyAt - plantedAt, 1), 1)
+                : 0
+            const stageIcon = !plot.crop
+              ? null
+              : ready
+                ? plot.crop.icon
+                : progress < 0.35
+                  ? '🌱'
+                  : progress < 0.75
+                    ? '🌿'
+                    : plot.crop.icon
             return (
-              <div
+              <button
                 key={plot.id}
-                className={`card relative flex min-h-36 flex-col items-center justify-center gap-1 p-4 text-center ${ready ? 'ring-2 ring-pop-yellow' : ''}`}
-                style={{ background: 'linear-gradient(180deg, #3A2A17 0%, #2B1E10 100%)' }}
+                onClick={() => {
+                  if (!plot.crop) setPicker(plot.id)
+                  else if (ready)
+                    void call('/api/farm/harvest', { plotId: plot.id }, (r) => {
+                      const h = r.harvested as { icon: string; name: string; sell: number } | undefined
+                      return h ? `${h.icon} ${h.name} vendida por 🪙 ${h.sell}!` : 'Colhido!'
+                    })
+                }}
+                className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-2xl transition sm:h-28 sm:w-28 ${
+                  ready ? 'cursor-pointer ring-2 ring-pop-yellow' : plot.crop ? 'cursor-default' : 'cursor-pointer hover:ring-2 hover:ring-pop-green'
+                }`}
+                style={{
+                  background:
+                    'repeating-linear-gradient(180deg, #6B4A28 0px, #6B4A28 8px, #5C3E20 8px, #5C3E20 16px)',
+                  boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.35), 0 3px 0 #4A3218',
+                }}
+                aria-label={plot.crop ? `Canteiro com ${plot.crop.name}` : 'Canteiro vazio — plantar'}
               >
                 {!plot.crop ? (
-                  <button
-                    onClick={() => setPicker(plot.id)}
-                    className="btn-pop flex flex-col items-center gap-1 rounded-2xl border-2 border-dashed border-[#5C452A] px-6 py-4 text-sm font-bold text-[#B99B6B] hover:border-pop-green hover:text-pop-green"
-                  >
-                    <span className="text-2xl" aria-hidden="true">🌱</span>
-                    Plantar
-                  </button>
-                ) : ready ? (
-                  <button
-                    onClick={() =>
-                      void call('/api/farm/harvest', { plotId: plot.id }, (r) =>
-                        r.harvested ? `${r.harvested.icon} ${r.harvested.name} vendida por 🪙 ${r.harvested.sell}!` : 'Colhido!',
-                      )
-                    }
-                    className="btn-pop flex flex-col items-center gap-1"
-                  >
-                    <span className="animate-float text-4xl drop-shadow-[0_0_10px_rgba(255,197,61,0.8)]" aria-hidden="true">
-                      {plot.crop.icon}
-                    </span>
-                    <span className="rounded-full bg-pop-yellow px-4 py-1 text-xs font-extrabold text-ink-950">
-                      Colher! +🪙{plot.crop.sell}
-                    </span>
-                  </button>
+                  <span className="rounded-full bg-[#4A3218]/70 px-3 py-1 text-xs font-bold text-[#D9BE93]">
+                    🌱 plantar
+                  </span>
                 ) : (
                   <>
-                    <span className="text-3xl opacity-80" aria-hidden="true" style={{ transform: `scale(${0.55 + plot.progress * 0.45})` }}>
-                      {plot.crop.icon}
+                    <span
+                      aria-hidden="true"
+                      className={ready ? 'animate-ripe' : ''}
+                      style={{ fontSize: 20 + progress * 22 }}
+                    >
+                      {stageIcon}
                     </span>
-                    <span className="text-xs font-bold">{plot.crop.name}</span>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-ink-950/60">
-                      <div
-                        className="h-2 rounded-full bg-gradient-to-r from-pop-green to-pop-yellow transition-all"
-                        style={{ width: `${Math.min(((now - new Date(plot.plantedAt!).getTime()) / (readyAt! - new Date(plot.plantedAt!).getTime())) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-[#B99B6B] tabular-nums">⏱ {fmtTime(remaining ?? 0)}</span>
+                    {ready ? (
+                      <span className="absolute -bottom-2 rounded-full bg-pop-yellow px-2.5 py-0.5 text-[11px] font-extrabold text-ink-950 shadow">
+                        Colher +🪙{plot.crop.sell}
+                      </span>
+                    ) : (
+                      <>
+                        <div className="mt-1 h-1.5 w-16 overflow-hidden rounded-full bg-[#4A3218]">
+                          <div
+                            className="h-1.5 rounded-full bg-gradient-to-r from-pop-green to-pop-yellow"
+                            style={{ width: `${progress * 100}%` }}
+                          />
+                        </div>
+                        <span className="mt-0.5 text-[10px] font-bold text-[#EADFC8] tabular-nums drop-shadow">
+                          {fmtTime(remaining ?? 0)}
+                        </span>
+                      </>
+                    )}
                   </>
                 )}
-              </div>
+              </button>
             )
           })}
         </div>
 
-        {/* loja + curral */}
-        <div className="flex flex-col gap-3">
-          {/* curral */}
-          <div className="card p-4" style={{ background: 'linear-gradient(180deg, #33261A 0%, #241A10 100%)' }}>
-            <p className="font-display text-sm font-bold">
-              🏚️ Curral ({farm?.barn.owned ?? 0}/{farm?.barn.max ?? 8})
-            </p>
-            <div className="mt-2 flex flex-col gap-2">
-              {farm?.animals.length === 0 && (
-                <p className="text-xs text-text-muted">Nenhum animal ainda — compre abaixo!</p>
-              )}
-              {farm?.animals.map((a) => {
-                const produceReady = a.produce ? new Date(a.produce.readyAt).getTime() - now <= 0 : false
-                const produceRemaining = a.produce ? (new Date(a.produce.readyAt).getTime() - now) / 1000 : 0
-                const matureRemaining = (new Date(a.meat.matureAt).getTime() - now) / 1000
-                const mature = matureRemaining <= 0
-                return (
-                  <div key={a.id} className="rounded-field bg-ink-950/50 p-2.5 ring-1 ring-[#5C452A]">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl" aria-hidden="true">{a.icon}</span>
-                      <span className="text-sm font-bold">{a.name}</span>
-                      <span className="ml-auto text-[10px] text-[#B99B6B]">
-                        {mature ? 'no ponto de abate' : `abate em ${fmtTime(matureRemaining)}`}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex gap-2">
-                      {a.produce && (
-                        <button
-                          onClick={() =>
-                            void call('/api/farm/animal/collect', { animalId: a.id }, (r) => {
-                              const c = (r as unknown as { collected?: { icon: string; name: string; sell: number } }).collected
-                              return c ? `${c.icon} ${c.name} vendido por 🪙 ${c.sell}!` : 'Coletado!'
-                            })
-                          }
-                          disabled={!produceReady}
-                          className={`btn-pop flex-1 rounded-full px-3 py-1.5 text-xs font-bold ${
-                            produceReady
-                              ? 'bg-pop-yellow text-ink-950'
-                              : 'bg-ink-900 text-text-muted ring-1 ring-ink-700'
-                          }`}
-                        >
-                          {produceReady
-                            ? `Coletar ${a.produce.icon} +🪙${a.produce.sell}`
-                            : `${a.produce.icon} em ${fmtTime(produceRemaining)}`}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          if (!window.confirm(`Abater ${a.name} por 🪙 ${a.meat.sell}?`)) return
-                          void call('/api/farm/animal/slaughter', { animalId: a.id }, (r) => {
-                            const s = (r as unknown as { slaughtered?: { name: string; sell: number } }).slaughtered
-                            return s ? `🍖 ${s.name} vendida por 🪙 ${s.sell}!` : 'Abatido!'
+        {/* cercado dos animais */}
+        <div className="relative z-10 mx-4 mb-4 sm:mx-6">
+          <div
+            className="relative h-40 overflow-hidden rounded-2xl"
+            style={{
+              background: 'linear-gradient(180deg, #7CBB53 0%, #69A844 100%)',
+              border: '5px solid #8D6B4B',
+              boxShadow: 'inset 0 0 0 3px #6E5138, inset 0 6px 14px rgba(0,0,0,0.18)',
+            }}
+          >
+            <span className="absolute top-1 left-3 rounded-full bg-[#6E5138]/85 px-3 py-0.5 text-[11px] font-extrabold text-[#EADFC8]">
+              🏚️ Curral {farm ? `${farm.barn.owned}/${farm.barn.max}` : ''}
+            </span>
+            {farm?.animals.length === 0 && (
+              <p className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[#3E5A2B]">
+                Compre animais na lojinha abaixo 👇
+              </p>
+            )}
+            {farm?.animals.map((a, i) => {
+              const produceReady = a.produce ? new Date(a.produce.readyAt).getTime() - now <= 0 : false
+              const mature = new Date(a.meat.matureAt).getTime() - now <= 0
+              const lane = 18 + ((i * 37) % 70) // % vertical
+              const wanderDist = 60 + ((i * 53) % 120)
+              const duration = 5 + ((i * 2.3) % 6)
+              return (
+                <div
+                  key={a.id}
+                  className="animate-wander absolute"
+                  style={{
+                    top: `${lane}%`,
+                    left: `${6 + ((i * 23) % 40)}%`,
+                    ['--wander-distance' as string]: `${wanderDist}px`,
+                    animationDuration: `${duration}s`,
+                  }}
+                >
+                  <button
+                    onClick={() => setAnimalOpen(a.id)}
+                    className="relative block cursor-pointer select-none"
+                    aria-label={`${a.name} — abrir`}
+                  >
+                    {/* bolha de produto pronta (clique = coletar) */}
+                    {produceReady && a.produce && (
+                      <span
+                        role="button"
+                        aria-label={`Coletar ${a.produce.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void call('/api/farm/animal/collect', { animalId: a.id }, (r) => {
+                            const c = r.collected as { icon: string; name: string; sell: number } | undefined
+                            return c ? `${c.icon} ${c.name} vendido por 🪙 ${c.sell}!` : 'Coletado!'
                           })
                         }}
-                        disabled={!mature}
-                        className={`btn-pop rounded-full px-3 py-1.5 text-xs font-bold ${
-                          mature
-                            ? 'bg-pop-orange/25 text-pop-orange ring-1 ring-pop-orange/50'
-                            : 'bg-ink-900 text-text-muted ring-1 ring-ink-700 opacity-60'
-                        }`}
+                        className="animate-float absolute -top-7 left-1/2 flex size-8 -translate-x-1/2 items-center justify-center rounded-full bg-white text-base shadow-lg ring-2 ring-pop-yellow"
                       >
-                        🍖 +🪙{a.meat.sell}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            {/* comprar animais */}
-            {farm && farm.barn.owned < farm.barn.max && (
-              <div className="mt-3 flex flex-col gap-1.5 border-t border-[#5C452A] pt-3">
-                {farm.barn.forSale.map((d) => (
-                  <button
-                    key={d.kind}
-                    onClick={() => void call('/api/farm/animal/buy', { kind: d.kind }, () => `${d.icon} ${d.name} chegou ao curral!`)}
-                    disabled={farm.coins < d.cost}
-                    className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2 text-xs ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
-                  >
-                    <span className="text-left">
-                      {d.icon} <strong>{d.name}</strong>
-                      <span className="block text-[10px] text-text-muted">
-                        {d.produce
-                          ? `${d.produce.icon} a cada ${fmtTime(d.produce.everySecs)} (+${d.produce.sell}) · `
-                          : ''}
-                        🍖 {d.meat.sell} após {fmtTime(d.meat.matureSecs)}
+                        {a.produce.icon}
                       </span>
+                    )}
+                    {/* selo de abate disponível */}
+                    {mature && (
+                      <span className="absolute -right-2.5 -bottom-1 flex size-5 items-center justify-center rounded-full bg-pop-orange text-[10px] shadow ring-1 ring-white/60">
+                        🍖
+                      </span>
+                    )}
+                    <span
+                      aria-hidden="true"
+                      className="animate-face block"
+                      style={{ fontSize: 34, animationDuration: `${duration * 2}s` }}
+                    >
+                      {a.icon}
                     </span>
-                    <span className="font-bold text-pop-yellow">🪙 {d.cost}</span>
+                    <span
+                      aria-hidden="true"
+                      className="mx-auto block h-1.5 w-7 rounded-full bg-[#3E5A2B]/40"
+                    />
                   </button>
-                ))}
-              </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ============ painéis ============ */}
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {/* lojinha de animais */}
+        <div className="card p-4">
+          <p className="font-display text-sm font-bold">🐄 Comprar animais</p>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {farm && farm.barn.owned >= farm.barn.max && (
+              <p className="text-xs text-text-muted">Curral cheio!</p>
+            )}
+            {farm &&
+              farm.barn.owned < farm.barn.max &&
+              farm.barn.forSale.map((d) => (
+                <button
+                  key={d.kind}
+                  onClick={() => void call('/api/farm/animal/buy', { kind: d.kind }, () => `${d.icon} ${d.name} chegou ao curral!`)}
+                  disabled={farm.coins < d.cost}
+                  className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2 text-xs ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
+                >
+                  <span className="text-left">
+                    {d.icon} <strong>{d.name}</strong>
+                    <span className="block text-[10px] text-text-muted">
+                      {d.produce ? `${d.produce.icon} ${fmtTime(d.produce.everySecs)} (+${d.produce.sell}) · ` : ''}
+                      🍖 {d.meat.sell} após {fmtTime(d.meat.matureSecs)}
+                    </span>
+                  </span>
+                  <span className="font-bold text-pop-yellow">🪙 {d.cost}</span>
+                </button>
+              ))}
+          </div>
+        </div>
+
+        {/* melhorias */}
+        <div className="card p-4">
+          <p className="font-display text-sm font-bold">🏪 Melhorias</p>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {farm?.shop.plot ? (
+              <button
+                onClick={() => void call('/api/farm/buy', { upgrade: 'plot' }, () => 'Canteiro novo! 🎉')}
+                disabled={farm.coins < farm.shop.plot.price}
+                className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2 text-xs ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
+              >
+                <span>🟫 Novo canteiro ({farm.shop.plot.owned}/{farm.shop.plot.max})</span>
+                <span className="font-bold text-pop-yellow">🪙 {farm.shop.plot.price}</span>
+              </button>
+            ) : (
+              <p className="text-xs text-text-muted">🟫 Fazenda no tamanho máximo!</p>
+            )}
+            {farm?.shop.fertilizer ? (
+              <button
+                onClick={() => void call('/api/farm/buy', { upgrade: 'fertilizer' }, (r) => `Adubo nível ${(r.upgrades as { fertilizer: number }).fertilizer}! 🌱`)}
+                disabled={farm.coins < farm.shop.fertilizer.price}
+                className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2 text-xs ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
+              >
+                <span>💩 Adubo nível {farm.shop.fertilizer.level + 1} (−8% tempo)</span>
+                <span className="font-bold text-pop-yellow">🪙 {farm.shop.fertilizer.price}</span>
+              </button>
+            ) : (
+              <p className="text-xs text-text-muted">💩 Adubo no nível máximo!</p>
             )}
           </div>
-          <div className="card p-4">
-            <p className="font-display text-sm font-bold">🏪 Melhorias</p>
-            <div className="mt-3 flex flex-col gap-2">
-              {farm?.shop.plot ? (
-                <button
-                  onClick={() => void call('/api/farm/buy', { upgrade: 'plot' }, () => 'Canteiro novo! 🎉')}
-                  disabled={farm.coins < farm.shop.plot.price}
-                  className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2.5 text-sm ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
-                >
-                  <span>🟫 Novo canteiro ({farm.shop.plot.owned}/{farm.shop.plot.max})</span>
-                  <span className="font-bold text-pop-yellow">🪙 {farm.shop.plot.price}</span>
-                </button>
-              ) : (
-                <p className="text-xs text-text-muted">🟫 Fazenda no tamanho máximo!</p>
-              )}
-              {farm?.shop.fertilizer ? (
-                <button
-                  onClick={() => void call('/api/farm/buy', { upgrade: 'fertilizer' }, (r) => `Adubo nível ${r.upgrades.fertilizer}! Crescimento mais rápido 🌱`)}
-                  disabled={farm.coins < farm.shop.fertilizer.price}
-                  className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2.5 text-sm ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
-                >
-                  <span>💩 Adubo nível {farm.shop.fertilizer.level + 1} (−8% tempo)</span>
-                  <span className="font-bold text-pop-yellow">🪙 {farm.shop.fertilizer.price}</span>
-                </button>
-              ) : (
-                <p className="text-xs text-text-muted">💩 Adubo no nível máximo!</p>
-              )}
-            </div>
-          </div>
+        </div>
 
-          <div className="card p-4">
-            <p className="font-display text-sm font-bold">📖 Sementes</p>
-            <div className="mt-2 flex flex-col gap-1.5 text-xs">
-              {farm?.catalog.map((c) => (
-                <div key={c.slug} className="flex items-center justify-between rounded-field bg-ink-900 px-3 py-1.5 ring-1 ring-ink-700">
-                  <span>
-                    {c.icon} {c.name} <span className="text-text-muted">· {fmtTime(c.growSecs)}</span>
-                  </span>
-                  <span className="tabular-nums">
-                    <span className="text-pop-orange">−{c.cost}</span> → <span className="text-pop-green">+{c.sell}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
+        {/* guia de sementes */}
+        <div className="card p-4">
+          <p className="font-display text-sm font-bold">📖 Sementes</p>
+          <div className="mt-2 flex flex-col gap-1 text-xs">
+            {farm?.catalog.map((c) => (
+              <div key={c.slug} className="flex items-center justify-between rounded-field bg-ink-900 px-3 py-1.5 ring-1 ring-ink-700">
+                <span>
+                  {c.icon} {c.name} <span className="text-text-muted">· {fmtTime(c.growSecs)}</span>
+                </span>
+                <span className="tabular-nums">
+                  <span className="text-pop-orange">−{c.cost}</span> → <span className="text-pop-green">+{c.sell}</span>
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -359,6 +432,69 @@ export default function FarmPage() {
             <button onClick={() => setPicker(null)} className="btn-pop mt-3 w-full px-4 py-2 text-sm text-text-muted ring-1 ring-ink-700">
               Cancelar
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ficha do animal */}
+      {openAnimal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/80 p-4"
+          onClick={(e) => e.target === e.currentTarget && setAnimalOpen(null)}
+        >
+          <div className="card w-full max-w-xs p-5 text-center">
+            <p className="text-5xl" aria-hidden="true">{openAnimal.icon}</p>
+            <p className="mt-1 font-display text-xl font-extrabold">{openAnimal.name}</p>
+            {openAnimal.produce && (
+              <p className="mt-1 text-xs text-text-muted">
+                {openAnimal.produce.icon} {openAnimal.produce.name}:{' '}
+                {new Date(openAnimal.produce.readyAt).getTime() - now <= 0
+                  ? 'pronto!'
+                  : `em ${fmtTime((new Date(openAnimal.produce.readyAt).getTime() - now) / 1000)}`}
+              </p>
+            )}
+            <p className="text-xs text-text-muted">
+              🍖 {openAnimal.meat.name} (+🪙{openAnimal.meat.sell}):{' '}
+              {new Date(openAnimal.meat.matureAt).getTime() - now <= 0
+                ? 'no ponto de abate'
+                : `em ${fmtTime((new Date(openAnimal.meat.matureAt).getTime() - now) / 1000)}`}
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              {openAnimal.produce && (
+                <button
+                  disabled={new Date(openAnimal.produce.readyAt).getTime() - now > 0}
+                  onClick={() => {
+                    const id = openAnimal.id
+                    setAnimalOpen(null)
+                    void call('/api/farm/animal/collect', { animalId: id }, (r) => {
+                      const c = r.collected as { icon: string; name: string; sell: number } | undefined
+                      return c ? `${c.icon} ${c.name} vendido por 🪙 ${c.sell}!` : 'Coletado!'
+                    })
+                  }}
+                  className="btn-pop bg-pop-yellow px-4 py-2.5 text-sm font-extrabold text-ink-950 disabled:opacity-50"
+                >
+                  Coletar {openAnimal.produce.icon} +🪙{openAnimal.produce.sell}
+                </button>
+              )}
+              <button
+                disabled={new Date(openAnimal.meat.matureAt).getTime() - now > 0}
+                onClick={() => {
+                  if (!window.confirm(`Abater ${openAnimal.name} por 🪙 ${openAnimal.meat.sell}?`)) return
+                  const id = openAnimal.id
+                  setAnimalOpen(null)
+                  void call('/api/farm/animal/slaughter', { animalId: id }, (r) => {
+                    const s = r.slaughtered as { name: string; sell: number } | undefined
+                    return s ? `🍖 ${s.name} vendida por 🪙 ${s.sell}!` : 'Abatido!'
+                  })
+                }}
+                className="btn-pop bg-pop-orange/25 px-4 py-2.5 text-sm font-extrabold text-pop-orange ring-1 ring-pop-orange/50 disabled:opacity-50"
+              >
+                🍖 Abater +🪙{openAnimal.meat.sell}
+              </button>
+              <button onClick={() => setAnimalOpen(null)} className="btn-pop px-4 py-2 text-xs text-text-muted ring-1 ring-ink-700">
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

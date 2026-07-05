@@ -19,8 +19,9 @@ import {
   type GameHost,
 } from '../engine/core'
 
-export const CARDUME_W = 480
-export const CARDUME_H = 640
+// paisagem: bem mais espaço nas laterais para o cardume navegar
+export const CARDUME_W = 900
+export const CARDUME_H = 540
 
 const MAX_FISH = 90
 const TAP_MS = 220
@@ -363,7 +364,12 @@ export class CardumeGame implements GameHost {
     ctx.fillRect(0, 0, CARDUME_W, CARDUME_H)
 
     // raios de luz
-    for (const [x0, w] of [[60, 90], [220, 60], [370, 110]] as const) {
+    for (const [x0, w] of [
+      [CARDUME_W * 0.12, 90],
+      [CARDUME_W * 0.38, 60],
+      [CARDUME_W * 0.62, 110],
+      [CARDUME_W * 0.85, 70],
+    ] as const) {
       const sway = Math.sin(this.time * 0.4 + x0) * 24
       const g = ctx.createLinearGradient(x0 + sway, 0, x0 + sway + w, CARDUME_H)
       g.addColorStop(0, 'rgba(126,220,255,0.10)')

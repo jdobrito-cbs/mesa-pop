@@ -38,6 +38,8 @@ export interface SoloGameDef {
   icon: string
   width: number
   height: number
+  /** canvas paisagem: ocupa a largura toda (leaderboard vai para baixo) */
+  wide?: boolean
   controls: string
   /** botões de toque sobre o canvas (celular/tablet) */
   actions?: TouchAction[]
@@ -54,6 +56,7 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     icon: '🐠',
     width: CARDUME_W,
     height: CARDUME_H,
+    wide: true,
     controls:
       'Mova o ponteiro (ou setas): o cardume segue. Toque rápido/espaço: os peixes se ESPALHAM. Segure/Shift: eles ORBITAM em alta velocidade — sua arma contra os peixões. Coma peixinhos dourados para crescer!',
     create: (cb) => new CardumeGame(cb),
@@ -179,9 +182,9 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
         </button>
       </div>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className={`mt-5 grid items-start gap-5 ${def.wide ? '' : 'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
         {/* jogo */}
-        <div className="relative mx-auto w-full max-w-md">
+        <div className={`relative mx-auto w-full ${def.wide ? 'max-w-4xl' : 'max-w-md'}`}>
           <canvas
             ref={canvasRef}
             width={def.width}

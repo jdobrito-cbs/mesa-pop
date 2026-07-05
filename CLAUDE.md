@@ -484,6 +484,15 @@ Cada jogo é um módulo implementando interface comum, ex.:
   (não sobrepõe ao 1942, que cobre o atirar).
 
 ### Engines próprias
+- **Fazenda como CENA VIVA (pedido do usuário em 2026-07-05, ref. visual
+  "Family Farm Seaside")**: a fazenda não é um painel de cards — é uma cena
+  interativa: gramado com árvores/cercas, canteiros de terra onde a planta
+  CRESCE visualmente (broto → planta → pronta pulsando), animais ANDANDO
+  pelo cercado com bolhas de produto (🥚/🥛) flutuando quando prontas —
+  clica na bolha para coletar; indicador de abate no animal maduro.
+- **Cardume em tela larga (pedido do usuário em 2026-07-05)**: o canvas do
+  Cardume é PAISAGEM (mais espaço nas laterais para navegar o cardume),
+  adaptado a tablets e celulares (escala fluida, toque).
 - **Animais da fazenda (pedido do usuário em 2026-07-05)**: além das
   plantações, um CURRAL com galinhas 🐔 (põem OVOS coletáveis em ciclo e
   rendem carne de galinha no abate), porcos 🐖 (engordam e rendem carne de
