@@ -25,10 +25,30 @@ interface PlotView {
   progress: number
 }
 
+interface AnimalView {
+  id: number
+  kind: string
+  name: string
+  icon: string
+  produce: { name: string; icon: string; sell: number; readyAt: string; isReady: boolean } | null
+  meat: { name: string; sell: number; matureAt: string; isMature: boolean }
+}
+
+interface AnimalForSale {
+  kind: string
+  name: string
+  icon: string
+  cost: number
+  produce: { name: string; icon: string; sell: number; everySecs: number } | null
+  meat: { name: string; sell: number; matureSecs: number }
+}
+
 interface FarmView {
   coins: number
   upgrades: { fertilizer: number }
   plots: PlotView[]
+  animals: AnimalView[]
+  barn: { max: number; owned: number; forSale: AnimalForSale[] }
   catalog: CropInfo[]
   shop: {
     plot: { price: number; owned: number; max: number } | null
@@ -167,8 +187,99 @@ export default function FarmPage() {
           })}
         </div>
 
-        {/* loja */}
+        {/* loja + curral */}
         <div className="flex flex-col gap-3">
+          {/* curral */}
+          <div className="card p-4" style={{ background: 'linear-gradient(180deg, #33261A 0%, #241A10 100%)' }}>
+            <p className="font-display text-sm font-bold">
+              🏚️ Curral ({farm?.barn.owned ?? 0}/{farm?.barn.max ?? 8})
+            </p>
+            <div className="mt-2 flex flex-col gap-2">
+              {farm?.animals.length === 0 && (
+                <p className="text-xs text-text-muted">Nenhum animal ainda — compre abaixo!</p>
+              )}
+              {farm?.animals.map((a) => {
+                const produceReady = a.produce ? new Date(a.produce.readyAt).getTime() - now <= 0 : false
+                const produceRemaining = a.produce ? (new Date(a.produce.readyAt).getTime() - now) / 1000 : 0
+                const matureRemaining = (new Date(a.meat.matureAt).getTime() - now) / 1000
+                const mature = matureRemaining <= 0
+                return (
+                  <div key={a.id} className="rounded-field bg-ink-950/50 p-2.5 ring-1 ring-[#5C452A]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl" aria-hidden="true">{a.icon}</span>
+                      <span className="text-sm font-bold">{a.name}</span>
+                      <span className="ml-auto text-[10px] text-[#B99B6B]">
+                        {mature ? 'no ponto de abate' : `abate em ${fmtTime(matureRemaining)}`}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      {a.produce && (
+                        <button
+                          onClick={() =>
+                            void call('/api/farm/animal/collect', { animalId: a.id }, (r) => {
+                              const c = (r as unknown as { collected?: { icon: string; name: string; sell: number } }).collected
+                              return c ? `${c.icon} ${c.name} vendido por 🪙 ${c.sell}!` : 'Coletado!'
+                            })
+                          }
+                          disabled={!produceReady}
+                          className={`btn-pop flex-1 rounded-full px-3 py-1.5 text-xs font-bold ${
+                            produceReady
+                              ? 'bg-pop-yellow text-ink-950'
+                              : 'bg-ink-900 text-text-muted ring-1 ring-ink-700'
+                          }`}
+                        >
+                          {produceReady
+                            ? `Coletar ${a.produce.icon} +🪙${a.produce.sell}`
+                            : `${a.produce.icon} em ${fmtTime(produceRemaining)}`}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!window.confirm(`Abater ${a.name} por 🪙 ${a.meat.sell}?`)) return
+                          void call('/api/farm/animal/slaughter', { animalId: a.id }, (r) => {
+                            const s = (r as unknown as { slaughtered?: { name: string; sell: number } }).slaughtered
+                            return s ? `🍖 ${s.name} vendida por 🪙 ${s.sell}!` : 'Abatido!'
+                          })
+                        }}
+                        disabled={!mature}
+                        className={`btn-pop rounded-full px-3 py-1.5 text-xs font-bold ${
+                          mature
+                            ? 'bg-pop-orange/25 text-pop-orange ring-1 ring-pop-orange/50'
+                            : 'bg-ink-900 text-text-muted ring-1 ring-ink-700 opacity-60'
+                        }`}
+                      >
+                        🍖 +🪙{a.meat.sell}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {/* comprar animais */}
+            {farm && farm.barn.owned < farm.barn.max && (
+              <div className="mt-3 flex flex-col gap-1.5 border-t border-[#5C452A] pt-3">
+                {farm.barn.forSale.map((d) => (
+                  <button
+                    key={d.kind}
+                    onClick={() => void call('/api/farm/animal/buy', { kind: d.kind }, () => `${d.icon} ${d.name} chegou ao curral!`)}
+                    disabled={farm.coins < d.cost}
+                    className="btn-pop justify-between rounded-field bg-ink-900 px-3 py-2 text-xs ring-1 ring-ink-700 hover:ring-pop-green disabled:opacity-50"
+                  >
+                    <span className="text-left">
+                      {d.icon} <strong>{d.name}</strong>
+                      <span className="block text-[10px] text-text-muted">
+                        {d.produce
+                          ? `${d.produce.icon} a cada ${fmtTime(d.produce.everySecs)} (+${d.produce.sell}) · `
+                          : ''}
+                        🍖 {d.meat.sell} após {fmtTime(d.meat.matureSecs)}
+                      </span>
+                    </span>
+                    <span className="font-bold text-pop-yellow">🪙 {d.cost}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="card p-4">
             <p className="font-display text-sm font-bold">🏪 Melhorias</p>
             <div className="mt-3 flex flex-col gap-2">

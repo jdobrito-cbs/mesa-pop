@@ -26,9 +26,48 @@ export const CROPS: CropDef[] = [
   { slug: 'cacau', name: 'Cacau', icon: '🍫', cost: 400, sell: 1150, growSecs: 8 * 3600 },
 ]
 
+export interface AnimalDef {
+  kind: string
+  name: string
+  icon: string
+  cost: number
+  /** produto coletável em ciclo (ovos/leite) — null para o porco */
+  produce: { name: string; icon: string; sell: number; everySecs: number } | null
+  /** abate: carne liberada após a maturidade */
+  meat: { name: string; sell: number; matureSecs: number }
+}
+
+export const ANIMALS: AnimalDef[] = [
+  {
+    kind: 'galinha',
+    name: 'Galinha',
+    icon: '🐔',
+    cost: 40,
+    produce: { name: 'Ovo', icon: '🥚', sell: 8, everySecs: 3 * 60 },
+    meat: { name: 'Carne de galinha', sell: 55, matureSecs: 10 * 60 },
+  },
+  {
+    kind: 'porco',
+    name: 'Porco',
+    icon: '🐖',
+    cost: 90,
+    produce: null,
+    meat: { name: 'Carne de porco', sell: 220, matureSecs: 30 * 60 },
+  },
+  {
+    kind: 'vaca',
+    name: 'Vaca',
+    icon: '🐄',
+    cost: 250,
+    produce: { name: 'Leite', icon: '🥛', sell: 30, everySecs: 10 * 60 },
+    meat: { name: 'Carne de vaca', sell: 600, matureSecs: 60 * 60 },
+  },
+]
+
 const START_PLOTS = 4
 const MAX_PLOTS = 12
 const MAX_FERTILIZER = 5
+const MAX_ANIMALS = 8
 
 export const plotPrice = (owned: number) => Math.round(90 * Math.pow(1.65, owned - START_PLOTS))
 export const fertilizerPrice = (level: number) => 180 * Math.pow(2, level)
@@ -39,6 +78,13 @@ interface Plot {
   id: number
   crop: string | null
   plantedAt: string | null
+}
+
+interface Animal {
+  id: number
+  kind: string
+  boughtAt: string
+  lastCollectedAt: string
 }
 
 interface Upgrades {
@@ -60,10 +106,11 @@ export default async function farmRoutes(app: FastifyInstance) {
     return farm
   }
 
-  function view(farm: { coins: number; plots: unknown; upgrades: unknown }) {
+  function view(farm: { coins: number; plots: unknown; upgrades: unknown; animals: unknown }) {
     const now = Date.now()
     const plots = farm.plots as Plot[]
     const upgrades = farm.upgrades as Upgrades
+    const animals = (farm.animals ?? []) as Animal[]
     const factor = growthFactor(upgrades.fertilizer)
     return {
       coins: farm.coins,
@@ -84,6 +131,48 @@ export default async function farmRoutes(app: FastifyInstance) {
             : 0,
         }
       }),
+      animals: animals.map((a) => {
+        const def = ANIMALS.find((d) => d.kind === a.kind)!
+        const bought = new Date(a.boughtAt).getTime()
+        const last = new Date(a.lastCollectedAt).getTime()
+        const produceReadyAt = def.produce ? last + def.produce.everySecs * 1000 : null
+        const matureAt = bought + def.meat.matureSecs * 1000
+        return {
+          id: a.id,
+          kind: def.kind,
+          name: def.name,
+          icon: def.icon,
+          produce: def.produce
+            ? {
+                name: def.produce.name,
+                icon: def.produce.icon,
+                sell: def.produce.sell,
+                readyAt: new Date(produceReadyAt!).toISOString(),
+                isReady: now >= produceReadyAt!,
+              }
+            : null,
+          meat: {
+            name: def.meat.name,
+            sell: def.meat.sell,
+            matureAt: new Date(matureAt).toISOString(),
+            isMature: now >= matureAt,
+          },
+        }
+      }),
+      barn: {
+        max: MAX_ANIMALS,
+        owned: animals.length,
+        forSale: ANIMALS.map((d) => ({
+          kind: d.kind,
+          name: d.name,
+          icon: d.icon,
+          cost: d.cost,
+          produce: d.produce
+            ? { name: d.produce.name, icon: d.produce.icon, sell: d.produce.sell, everySecs: d.produce.everySecs }
+            : null,
+          meat: d.meat,
+        })),
+      },
       catalog: CROPS,
       shop: {
         plot: plots.length < MAX_PLOTS ? { price: plotPrice(plots.length), owned: plots.length, max: MAX_PLOTS } : null,
@@ -147,6 +236,75 @@ export default async function farmRoutes(app: FastifyInstance) {
       data: { coins: farm.coins + def.sell, plots },
     })
     return { ...view(updated), harvested: { name: def.name, icon: def.icon, sell: def.sell } }
+  })
+
+  app.post('/api/farm/animal/buy', { preHandler: [app.authenticate] }, async (req, reply) => {
+    const { kind } = z.object({ kind: z.string() }).parse(req.body)
+    const farm = await loadFarm(req.auth!.sub)
+    const animals = (farm.animals ?? []) as Animal[]
+    const def = ANIMALS.find((d) => d.kind === kind)
+    if (!def) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal desconhecido' })
+    if (animals.length >= MAX_ANIMALS) {
+      return reply.code(400).send({ error: 'BARN_FULL', message: 'O curral está cheio' })
+    }
+    if (farm.coins < def.cost) {
+      return reply.code(400).send({ error: 'NO_COINS', message: 'Moedas insuficientes' })
+    }
+    const nowIso = new Date().toISOString()
+    animals.push({
+      id: animals.length ? Math.max(...animals.map((a) => a.id)) + 1 : 0,
+      kind: def.kind,
+      boughtAt: nowIso,
+      lastCollectedAt: nowIso,
+    })
+    const updated = await app.prisma.farm.update({
+      where: { id: farm.id },
+      data: { coins: farm.coins - def.cost, animals },
+    })
+    return view(updated)
+  })
+
+  app.post('/api/farm/animal/collect', { preHandler: [app.authenticate] }, async (req, reply) => {
+    const { animalId } = z.object({ animalId: z.number().int().min(0) }).parse(req.body)
+    const farm = await loadFarm(req.auth!.sub)
+    const animals = (farm.animals ?? []) as Animal[]
+    const animal = animals.find((a) => a.id === animalId)
+    if (!animal) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal não encontrado' })
+    const def = ANIMALS.find((d) => d.kind === animal.kind)!
+    if (!def.produce) {
+      return reply.code(400).send({ error: 'NO_PRODUCE', message: 'Este animal não produz nada — é para carne!' })
+    }
+    const readyAt = new Date(animal.lastCollectedAt).getTime() + def.produce.everySecs * 1000
+    // o SERVIDOR decide se o ovo/leite está pronto
+    if (Date.now() < readyAt) {
+      return reply.code(400).send({ error: 'NOT_READY', message: `${def.produce.name} ainda não está pronto!` })
+    }
+    animal.lastCollectedAt = new Date().toISOString()
+    const updated = await app.prisma.farm.update({
+      where: { id: farm.id },
+      data: { coins: farm.coins + def.produce.sell, animals },
+    })
+    return { ...view(updated), collected: { name: def.produce.name, icon: def.produce.icon, sell: def.produce.sell } }
+  })
+
+  app.post('/api/farm/animal/slaughter', { preHandler: [app.authenticate] }, async (req, reply) => {
+    const { animalId } = z.object({ animalId: z.number().int().min(0) }).parse(req.body)
+    const farm = await loadFarm(req.auth!.sub)
+    const animals = (farm.animals ?? []) as Animal[]
+    const animal = animals.find((a) => a.id === animalId)
+    if (!animal) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal não encontrado' })
+    const def = ANIMALS.find((d) => d.kind === animal.kind)!
+    const matureAt = new Date(animal.boughtAt).getTime() + def.meat.matureSecs * 1000
+    // abate só depois da maturidade — relógio do servidor
+    if (Date.now() < matureAt) {
+      return reply.code(400).send({ error: 'NOT_MATURE', message: `${def.name} ainda não está no ponto de abate` })
+    }
+    const remaining = animals.filter((a) => a.id !== animalId)
+    const updated = await app.prisma.farm.update({
+      where: { id: farm.id },
+      data: { coins: farm.coins + def.meat.sell, animals: remaining },
+    })
+    return { ...view(updated), slaughtered: { name: def.meat.name, sell: def.meat.sell, icon: '🍖' } }
   })
 
   app.post('/api/farm/buy', { preHandler: [app.authenticate] }, async (req, reply) => {

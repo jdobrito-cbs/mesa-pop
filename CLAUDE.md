@@ -463,6 +463,12 @@ Cada jogo é um módulo implementando interface comum, ex.:
   (não sobrepõe ao 1942, que cobre o atirar).
 
 ### Engines próprias
+- **Animais da fazenda (pedido do usuário em 2026-07-05)**: além das
+  plantações, um CURRAL com galinhas 🐔 (põem OVOS coletáveis em ciclo e
+  rendem carne de galinha no abate), porcos 🐖 (engordam e rendem carne de
+  porco no abate) e vacas 🐄 (dão LEITE coletável em ciclo e rendem carne
+  de vaca no abate). Abate só após a maturidade — validada pelo relógio do
+  SERVIDOR, como as colheitas. Produção continua offline.
 - **Fazenda**: simulação econômica persistente. Loop: produzir → esperar →
   colher → vender → reinvestir em melhorias → repetir (curva de crescimento).
   **Servidor calcula crescimento offline** (plantou 14h, colhe 18h). Estado

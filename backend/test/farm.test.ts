@@ -129,6 +129,89 @@ describe('fazenda persistente', () => {
     expect(poor.json().error).toBe('NO_COINS')
   })
 
+  it('curral: compra galinha, ovo cedo demais é recusado; offline rende ovo; abate só maduro', async () => {
+    await app.prisma.farm.update({ where: { userId }, data: { coins: 1000 } })
+
+    const buy = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/buy',
+      headers: auth(),
+      body: { kind: 'galinha' },
+    })
+    expect(buy.statusCode).toBe(200)
+    expect(buy.json().animals).toHaveLength(1)
+    expect(buy.json().coins).toBe(960)
+    const animalId = buy.json().animals[0].id
+
+    // ovo antes da hora → recusado
+    const early = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/collect',
+      headers: auth(),
+      body: { animalId },
+    })
+    expect(early.statusCode).toBe(400)
+    expect(early.json().error).toBe('NOT_READY')
+
+    // abate antes da maturidade → recusado
+    const rawSlaughter = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/slaughter',
+      headers: auth(),
+      body: { animalId },
+    })
+    expect(rawSlaughter.statusCode).toBe(400)
+    expect(rawSlaughter.json().error).toBe('NOT_MATURE')
+
+    // viagem no tempo: comprada há 15 min (ovo pronto E madura)
+    const farm = await app.prisma.farm.findUnique({ where: { userId } })
+    const animals = farm!.animals as Array<{ id: number; boughtAt: string; lastCollectedAt: string; kind: string }>
+    const past = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+    animals[0]!.boughtAt = past
+    animals[0]!.lastCollectedAt = past
+    await app.prisma.farm.update({ where: { userId }, data: { animals } })
+
+    const collect = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/collect',
+      headers: auth(),
+      body: { animalId },
+    })
+    expect(collect.statusCode).toBe(200)
+    expect(collect.json().collected.name).toBe('Ovo')
+    expect(collect.json().coins).toBe(960 + 8)
+
+    const slaughter = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/slaughter',
+      headers: auth(),
+      body: { animalId },
+    })
+    expect(slaughter.statusCode).toBe(200)
+    expect(slaughter.json().slaughtered.name).toBe('Carne de galinha')
+    expect(slaughter.json().coins).toBe(968 + 55)
+    expect(slaughter.json().animals).toHaveLength(0)
+  })
+
+  it('porco não produz nada coletável — só carne', async () => {
+    const buy = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/buy',
+      headers: auth(),
+      body: { kind: 'porco' },
+    })
+    expect(buy.statusCode).toBe(200)
+    const id = buy.json().animals[0].id
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/farm/animal/collect',
+      headers: auth(),
+      body: { animalId: id },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('NO_PRODUCE')
+  })
+
   it('adubo acelera o crescimento (readyAt mais cedo)', async () => {
     await app.prisma.farm.update({ where: { userId }, data: { coins: 5000 } })
     const before = await app.inject({

@@ -179,6 +179,8 @@ model Farm {
   plots     Json
   /// melhorias: { fertilizer: number }
   upgrades  Json
+  /// curral: [{ id, kind, boughtAt: ISO, lastCollectedAt: ISO }]
+  animals   Json     @default("[]")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
