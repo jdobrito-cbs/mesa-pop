@@ -5,6 +5,14 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Mesa from './pages/Mesa'
+import AdminLayout from './pages/admin/AdminLayout'
+import Dashboard from './pages/admin/Dashboard'
+import Users from './pages/admin/Users'
+import Audit from './pages/admin/Audit'
+import Games from './pages/admin/Games'
+import Rooms from './pages/admin/Rooms'
+import Rankings from './pages/admin/Rankings'
+import Announcements from './pages/admin/Announcements'
 import { AuthProvider, useAuth } from './lib/auth'
 import { Chip } from './components/Logo'
 
@@ -35,6 +43,15 @@ export default function App() {
               <Route path="/criar-conta" element={<Register />} />
               <Route element={<RequireAuth />}>
                 <Route path="/mesa" element={<Mesa />} />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="usuarios" element={<Users />} />
+                  <Route path="auditoria" element={<Audit />} />
+                  <Route path="jogos" element={<Games />} />
+                  <Route path="salas" element={<Rooms />} />
+                  <Route path="rankings" element={<Rankings />} />
+                  <Route path="avisos" element={<Announcements />} />
+                </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

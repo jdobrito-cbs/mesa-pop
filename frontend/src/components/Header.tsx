@@ -27,6 +27,14 @@ export default function Header() {
               >
                 Minha mesa
               </Link>
+              {user.role === 'ADMIN' && (
+                <Link
+                  to="/admin"
+                  className="btn-pop px-4 py-2 text-sm text-pop-yellow hover:text-pop-orange"
+                >
+                  Admin
+                </Link>
+              )}
               <span
                 className="hidden max-w-40 truncate text-sm text-text-muted sm:block"
                 title={user.displayName}

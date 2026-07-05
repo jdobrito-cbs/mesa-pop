@@ -17,11 +17,8 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function api<T>(
-  path: string,
-  opts: { method?: string; body?: unknown } = {},
-): Promise<T> {
-  const res = await fetch(API_URL + path, {
+async function request(path: string, opts: { method?: string; body?: unknown }) {
+  return fetch(API_URL + path, {
     method: opts.method ?? (opts.body !== undefined ? 'POST' : 'GET'),
     headers: {
       ...(opts.body !== undefined ? { 'content-type': 'application/json' } : {}),
@@ -30,6 +27,25 @@ export async function api<T>(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     credentials: 'include',
   })
+}
+
+export async function api<T>(
+  path: string,
+  opts: { method?: string; body?: unknown } = {},
+): Promise<T> {
+  let res = await request(path, opts)
+
+  // Access token expira em ~15min: num 401 fora do /api/auth, tenta
+  // renovar a sessão via cookie de refresh e repete a chamada uma vez.
+  if (res.status === 401 && !path.startsWith('/api/auth/')) {
+    const refresh = await request('/api/auth/refresh', { method: 'POST' })
+    if (refresh.ok) {
+      const data = await refresh.json().catch(() => null)
+      if (data?.accessToken) setAccessToken(data.accessToken)
+      res = await request(path, opts)
+    }
+  }
+
   const data = await res.json().catch(() => null)
   if (!res.ok) {
     throw new ApiRequestError(
