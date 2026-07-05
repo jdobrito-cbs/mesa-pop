@@ -36,10 +36,12 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [coopMode, setCoopMode] = useState<'juntos' | 'lado-a-lado'>('juntos')
+  const [vehicle, setVehicle] = useState<'carro' | 'moto'>('carro')
 
   const game = gamesData?.games.find((g) => g.slug === slug)
   const rooms = (roomsData?.rooms ?? []).filter((r) => r.game.slug === slug)
   const isCoop = slug === 'esquadrao-coop'
+  const isRace = slug === 'corrida'
 
   async function createRoom(isPrivate: boolean) {
     setBusy(true)
@@ -48,6 +50,7 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
       gameSlug: slug,
       isPrivate,
       ...(isCoop ? { options: { mode: coopMode } } : {}),
+      ...(isRace ? { options: { vehicle } } : {}),
     })
     setBusy(false)
     if (!res.ok) return setError(res.error ?? 'Não deu para criar a sala')
@@ -121,7 +124,33 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
         </div>
       )}
 
-      <div className={`${isCoop ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
+      {/* veículo da corrida */}
+      {isRace && (
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => setVehicle('carro')}
+            aria-pressed={vehicle === 'carro'}
+            className={`card p-4 text-left transition ${vehicle === 'carro' ? 'ring-2 ring-pop-orange' : 'opacity-70 hover:opacity-100'}`}
+          >
+            <p className="font-display font-bold text-pop-orange">🏎️ Carro</p>
+            <p className="mt-1 text-xs text-text-muted">
+              Equilibrado: gruda no asfalto e perdoa o exagero na curva.
+            </p>
+          </button>
+          <button
+            onClick={() => setVehicle('moto')}
+            aria-pressed={vehicle === 'moto'}
+            className={`card p-4 text-left transition ${vehicle === 'moto' ? 'ring-2 ring-pop-cyan' : 'opacity-70 hover:opacity-100'}`}
+          >
+            <p className="font-display font-bold text-pop-cyan">🏍️ Moto</p>
+            <p className="mt-1 text-xs text-text-muted">
+              Mais veloz e mais escorregadia — para quem domina o drift.
+            </p>
+          </button>
+        </div>
+      )}
+
+      <div className={`${isCoop || isRace ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
         <button
           onClick={() => void createRoom(false)}
           disabled={busy}

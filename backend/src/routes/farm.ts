@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 /**
@@ -95,12 +96,18 @@ function freshPlots(): Plot[] {
   return Array.from({ length: START_PLOTS }, (_, i) => ({ id: i, crop: null, plantedAt: null }))
 }
 
+/** o Prisma tipa colunas Json como JsonValue — as pontes de cast vivem aqui */
+const asPlots = (v: unknown) => v as Plot[]
+const asUpgrades = (v: unknown) => v as Upgrades
+const asAnimals = (v: unknown) => (v ?? []) as Animal[]
+const asJson = (v: unknown) => v as Prisma.InputJsonValue
+
 export default async function farmRoutes(app: FastifyInstance) {
   async function loadFarm(userId: string) {
     let farm = await app.prisma.farm.findUnique({ where: { userId } })
     if (!farm) {
       farm = await app.prisma.farm.create({
-        data: { userId, plots: freshPlots(), upgrades: { fertilizer: 0 } },
+        data: { userId, plots: asJson(freshPlots()), upgrades: { fertilizer: 0 } },
       })
     }
     return farm
@@ -108,9 +115,9 @@ export default async function farmRoutes(app: FastifyInstance) {
 
   function view(farm: { coins: number; plots: unknown; upgrades: unknown; animals: unknown }) {
     const now = Date.now()
-    const plots = farm.plots as Plot[]
-    const upgrades = farm.upgrades as Upgrades
-    const animals = (farm.animals ?? []) as Animal[]
+    const plots = asPlots(farm.plots)
+    const upgrades = asUpgrades(farm.upgrades)
+    const animals = asAnimals(farm.animals)
     const factor = growthFactor(upgrades.fertilizer)
     return {
       coins: farm.coins,
@@ -195,7 +202,7 @@ export default async function farmRoutes(app: FastifyInstance) {
       .object({ plotId: z.number().int().min(0), crop: z.string() })
       .parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const plots = farm.plots as Plot[]
+    const plots = asPlots(farm.plots)
     const plot = plots.find((p) => p.id === plotId)
     const def = CROPS.find((c) => c.slug === crop)
     if (!plot) return reply.code(400).send({ error: 'NO_PLOT', message: 'Canteiro inválido' })
@@ -208,7 +215,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     plot.plantedAt = new Date().toISOString()
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins - def.cost, plots },
+      data: { coins: farm.coins - def.cost, plots: asJson(plots) },
     })
     return view(updated)
   })
@@ -216,8 +223,8 @@ export default async function farmRoutes(app: FastifyInstance) {
   app.post('/api/farm/harvest', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { plotId } = z.object({ plotId: z.number().int().min(0) }).parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const plots = farm.plots as Plot[]
-    const upgrades = farm.upgrades as Upgrades
+    const plots = asPlots(farm.plots)
+    const upgrades = asUpgrades(farm.upgrades)
     const plot = plots.find((p) => p.id === plotId)
     if (!plot?.crop || !plot.plantedAt) {
       return reply.code(400).send({ error: 'EMPTY', message: 'Nada plantado aqui' })
@@ -233,7 +240,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     plot.plantedAt = null
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins + def.sell, plots },
+      data: { coins: farm.coins + def.sell, plots: asJson(plots) },
     })
     return { ...view(updated), harvested: { name: def.name, icon: def.icon, sell: def.sell } }
   })
@@ -241,7 +248,7 @@ export default async function farmRoutes(app: FastifyInstance) {
   app.post('/api/farm/animal/buy', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { kind } = z.object({ kind: z.string() }).parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const animals = (farm.animals ?? []) as Animal[]
+    const animals = asAnimals(farm.animals)
     const def = ANIMALS.find((d) => d.kind === kind)
     if (!def) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal desconhecido' })
     if (animals.length >= MAX_ANIMALS) {
@@ -259,7 +266,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     })
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins - def.cost, animals },
+      data: { coins: farm.coins - def.cost, animals: asJson(animals) },
     })
     return view(updated)
   })
@@ -267,7 +274,7 @@ export default async function farmRoutes(app: FastifyInstance) {
   app.post('/api/farm/animal/collect', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { animalId } = z.object({ animalId: z.number().int().min(0) }).parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const animals = (farm.animals ?? []) as Animal[]
+    const animals = asAnimals(farm.animals)
     const animal = animals.find((a) => a.id === animalId)
     if (!animal) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal não encontrado' })
     const def = ANIMALS.find((d) => d.kind === animal.kind)!
@@ -282,7 +289,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     animal.lastCollectedAt = new Date().toISOString()
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins + def.produce.sell, animals },
+      data: { coins: farm.coins + def.produce.sell, animals: asJson(animals) },
     })
     return { ...view(updated), collected: { name: def.produce.name, icon: def.produce.icon, sell: def.produce.sell } }
   })
@@ -290,7 +297,7 @@ export default async function farmRoutes(app: FastifyInstance) {
   app.post('/api/farm/animal/slaughter', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { animalId } = z.object({ animalId: z.number().int().min(0) }).parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const animals = (farm.animals ?? []) as Animal[]
+    const animals = asAnimals(farm.animals)
     const animal = animals.find((a) => a.id === animalId)
     if (!animal) return reply.code(400).send({ error: 'NO_ANIMAL', message: 'Animal não encontrado' })
     const def = ANIMALS.find((d) => d.kind === animal.kind)!
@@ -302,7 +309,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     const remaining = animals.filter((a) => a.id !== animalId)
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins + def.meat.sell, animals: remaining },
+      data: { coins: farm.coins + def.meat.sell, animals: asJson(remaining) },
     })
     return { ...view(updated), slaughtered: { name: def.meat.name, sell: def.meat.sell, icon: '🍖' } }
   })
@@ -310,8 +317,8 @@ export default async function farmRoutes(app: FastifyInstance) {
   app.post('/api/farm/buy', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { upgrade } = z.object({ upgrade: z.enum(['plot', 'fertilizer']) }).parse(req.body)
     const farm = await loadFarm(req.auth!.sub)
-    const plots = farm.plots as Plot[]
-    const upgrades = farm.upgrades as Upgrades
+    const plots = asPlots(farm.plots)
+    const upgrades = asUpgrades(farm.upgrades)
 
     if (upgrade === 'plot') {
       if (plots.length >= MAX_PLOTS) {
@@ -324,7 +331,7 @@ export default async function farmRoutes(app: FastifyInstance) {
       plots.push({ id: Math.max(...plots.map((p) => p.id)) + 1, crop: null, plantedAt: null })
       const updated = await app.prisma.farm.update({
         where: { id: farm.id },
-        data: { coins: farm.coins - price, plots },
+        data: { coins: farm.coins - price, plots: asJson(plots) },
       })
       return view(updated)
     }
@@ -339,7 +346,7 @@ export default async function farmRoutes(app: FastifyInstance) {
     upgrades.fertilizer++
     const updated = await app.prisma.farm.update({
       where: { id: farm.id },
-      data: { coins: farm.coins - price, upgrades },
+      data: { coins: farm.coins - price, upgrades: asJson(upgrades) },
     })
     return view(updated)
   })

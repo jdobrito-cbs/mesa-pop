@@ -1,17 +1,19 @@
 /**
  * Corrida Pop — servidor AUTORITATIVO do PvP em tempo real.
- * Recebe o estado de input de cada carro (com seq crescente), roda a
+ * Recebe o estado de input de cada veículo (com seq crescente), roda a
  * física compartilhada a cada tick e devolve snapshots com o último seq
- * processado por carro — o que o cliente usa para reconciliar a previsão.
+ * processado por veículo — o que o cliente usa para reconciliar a previsão.
  */
 import {
   initialCar,
   raceProgress,
   stepCar,
   TOTAL_LAPS,
+  VEHICLES,
   type CarInputState,
   type CarState,
   type RacingSnapshot,
+  type VehicleKind,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
 
@@ -20,6 +22,7 @@ export interface RacingState {
   countdown: number
   raceTime: number
   players: number
+  vehicle: VehicleKind
   cars: CarState[]
   inputs: CarInputState[]
   lastAck: number[]
@@ -32,12 +35,14 @@ export interface RacingState {
 
 const NEUTRAL: CarInputState = { seq: 0, steer: 0, brake: false, drift: false, boost: false }
 
-export function initialRacingState(players: number): RacingState {
+export function initialRacingState(players: number, options?: Record<string, unknown>): RacingState {
+  const vehicle: VehicleKind = options?.vehicle === 'moto' ? 'moto' : 'carro'
   return {
     phase: 'countdown',
     countdown: 3.5,
     raceTime: 0,
     players,
+    vehicle,
     cars: Array.from({ length: players }, (_, seat) => initialCar(seat)),
     inputs: Array.from({ length: players }, () => ({ ...NEUTRAL })),
     lastAck: Array.from({ length: players }, () => 0),
@@ -53,7 +58,7 @@ export function applyRacingInput(
   input: Partial<CarInputState>,
 ): { error: string } | { state: RacingState } {
   const current = state.inputs[seat]
-  if (!current) return { error: 'Carro inválido' }
+  if (!current) return { error: 'Veículo inválido' }
   const seq = Number(input.seq ?? 0)
   if (!Number.isFinite(seq) || seq < current.seq) return { state } // pacote atrasado: ignora
   state.inputs[seat] = {
@@ -82,7 +87,7 @@ export function tickRacing(state: RacingState, dt: number) {
   state.raceTime += dt
   for (let seat = 0; seat < state.cars.length; seat++) {
     const before = state.cars[seat]!
-    const after = stepCar(before, state.inputs[seat]!, dt)
+    const after = stepCar(before, state.inputs[seat]!, dt, state.vehicle)
     // completou as voltas?
     if (!before.finished && after.lap >= state.totalLaps) {
       after.finished = true
@@ -115,6 +120,7 @@ export function racingSnapshot(state: RacingState): RacingSnapshot {
     countdown: state.countdown,
     raceTime: state.raceTime,
     totalLaps: state.totalLaps,
+    vehicle: state.vehicle,
     cars: state.cars,
     lastAck: state.lastAck,
     finishOrder: state.finishOrder,
@@ -127,8 +133,11 @@ export const racingModule: GameModule<RacingState, { type: 'input' } & Partial<C
   maxPlayers: 4,
   realtime: { tickMs: 33, broadcastEvery: 2 },
 
-  init(playerCount) {
-    return initialRacingState(playerCount)
+  init(playerCount, options) {
+    if (options?.vehicle !== undefined && !(String(options.vehicle) in VEHICLES)) {
+      delete options.vehicle
+    }
+    return initialRacingState(playerCount, options)
   },
 
   play(state, seat, action) {

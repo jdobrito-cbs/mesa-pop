@@ -16,34 +16,47 @@ Base sólida primeiro; os jogos plugam nela.
   Próximo passo: FASE 8 — restante do catálogo (aguardando OK do usuário).
 - **Última atualização**: 2026-07-05
 - **FASE 7 entregue** (Corrida Pop — PvP com client-side prediction, o
-  "boss final técnico"):
-  - **Física compartilhada determinista** (`shared/src/racing.ts`): pista
-    de 16 waypoints com chicane (CHECKPOINTS a cada 4, ROAD_HALF_WIDTH 46,
-    canvas 960×620), `stepCar(car, input, dt)` puro e idêntico nos dois
-    lados — aceleração automática (ACCEL 240, MAX_SPEED 265), drift
-    (Shift) reduz grip lateral (7.5→1.6) e CARREGA o boost quando
-    |vLateral|>40, boost (espaço) eleva o teto para 390 mas corta a
-    esterçada (3.1→1.5 rad/s), grama desacelera forte. `raceProgress`
-    ordena o pelotão (volta + checkpoint + distância ao próximo).
+  "boss final técnico"). **REFEITA em TERCEIRA PESSOA estilo Top Gear no
+  mesmo dia, a pedido do usuário** (a 1ª versão era top-down):
+  - **Física compartilhada determinista** (`shared/src/racing.ts`): o
+    veículo vive em coordenadas DA PISTA — `dist` (distância percorrida,
+    total, sem zerar por volta) e `lat` (deslocamento lateral, |lat|≤1 =
+    asfalto, >1.15 = grama). Pista = 14 segmentos {length, curve, hill}
+    (TRACK_LENGTH 4800, curvas normalizadas por CURVE_SCALE p/ o traçado
+    fechar 360° — minimapa fiel via `trackLayout`). `stepCar(car, input,
+    dt, vehicle)` puro: centrífuga empurra p/ fora (∝ curva × velocidade²),
+    volante contra-esterça, drift derruba o grip lateral (desliza) e
+    CARREGA o boost quando |latV|>1.1, boost eleva o teto (carro 280→400)
+    mas corta a esterçada a 45%, grama freia forte. **DOIS VEÍCULOS**
+    (`VEHICLES`): carro (equilibrado) e moto (mais rápida 300/430, menos
+    grip 4.4, mais centrífuga — escorrega mais; coberto por teste).
+    Checkpoints = 4 quartos da pista validados em ordem pela distância.
   - **Servidor autoritativo** (`backend/src/games/racing.ts`): countdown
-    3.5s → racing → finished; valida checkpoints em sequência (anti-corte
-    de caminho), guarda de seq obsoleto em `applyRacingInput`, timer de
-    20s após o 1º a completar; não-finalizados ranqueados por progresso.
-    Realtime tick 33ms, broadcast a cada 2 ticks. Env RACE_LAPS p/ testes.
-  - **Client-side prediction + reconciliação** (`racingClient.ts`): cada
-    input ganha `seq` e vai para um histórico; a cada snapshot o cliente
-    parte do carro AUTORITATIVO, descarta inputs ≤ lastAck e REAPLICA os
-    pendentes com o mesmo `stepCar` — zero lag no próprio carro, rivais
-    interpolados. Marcas de derrapagem persistentes, HUD volta/posição,
-    barra de boost, botões toque ◀▶/DRIFT/BOOST (lg:hidden).
-  - 110 testes (7 novos de física/regras: aceleração na reta, drift
-    carrega boost, boost estoura teto, grama freia, checkpoint em ordem,
-    volta completa, seq obsoleto ignorado). Testes posicionam o carro na
-    RETA (`carOnStraight`) — no gramado a velocidade de equilíbrio é ~87.
-  - Demo real (2 navegadores): largada com countdown, drift na chicane,
-    volta 3/3 e "Piquetinho venceu" — bots seguem waypoints via
-    window.__game. Lição: fim de corrida derruba RacingGame (room →
-    FINISHED) e mostra o overlay genérico de vitória do RoomPage.
+    3.5s → racing → finished; guarda de seq obsoleto; timer de 20s após o
+    1º a completar; `options.vehicle` da criação da sala (validada) define
+    carro/moto p/ TODOS. Tick 33ms, broadcast 2 ticks. Env RACE_LAPS.
+  - **Cliente pseudo-3D** (`racingClient.ts`): prediction + reconciliação
+    idênticas (histórico por seq, replay do stepCar). Render estilo anos
+    90: fatias projetadas com perspectiva (FOCAL/z), curvas acumulando
+    deslocamento parabólico, morros movendo o horizonte com OCLUSÃO de
+    crista (clipY), zebras vermelhas/brancas, faixa central, linha de
+    chegada xadrez, pôr-do-sol pop + montanhas em parallax (bgOff pela
+    curva), árvores/placas de seta procedurais, PÓRTICO "MESA POP",
+    minimapa com pontos ao vivo, fumaça de drift + chama de boost, sprite
+    visto de trás (carro com aerofólio/lanternas; moto com piloto que
+    inclina), velocímetro km/h. Rival só desenha se DE FATO à frente
+    (rel ≥ CAM_BACK×1.2) e com teto de escala 1.15 — senão um rival
+    colado atrás virava um gigante sobre o seu carro (lição da demo).
+    Barra de boost no canto esquerdo (no centro cobria o veículo).
+  - Lobby: cards 🏎️ Carro / 🏍️ Moto na criação (reusa `options` do co-op).
+  - 113 testes (novos: acelera/satura, determinismo, drift carrega boost,
+    boost estoura teto + corta esterçada, grama freia, centrífuga empurra
+    e moto escorrega mais, checkpoints em ordem + volta, opção moto
+    validada, corrida completa com bot que contra-esterça a centrífuga).
+  - Demo real (2 navegadores): grid de largada com pórtico, drift com
+    inclinação, disputa na volta 2/3 e "Piquetinho venceu"; demo extra de
+    MOTO. Aproveitado: erros de tipo pré-existentes do farm.ts (casts de
+    Json do Prisma) zerados com pontes asPlots/asJson — typecheck limpo.
 - **FASE 6 entregue** (jogos autorais):
   - **Fazenda Pop** (`routes/farm.ts` + model Farm com plots/upgrades/
     animals em Json): economia 100% validada no servidor — crescimento
@@ -493,6 +506,13 @@ Cada jogo é um módulo implementando interface comum, ex.:
 - **Palavra**: Termo diário, caça-palavras.
 
 ### Ação 2D top-down (engine compartilhada)
+- **MUDANÇA do usuário (2026-07-05, IMPLEMENTADA): a corrida (carro E
+  moto) deve ser em TERCEIRA PESSOA, estilo Top Gear (SNES)** — câmera atrás do veículo,
+  pista pseudo-3D (curvas/subidas por projeção de segmentos), rivais como
+  sprites escalados pela distância. Substitui a visão de cima estilo
+  Micro Machines. Manter o loop drift→boost e toda a infra de prediction/
+  reconciliação (a física vira distância na pista + deslocamento lateral,
+  que continua determinista e compartilhada).
 - **Corrida (carro/moto), até 4p**: visão de cima estilo Micro Machines.
   **Boost carregado por drift**, recarregável, com trade-off: durante o boost,
   controle reduzido (arriscar na curva = caótico; na reta = seguro). Loop de

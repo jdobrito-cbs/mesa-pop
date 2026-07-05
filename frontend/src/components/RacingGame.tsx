@@ -70,18 +70,25 @@ export default function RacingGame({
       {hud && hud.phase !== 'finished' && (
         <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-3 font-display text-sm font-bold">
           <span className="rounded-full bg-ink-950/70 px-3 py-1 text-pop-yellow tabular-nums">
-            volta {hud.lap}/{hud.totalLaps}
+            {hud.vehicle === 'moto' ? '🏍️' : '🏎️'} volta {hud.lap}/{hud.totalLaps}
           </span>
-          <span className="rounded-full bg-ink-950/70 px-3 py-1 text-pop-cyan tabular-nums">
+          <span className="mr-36 rounded-full bg-ink-950/70 px-3 py-1 text-pop-cyan tabular-nums">
             {ordinal(hud.position)} de {hud.players}
           </span>
         </div>
       )}
-      {/* barra de boost */}
+      {/* velocímetro */}
       {hud && hud.phase === 'racing' && (
-        <div className="pointer-events-none absolute bottom-3 left-1/2 w-44 -translate-x-1/2">
-          <p className="mb-0.5 text-center font-display text-[10px] font-extrabold tracking-widest text-cream/80 uppercase drop-shadow">
-            boost (derrape para carregar!)
+        <div className="pointer-events-none absolute right-3 bottom-3 hidden rounded-2xl bg-ink-950/70 px-4 py-2 text-right ring-1 ring-ink-700 lg:block">
+          <p className="font-display text-3xl font-extrabold text-cream tabular-nums">{hud.speed}</p>
+          <p className="-mt-1 text-[10px] font-bold tracking-widest text-text-muted uppercase">km/h</p>
+        </div>
+      )}
+      {/* barra de boost — canto esquerdo para não cobrir o veículo */}
+      {hud && hud.phase === 'racing' && (
+        <div className="pointer-events-none absolute bottom-20 left-3 w-40 lg:bottom-4 lg:left-4">
+          <p className="mb-0.5 font-display text-[10px] font-extrabold tracking-widest text-cream/80 uppercase drop-shadow">
+            boost (derrape p/ carregar!)
           </p>
           <div className="h-3 overflow-hidden rounded-full bg-ink-950/70 ring-1 ring-ink-700">
             <div

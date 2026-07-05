@@ -45,7 +45,7 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'fazenda', name: 'Fazenda Pop', description: 'Plante, colha, venda e cresça — até offline.', family: 'ECONOMY', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🌾', phase: 6, enabled: true },
   { slug: 'cardume', name: 'Cardume', description: 'Comande um cardume vivo contra peixes gigantes.', family: 'FLOCKING', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '🐠', phase: 6, enabled: true },
   // FASE 7
-  { slug: 'corrida', name: 'Corrida Pop', description: 'Corrida vista de cima com drift e boost. Até 4.', family: 'ACTION', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🏎️', phase: 7, enabled: true },
+  { slug: 'corrida', name: 'Corrida Pop', description: 'Carro ou moto em 3ª pessoa, com drift e boost. Até 4.', family: 'ACTION', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🏎️', phase: 7, enabled: true },
   // FASE 8
   { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis, em salas ranqueadas.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: false },
   { slug: 'truco', name: 'Truco', description: 'Blefe, grite truco e vire a mesa.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🂡', phase: 8, enabled: false },
