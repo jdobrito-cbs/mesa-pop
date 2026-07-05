@@ -64,15 +64,16 @@ const fmtTime = (secs: number) => {
   return `${Math.max(Math.ceil(secs), 0)}s`
 }
 
-/** decoração fixa da cena (posições em %) */
-const DECOR = [
-  { icon: '🌳', left: 2, top: 4, size: 44 },
-  { icon: '🌳', left: 90, top: 2, size: 40 },
-  { icon: '🏡', left: 80, top: 0, size: 52 },
-  { icon: '🌻', left: 30, top: 2, size: 24 },
-  { icon: '🌼', left: 45, top: 5, size: 18 },
-  { icon: '🌷', left: 62, top: 3, size: 20 },
-  { icon: '🪨', left: 12, top: 8, size: 18 },
+/** linha de árvores na divisa das colinas */
+const TREELINE = [
+  { icon: '🌳', size: 40 },
+  { icon: '🌲', size: 34 },
+  { icon: '🌳', size: 30 },
+  { icon: '🌳', size: 44 },
+  { icon: '🌲', size: 30 },
+  { icon: '🌳', size: 36 },
+  { icon: '🌲', size: 42 },
+  { icon: '🌳', size: 32 },
 ]
 
 export default function FarmPage() {
@@ -146,23 +147,101 @@ export default function FarmPage() {
 
       {/* ============ A CENA ============ */}
       <div
-        className="relative mt-5 overflow-hidden rounded-card ring-2 ring-[#3E7A2F]"
-        style={{ background: 'linear-gradient(180deg, #8CCB5E 0%, #6FB548 45%, #5CA23C 100%)' }}
+        className="relative mt-5 overflow-hidden rounded-[26px] ring-4 ring-[#4C8A2F]"
+        style={{ boxShadow: '0 24px 60px -24px rgba(15,50,8,0.65)' }}
       >
-        {/* decoração */}
-        {DECOR.map((d, i) => (
-          <span
-            key={i}
+        {/* céu */}
+        <div
+          className="relative h-24 overflow-hidden sm:h-28"
+          style={{ background: 'linear-gradient(180deg, #7ECFF0 0%, #BCE9FA 70%, #DFF6FF 100%)' }}
+        >
+          {/* sol */}
+          <div
+            className="animate-sunglow absolute top-3 left-6 size-12 rounded-full sm:size-14"
+            style={{ background: 'radial-gradient(circle at 35% 35%, #FFF3C4 0%, #FFD86B 55%, #FFB93D 100%)' }}
             aria-hidden="true"
-            className="pointer-events-none absolute select-none"
-            style={{ left: `${d.left}%`, top: `${d.top}%`, fontSize: d.size }}
-          >
-            {d.icon}
-          </span>
-        ))}
+          />
+          {/* nuvens à deriva */}
+          {[
+            { top: 8, scale: 1, dur: 75, delay: -20 },
+            { top: 34, scale: 0.7, dur: 95, delay: -60 },
+            { top: 20, scale: 1.25, dur: 120, delay: -5 },
+          ].map((c, i) => (
+            <div
+              key={i}
+              className="animate-cloud absolute"
+              style={{ top: c.top, animationDuration: `${c.dur}s`, animationDelay: `${c.delay}s` }}
+              aria-hidden="true"
+            >
+              <div
+                className="h-6 w-24 rounded-full opacity-90"
+                style={{
+                  transform: `scale(${c.scale})`,
+                  background: 'radial-gradient(ellipse at 50% 100%, #FFFFFF 0%, rgba(255,255,255,0.75) 70%, rgba(255,255,255,0) 100%)',
+                  filter: 'blur(1px)',
+                }}
+              />
+            </div>
+          ))}
+          {/* colinas ao fundo */}
+          <div
+            className="absolute -bottom-10 -left-10 h-20 w-2/3 rounded-[50%]"
+            style={{ background: '#6FB244' }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute -right-10 -bottom-12 h-24 w-3/4 rounded-[50%]"
+            style={{ background: '#7FC553' }}
+            aria-hidden="true"
+          />
+        </div>
 
-        {/* canteiros */}
-        <div className="relative z-10 flex flex-wrap justify-center gap-3 px-4 pt-16 pb-4 sm:justify-start sm:pl-6">
+        {/* linha de árvores na divisa */}
+        <div
+          className="pointer-events-none relative z-10 -mt-6 flex items-end justify-between px-2 select-none sm:-mt-7"
+          style={{ background: 'linear-gradient(180deg, #7FC553 0%, #7CC24F 100%)', marginTop: 0, paddingTop: 2 }}
+          aria-hidden="true"
+        >
+          {TREELINE.map((t, i) => (
+            <span key={i} style={{ fontSize: t.size, filter: 'drop-shadow(0 4px 3px rgba(20,50,10,0.4))' }}>
+              {t.icon}
+            </span>
+          ))}
+        </div>
+
+        {/* gramado */}
+        <div
+          className="relative -mt-4 px-3 pt-6 pb-5 sm:px-5"
+          style={{
+            background:
+              'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.07) 2px, transparent 2.5px), radial-gradient(circle at 70% 60%, rgba(30,80,15,0.10) 2.5px, transparent 3px), linear-gradient(180deg, #7CC24F 0%, #6CB443 55%, #5FA53A 100%)',
+            backgroundSize: '34px 34px, 46px 46px, 100% 100%',
+          }}
+        >
+          {/* borboletas */}
+          <span className="animate-butterfly pointer-events-none absolute top-8 left-6 z-20 text-lg select-none" aria-hidden="true">🦋</span>
+          <span
+            className="animate-butterfly pointer-events-none absolute top-24 right-40 z-20 text-sm select-none"
+            style={{ animationDuration: '14s', animationDelay: '-6s' }}
+            aria-hidden="true"
+          >
+            🦋
+          </span>
+
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row">
+            {/* campo de plantação emoldurado */}
+            <div
+              className="flex-1 rounded-3xl p-3 sm:p-4"
+              style={{
+                background: 'rgba(58,108,30,0.5)',
+                boxShadow: 'inset 0 5px 14px rgba(10,40,5,0.35)',
+                border: '3px dashed rgba(255,255,255,0.18)',
+              }}
+            >
+              <p className="mb-2 ml-1 text-xs font-extrabold tracking-wider text-[#EAF6DC] uppercase drop-shadow">
+                🌱 Plantação
+              </p>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-3">
           {farm?.plots.map((plot) => {
             const readyAt = plot.readyAt ? new Date(plot.readyAt).getTime() : null
             const plantedAt = plot.plantedAt ? new Date(plot.plantedAt).getTime() : null
@@ -239,21 +318,71 @@ export default function FarmPage() {
           })}
         </div>
 
+            </div>
+
+            {/* casa da fazenda */}
+            <div className="relative hidden w-52 shrink-0 flex-col items-center pt-1 select-none lg:flex" aria-hidden="true">
+              <span style={{ fontSize: 92, filter: 'drop-shadow(0 10px 8px rgba(20,50,10,0.45))' }}>🏡</span>
+              <div className="-mt-1 flex gap-1.5 text-xl">
+                <span>🌷</span>
+                <span>🌼</span>
+                <span>🌻</span>
+                <span>🌷</span>
+              </div>
+              <div className="mt-4 flex items-center gap-4 text-2xl" style={{ filter: 'drop-shadow(0 4px 3px rgba(20,50,10,0.35))' }}>
+                <span>📮</span>
+                <span>🪵</span>
+                <span>🛞</span>
+              </div>
+            </div>
+          </div>
+
         {/* cercado dos animais */}
-        <div className="relative z-10 mx-4 mb-4 sm:mx-6">
+        <div className="relative z-10 mt-6">
+          {/* postes da cerca */}
+          <div className="pointer-events-none absolute -top-3.5 right-2 left-2 z-20 flex justify-between" aria-hidden="true">
+            {Array.from({ length: 18 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-7 w-2.5 rounded-[3px]"
+                style={{
+                  background: 'linear-gradient(90deg, #C09055 0%, #8D6B4B 100%)',
+                  boxShadow: '0 3px 3px rgba(40,20,5,0.45)',
+                }}
+              />
+            ))}
+          </div>
           <div
-            className="relative h-40 overflow-hidden rounded-2xl"
+            className="relative h-44 overflow-hidden rounded-2xl"
             style={{
-              background: 'linear-gradient(180deg, #7CBB53 0%, #69A844 100%)',
-              border: '5px solid #8D6B4B',
-              boxShadow: 'inset 0 0 0 3px #6E5138, inset 0 6px 14px rgba(0,0,0,0.18)',
+              background:
+                'radial-gradient(ellipse at 22% 85%, rgba(232,200,104,0.55) 0%, transparent 42%), radial-gradient(ellipse at 78% 30%, rgba(255,255,255,0.08) 0%, transparent 50%), linear-gradient(180deg, #85C05A 0%, #6DAC46 100%)',
+              border: '6px solid #8D6B4B',
+              boxShadow: 'inset 0 0 0 3px #6E5138, inset 0 8px 18px rgba(20,40,8,0.25)',
             }}
           >
-            <span className="absolute top-1 left-3 rounded-full bg-[#6E5138]/85 px-3 py-0.5 text-[11px] font-extrabold text-[#EADFC8]">
-              🏚️ Curral {farm ? `${farm.barn.owned}/${farm.barn.max}` : ''}
+            {/* placa do curral */}
+            <span
+              className="absolute top-1.5 left-3 z-10 rounded-lg px-3 py-0.5 text-[11px] font-extrabold text-[#F4E3C2] shadow"
+              style={{ background: '#6E5138', border: '2px solid #55402C' }}
+            >
+              🐄 Curral {farm ? `${farm.barn.owned}/${farm.barn.max}` : ''}
             </span>
+            {/* feno */}
+            <span className="absolute bottom-2 left-5 text-2xl select-none" aria-hidden="true">🌾</span>
+            <span className="absolute bottom-5 left-12 text-lg select-none" aria-hidden="true">🌾</span>
+            {/* bebedouro */}
+            <div
+              className="absolute right-4 bottom-3 h-8 w-24 rounded-xl"
+              style={{ background: 'linear-gradient(180deg, #8D6B4B, #6E5138)', boxShadow: '0 4px 6px rgba(30,15,5,0.4)' }}
+              aria-hidden="true"
+            >
+              <div className="absolute inset-1 overflow-hidden rounded-lg" style={{ background: 'linear-gradient(180deg, #6FD2F0, #2E90C2)' }}>
+                <div className="absolute top-1 left-2 h-1 w-9 rounded-full bg-white/60" />
+              </div>
+            </div>
             {farm?.animals.length === 0 && (
-              <p className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-[#3E5A2B]">
+              <p className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#37511F]">
                 Compre animais na lojinha abaixo 👇
               </p>
             )}
@@ -318,6 +447,7 @@ export default function FarmPage() {
               )
             })}
           </div>
+        </div>
         </div>
       </div>
 

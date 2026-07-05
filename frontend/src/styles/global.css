@@ -138,6 +138,47 @@
       filter: drop-shadow(0 0 14px rgb(255 197 61 / 1));
     }
   }
+
+  /* nuvens cruzando o céu da fazenda */
+  --animate-cloud: cloud 70s linear infinite;
+  @keyframes cloud {
+    from {
+      transform: translateX(-180px);
+    }
+    to {
+      transform: translateX(1300px);
+    }
+  }
+  /* borboleta passeando */
+  --animate-butterfly: butterfly 11s ease-in-out infinite alternate;
+  @keyframes butterfly {
+    0% {
+      transform: translate(0, 0) rotate(-8deg);
+    }
+    25% {
+      transform: translate(70px, -26px) rotate(6deg);
+    }
+    50% {
+      transform: translate(150px, 6px) rotate(-6deg);
+    }
+    75% {
+      transform: translate(220px, -20px) rotate(8deg);
+    }
+    100% {
+      transform: translate(300px, -4px) rotate(-4deg);
+    }
+  }
+  /* brilho suave do sol */
+  --animate-sunglow: sunglow 4s ease-in-out infinite;
+  @keyframes sunglow {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 14px rgb(255 216 107 / 0.9));
+    }
+    50% {
+      filter: drop-shadow(0 0 30px rgb(255 216 107 / 1));
+    }
+  }
 }
 
 @layer base {
