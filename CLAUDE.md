@@ -33,6 +33,14 @@ Base sólida primeiro; os jogos plugam nela.
   3. **Salas: favoritos e compartilhamento**: salas PÚBLICAS podem ser
      FAVORITADAS; TODAS as salas (públicas e privadas) ganham opção de
      COMPARTILHAR O LINK da sala para amigos/família entrarem direto.
+  4. **Google Ads (2026-07-05)**: no fim, TODA página terá propaganda via
+     Google Ads — a plataforma deve ser PREPARADA para isso: componente
+     `AdSlot` reservando os espaços (lobby, páginas de jogo, salas),
+     carregamento do script só quando configurado (env com client ID),
+     banner de consentimento (LGPD) antes de ativar. ⚠️ ATENÇÃO: o rodapé
+     hoje diz "sem rastreadores" e a visão prometia privacidade sem CDN —
+     Google Ads conflita; ao ativar, revisar o texto do rodapé e a
+     política de privacidade (trade-off sinalizado ao usuário).
 - **FASE 8 · lote 3 entregue — RETRÔS (Come-Come, Pega-Ladrão, Missão
   Elevador)** (2026-07-05), todos no esqueleto solo:
   - **Come-Come** (`games/comeCome.ts`, labirinto 19×17 em string-art com
