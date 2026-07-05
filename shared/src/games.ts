@@ -58,4 +58,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'pega-ladrao', name: 'Pega-Ladrão', description: 'Persiga o ladrão pelos andares da loja antes que ele fuja.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '👮', phase: 8, enabled: false },
   { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: false },
   { slug: 'invasores', name: 'Invasores', description: 'Segure as fileiras alienígenas antes que desçam até você.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '👾', phase: 8, enabled: false },
+  { slug: 'duelo-palavras', name: 'Duelo de Palavras', description: 'A mesma palavra secreta para todos — quem acerta primeiro leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-cyan', icon: '🔠', phase: 8, enabled: false },
 ]

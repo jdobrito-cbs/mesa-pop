@@ -298,6 +298,13 @@ Cada jogo é um módulo implementando interface comum, ex.:
   Quiz/trivia, Forca multiplayer.
 
 ### Party
+- **"Duelo de Palavras"** — clone MULTIPLAYER do *Termo* (term.ooo) como
+  referência (pedido do usuário em 2026-07-04), até 6 jogadores: todos
+  tentam adivinhar a MESMA palavra secreta de 5 letras simultaneamente,
+  cada um em sua grade (verde = letra certa no lugar, amarelo = letra
+  existe em outra posição). Vence quem acertar primeiro (desempate: menos
+  tentativas). Os outros veem o progresso dos rivais só como cores (sem as
+  letras) — mão escondida aplicada a palavras. Nome genérico, sem a marca.
 - **Desenha & Adivinha** (regras detalhadas pelo usuário em 2026-07-04,
   até 6 jogadores): o desenhista da rodada digita uma PALAVRA (fica oculta
   até o fim da rodada) e desenha no canvas para exemplificá-la; os outros
