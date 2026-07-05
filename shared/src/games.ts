@@ -37,8 +37,8 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'domino', name: 'Dominó', description: 'Quatro jogadores, em duplas, na mesa.', family: 'TURN', minPlayers: 4, maxPlayers: 4, color: 'pop-cyan', icon: '🁢', phase: 3, enabled: false },
   { slug: 'one', name: 'One', description: 'Descarte tudo antes dos rivais. Cuidado com o +4!', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🃏', phase: 3, enabled: false },
   // FASE 4
-  { slug: 'esquadrao-1942', name: 'Esquadrão 42', description: 'Shoot\'em up aéreo com chuva de power-ups.', family: 'ACTION', minPlayers: 1, maxPlayers: 2, color: 'pop-yellow', icon: '✈️', phase: 4, enabled: false },
-  { slug: 'nave-espacial', name: 'Desvio Estelar', description: 'Desvie de tudo. Sobreviva o máximo que puder.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🚀', phase: 4, enabled: false },
+  { slug: 'esquadrao-1942', name: 'Esquadrão 42', description: 'Shoot\'em up aéreo com chuva de power-ups.', family: 'ACTION', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '✈️', phase: 4, enabled: true },
+  { slug: 'nave-espacial', name: 'Desvio Estelar', description: 'Desvie de tudo. Sobreviva o máximo que puder.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🚀', phase: 4, enabled: true },
   // FASE 6
   { slug: 'fazenda', name: 'Fazenda Pop', description: 'Plante, colha, venda e cresça — até offline.', family: 'ECONOMY', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🌾', phase: 6, enabled: false },
   { slug: 'cardume', name: 'Cardume', description: 'Comande um cardume vivo contra peixes gigantes.', family: 'FLOCKING', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '🐠', phase: 6, enabled: false },

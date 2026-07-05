@@ -1,0 +1,250 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api, ApiRequestError } from '../lib/api'
+import { useFetch } from '../lib/useFetch'
+import { startLoop, type GameHost, type Input } from '../engine/core'
+import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
+import { EsquadraoGame, ESQ_W, ESQ_H } from '../games/esquadrao'
+
+interface LeaderRow {
+  rank: number
+  userId: string
+  displayName: string
+  points: number
+}
+
+interface FinishResult {
+  points: number
+  best: number
+  rank: number
+  isRecord: boolean
+}
+
+export interface SoloGameDef {
+  slug: string
+  title: string
+  icon: string
+  width: number
+  height: number
+  controls: string
+  create(callbacks: {
+    onGameOver(points: number): void
+    onHud(hud: Record<string, unknown>): void
+  }): GameHost & { input: Input }
+}
+
+export const SOLO_GAMES: Record<string, SoloGameDef> = {
+  'nave-espacial': {
+    slug: 'nave-espacial',
+    title: 'Desvio Estelar',
+    icon: '🚀',
+    width: DESVIO_W,
+    height: DESVIO_H,
+    controls: 'Setas/WASD ou arraste o dedo — apenas DESVIE. Um toque e já era.',
+    create: (cb) => new DesvioGame(cb),
+  },
+  'esquadrao-1942': {
+    slug: 'esquadrao-1942',
+    title: 'Esquadrão 42',
+    icon: '✈️',
+    width: ESQ_W,
+    height: ESQ_H,
+    controls:
+      'Setas/WASD movem, fogo é automático. Pegue as armas no caminho (E, L, M) — elas acabam! Espaço/B solta a bomba. 3 vidas.',
+    create: (cb) => new EsquadraoGame(cb),
+  },
+}
+
+export default function SoloGamePage({ def }: { def: SoloGameDef }) {
+  const navigate = useNavigate()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const matchIdRef = useRef<string | null>(null)
+  const [hud, setHud] = useState<Record<string, unknown>>({})
+  const [phase, setPhase] = useState<'ready' | 'playing' | 'over'>('ready')
+  const [result, setResult] = useState<FinishResult | null>(null)
+  const [submitError, setSubmitError] = useState('')
+  const [runNumber, setRunNumber] = useState(0)
+
+  const { data: leaderboard, reload: reloadBoard } = useFetch<{ rows: LeaderRow[] }>(
+    `/api/leaderboards/${def.slug}`,
+  )
+
+  const finish = useCallback(
+    async (points: number) => {
+      setPhase('over')
+      const matchId = matchIdRef.current
+      if (!matchId) return
+      try {
+        const res = await api<FinishResult>('/api/solo/finish', { body: { matchId, points } })
+        setResult(res)
+        void reloadBoard()
+      } catch (err) {
+        setSubmitError(
+          err instanceof ApiRequestError ? err.message : 'Não deu para registrar a pontuação',
+        )
+      }
+    },
+    [reloadBoard],
+  )
+
+  // monta o jogo quando entra em 'playing'
+  useEffect(() => {
+    if (phase !== 'playing') return
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const game = def.create({
+      onGameOver: (points) => void finish(points),
+      onHud: (h) => setHud(h),
+    })
+    game.input.attach(canvas, (px, py) => ({ x: px, y: py }))
+    const stop = startLoop(canvas, game)
+
+    // abre a partida no servidor (mede a duração de lá)
+    setResult(null)
+    setSubmitError('')
+    void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: def.slug } })
+      .then((r) => {
+        matchIdRef.current = r.matchId
+      })
+      .catch(() => {
+        matchIdRef.current = null
+      })
+
+    return () => {
+      stop()
+      game.input.detach()
+    }
+  }, [phase, runNumber, def, finish])
+
+  const start = () => {
+    setPhase('playing')
+    setRunNumber((n) => n + 1)
+  }
+
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-extrabold">
+          <span aria-hidden="true">{def.icon}</span> {def.title}
+        </h1>
+        <button
+          onClick={() => navigate('/mesa')}
+          className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange"
+        >
+          Voltar à mesa
+        </button>
+      </div>
+
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+        {/* jogo */}
+        <div className="relative mx-auto w-full max-w-md">
+          <canvas
+            ref={canvasRef}
+            width={def.width}
+            height={def.height}
+            className="block w-full touch-none rounded-card ring-2 ring-ink-700"
+            aria-label={def.title}
+          />
+
+          {/* HUD */}
+          {phase === 'playing' && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3 font-display text-sm font-bold">
+              <span className="rounded-full bg-ink-950/70 px-3 py-1 text-pop-yellow tabular-nums">
+                {String(hud.points ?? 0)} pts
+              </span>
+              {'lives' in hud && (
+                <span className="rounded-full bg-ink-950/70 px-3 py-1 text-pop-magenta">
+                  {'♥'.repeat(Number(hud.lives ?? 0))}
+                </span>
+              )}
+              {'weapon' in hud && (
+                <span className="rounded-full bg-ink-950/70 px-3 py-1 text-pop-cyan">
+                  {String(hud.weapon)}
+                  {hud.ammo !== null && hud.ammo !== undefined ? ` ×${hud.ammo}` : ''}
+                  {Number(hud.bombs ?? 0) > 0 ? ` · ✹${hud.bombs}` : ''}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* pronto para jogar */}
+          {phase === 'ready' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-card bg-ink-950/85 p-6 text-center">
+              <p className="text-5xl" aria-hidden="true">{def.icon}</p>
+              <h2 className="font-display text-2xl font-extrabold">{def.title}</h2>
+              <p className="max-w-xs text-sm text-text-muted">{def.controls}</p>
+              <button
+                onClick={start}
+                className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-8 py-3.5 text-white shadow-lg shadow-pop-purple/25"
+              >
+                Jogar!
+              </button>
+            </div>
+          )}
+
+          {/* game over */}
+          {phase === 'over' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-card bg-ink-950/90 p-6 text-center">
+              <p className="text-5xl" aria-hidden="true">{result?.isRecord ? '🏆' : '💫'}</p>
+              <h2 className="font-display text-3xl font-extrabold">
+                {result?.isRecord ? 'Novo recorde!' : 'Fim de jogo'}
+              </h2>
+              <p className="font-display text-4xl font-extrabold text-pop-yellow tabular-nums">
+                {result?.points ?? String(hud.points ?? 0)} pts
+              </p>
+              {result && (
+                <p className="text-sm text-text-muted">
+                  Seu recorde: <strong className="text-text">{result.best}</strong> · posição{' '}
+                  <strong className="text-pop-cyan">{result.rank}º</strong> no ranking
+                </p>
+              )}
+              {submitError && <p className="text-sm font-semibold text-pop-orange">{submitError}</p>}
+              <div className="mt-2 flex gap-3">
+                <button
+                  onClick={start}
+                  className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white"
+                >
+                  Jogar de novo
+                </button>
+                <button
+                  onClick={() => navigate('/mesa')}
+                  className="btn-pop px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan"
+                >
+                  Minha mesa
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* leaderboard */}
+        <div className="card p-4">
+          <p className="font-display text-sm font-bold">🏆 Ranking (30 dias)</p>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {!leaderboard?.rows.length && (
+              <p className="text-sm text-text-muted">
+                Ninguém pontuou ainda — seja a primeira lenda deste placar!
+              </p>
+            )}
+            {leaderboard?.rows.map((r) => (
+              <div
+                key={r.userId}
+                className="flex items-center gap-2 rounded-field bg-ink-900 px-3 py-1.5 text-sm ring-1 ring-ink-700"
+              >
+                <span className={`w-7 font-display font-extrabold ${r.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>
+                  {r.rank}º
+                </span>
+                <span className="min-w-0 flex-1 truncate font-semibold">{r.displayName}</span>
+                <span className="font-bold text-pop-cyan tabular-nums">{r.points}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-text-muted">
+            Pontuações são validadas no servidor — jogadas impossíveis não entram no ranking.
+          </p>
+        </div>
+      </div>
+    </main>
+  )
+}

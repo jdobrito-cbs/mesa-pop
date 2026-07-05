@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { GameView, RoomView } from '@mesapop/shared'
 import { useFetch } from '../lib/useFetch'
 import { emitAck } from '../lib/socket'
+import SoloGamePage, { SOLO_GAMES } from './SoloGamePage'
 
 interface RoomRow {
   id: string
@@ -13,9 +14,19 @@ interface RoomRow {
   host: { displayName: string }
 }
 
-/** Lobby de um jogo: criar sala, entrar por código ou pegar uma sala aberta. */
+/**
+ * Rota /jogos/:slug — jogos solo abrem direto no canvas;
+ * multiplayer cai no lobby de salas.
+ */
 export default function GameLobby() {
   const { slug } = useParams<{ slug: string }>()
+  const solo = slug ? SOLO_GAMES[slug] : undefined
+  if (solo) return <SoloGamePage key={solo.slug} def={solo} />
+  return <MultiplayerLobby slug={slug} />
+}
+
+/** Lobby de um jogo multiplayer: criar sala, entrar por código ou sentar. */
+function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const navigate = useNavigate()
   const { data: gamesData } = useFetch<{ games: GameView[] }>('/api/games')
   const { data: roomsData, reload } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
