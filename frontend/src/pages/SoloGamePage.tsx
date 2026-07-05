@@ -9,6 +9,9 @@ import { CardumeGame, CARDUME_W, CARDUME_H } from '../games/cardume'
 import { SnakeGame, SNAKE_W, SNAKE_H } from '../games/snake'
 import { CampoMinadoGame, MINAS_W, MINAS_H } from '../games/campoMinado'
 import { InvasoresGame, INV_W, INV_H } from '../games/invasores'
+import { ComeComeGame, COME_W, COME_H } from '../games/comeCome'
+import { PegaLadraoGame, PEGA_W, PEGA_H } from '../games/pegaLadrao'
+import { MissaoElevadorGame, ELEV_W, ELEV_H } from '../games/missaoElevador'
 
 interface LeaderRow {
   rank: number
@@ -141,6 +144,44 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     controls:
       'Setas/WASD ou arraste o dedo — o fogo é automático. Segure as fileiras antes que desçam até as barreiras. Acerte a nave dourada para o bônus!',
     create: (cb) => new InvasoresGame(cb),
+  },
+  'come-come': {
+    slug: 'come-come',
+    title: 'Come-Come',
+    icon: '🟡',
+    width: COME_W,
+    height: COME_H,
+    wide: true,
+    controls:
+      'Setas/WASD ou DESLIZE o dedo. Coma todas as pastilhas fugindo dos 4 fantasmas — cada um caça de um jeito. A pastilha grande INVERTE a caçada!',
+    create: (cb) => new ComeComeGame(cb),
+  },
+  'pega-ladrao': {
+    slug: 'pega-ladrao',
+    title: 'Pega-Ladrão',
+    icon: '👮',
+    width: PEGA_W,
+    height: PEGA_H,
+    controls:
+      '←/→ ou arraste para correr; ↑ (ou botão) PULA carrinhos e bolas; ↓ (ou botão) ABAIXA dos aviõezinhos. As escadas rolantes ficam nas pontas. Pegue o ladrão antes do tempo acabar — cada segundo que sobra vira ponto!',
+    actions: [
+      { id: 'pular', icon: '⤴', label: 'Pular', invoke: (g) => (g as PegaLadraoGame).triggerJump() },
+      { id: 'abaixar', icon: '⤵', label: 'Abaixar', invoke: (g) => (g as PegaLadraoGame).triggerDuck() },
+    ],
+    create: (cb) => new PegaLadraoGame(cb),
+  },
+  'missao-elevador': {
+    slug: 'missao-elevador',
+    title: 'Missão Elevador',
+    icon: '🛗',
+    width: ELEV_W,
+    height: ELEV_H,
+    controls:
+      '←/→ anda; suba no elevador e use ↑/↓ para trocar de andar. Espaço (ou botão) ATIRA. Recolha os documentos das portas VERMELHAS e desça até a garagem — cuidado com os agentes!',
+    actions: [
+      { id: 'tiro', icon: '✦', label: 'Tiro', invoke: (g) => (g as MissaoElevadorGame).triggerShoot() },
+    ],
+    create: (cb) => new MissaoElevadorGame(cb),
   },
 }
 

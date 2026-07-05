@@ -17,6 +17,9 @@ const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints
   snake: { maxPerSec: 30, minMs: 2000, maxPoints: 50_000 },
   'campo-minado': { maxPerSec: 150, minMs: 2500, maxPoints: 2_000 },
   invasores: { maxPerSec: 80, minMs: 4000, maxPoints: 1_000_000 },
+  'come-come': { maxPerSec: 120, minMs: 4000, maxPoints: 500_000 },
+  'pega-ladrao': { maxPerSec: 100, minMs: 4000, maxPoints: 300_000 },
+  'missao-elevador': { maxPerSec: 120, minMs: 5000, maxPoints: 500_000 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })

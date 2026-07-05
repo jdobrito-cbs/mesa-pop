@@ -13,9 +13,46 @@ Base sólida primeiro; os jogos plugam nela.
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
 - **Fase atual**: FASE 8 — EM ANDAMENTO. Lote 1: Xadrez ✅. Lote 2:
-  Snake + Campo Minado + Invasores ✅ (2026-07-05). FASES 0–7 ✅.
-  13 jogos jogáveis; faltam 10 do catálogo. Próximo lote: aguardando OK.
+  Snake/Campo Minado/Invasores ✅. Lote 3: Come-Come/Pega-Ladrão/Missão
+  Elevador ✅ (2026-07-05). FASES 0–7 ✅. **16 jogos jogáveis; faltam 7
+  do catálogo.** Próximo: lote 4 = MODO CONVIDADO + Desenha & Adivinha
+  (pedidos novos do usuário, ver adendos) — plano proposto, aguardando OK.
 - **Última atualização**: 2026-07-05
+- **ADENDOS NOVOS do usuário (2026-07-05, ainda NÃO implementados)**:
+  1. **MODO CONVIDADO**: dá para JOGAR SEM LOGIN; convidado NÃO pode:
+     usar chat, salvar estado de jogo p/ continuar depois (ex.: fazenda),
+     participar de ranking/sistema de pontos — para isso conta+login são
+     OBRIGATÓRIOS.
+  2. **Desenha & Adivinha** (clone do gartic.io; ver tb garticphone.com):
+     tem CHAT PRÓPRIO de respostas ("RESPOSTAS") e esse é o ÚNICO chat
+     liberado nesse jogo (o chat geral da sala fica oculto). Tela estilo
+     gartic: lista de jogadores com pts (lápis marca o desenhista), DICA
+     com tracinhos, painel REGISTROS (entrou/saiu). **Ao acertar, NÃO
+     mostrar a palavra acertada — aparece só "✓ Fulana acertou!" em verde
+     (e o input do acertador vira "Você acertou!").**
+- **FASE 8 · lote 3 entregue — RETRÔS (Come-Come, Pega-Ladrão, Missão
+  Elevador)** (2026-07-05), todos no esqueleto solo:
+  - **Come-Come** (`games/comeCome.ts`, labirinto 19×17 em string-art com
+    túnel e casa): 4 fantasmas com PERSONALIDADES (caçador=você;
+    emboscada=4 tiles à frente; errante alterna caça/canto; tímido foge
+    de perto), power pellet inverte 7s (azuis, pisca no fim, 200/400/800/
+    1600 em combo; comido vira olhos que voltam p/ casa), viradas só no
+    centro do tile (meia-volta livre), fases + rápidas. Paredes neon.
+  - **Pega-Ladrão** (`games/pegaLadrao.ts`, side-view, mundo 1500px com
+    câmera): 4 andares + escadas rolantes em pontas alternadas, ladrão
+    listrado com saco de $ correndo p/ o telhado, carrinhos/bolas (PULE)
+    e aviõezinhos (ABAIXE; toque = triggerDuck com timer 0.8s), acerto =
+    stun + −8s no cronômetro; pegar = segundos restantes ×20 + 500.
+  - **Missão Elevador** (`games/missaoElevador.ts`, prédio 8+ andares,
+    câmera vertical): elevador dirigível (↑/↓ a bordo; poço bloqueia sem
+    cabine), portas VERMELHAS = documentos (+500, coleta ao passar),
+    agentes saem das portas e atiram, tiro do espião (espaço/botão),
+    tudo coletado → "DESÇA À GARAGEM" → +1000 e próximo prédio maior.
+  - PLAUSIBILITY dos 3; demos com bots (pathing de pastilhas no
+    Come-Come; pulo/abaixo reativo; doc coletado no Elevador).
+    **LIÇÃO**: page.evaluate com funções internas via tsx quebra
+    (`__name is not defined` do esbuild) — demos com evaluate complexo
+    devem ser .mjs PURO rodado com node.
 - **FASE 8 · lote 2 entregue — ARCADES SOLO (Snake, Campo Minado,
   Invasores)** (2026-07-05): três jogos plugados no esqueleto solo
   (SoloGamePage + /api/solo start/finish + PLAUSIBILITY + leaderboard):
@@ -568,12 +605,19 @@ Cada jogo é um módulo implementando interface comum, ex.:
 - **Desenha & Adivinha** (regras detalhadas pelo usuário em 2026-07-04,
   até 6 jogadores): o desenhista da rodada digita uma PALAVRA (fica oculta
   até o fim da rodada) e desenha no canvas para exemplificá-la; os outros
-  tentam adivinhar PELO CHAT da sala. Quem escrever a palavra exata ganha a
-  partida/rodada. Tempo de rodada: 3 minutos. Ao acertar OU estourar o tempo
-  sem acerto, a vez de desenhar RODA para outro participante (cada rodada um
-  novo integrante escolhido, mesmos critérios). A sala fica ativa em rodadas
-  contínuas até o anfitrião encerrar. Dedução social ("impostor") como
-  possível extensão futura.
+  tentam adivinhar. Quem escrever a palavra exata ganha a partida/rodada.
+  Tempo de rodada: 3 minutos. Ao acertar OU estourar o tempo sem acerto, a
+  vez de desenhar RODA para outro participante. A sala fica ativa em
+  rodadas contínuas até o anfitrião encerrar. Dedução social ("impostor")
+  como possível extensão futura.
+  **Adendos do usuário (2026-07-05, refs gartic.io e garticphone.com +
+  print da tela do gartic)**: o jogo tem CHAT PRÓPRIO de palpites
+  ("RESPOSTAS") e esse é o ÚNICO chat liberado no jogo — o chat geral da
+  sala fica OCULTO. Layout estilo gartic: lista de jogadores com pontos
+  (ícone de lápis no desenhista), caixa DICA com tracinhos da palavra,
+  painel REGISTROS (fulano entrou/saiu). Quando alguém acerta, a PALAVRA
+  NÃO aparece no chat — só "✓ Fulana acertou!" em verde; para quem
+  acertou, o campo de resposta vira "Você acertou!" e trava.
 
 ### Single-player (com leaderboard)
 - **Puzzle**: Sudoku, Campo Minado, Nonograma, Sokoban, **Puzzle

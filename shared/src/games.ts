@@ -56,9 +56,9 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'snake', name: 'Snake', description: 'Coma, cresça, não se morda. Clássico eterno.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🐍', phase: 8, enabled: true },
   { slug: 'paciencia', name: 'Paciência', description: 'O clássico solitário de cartas para relaxar.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-magenta', icon: '🃑', phase: 8, enabled: false },
   { slug: 'puzzle', name: 'Puzzle', description: 'Monte o quebra-cabeça no menor tempo.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🧩', phase: 8, enabled: false },
-  { slug: 'missao-elevador', name: 'Missão Elevador', description: 'Desça o prédio de elevador, porta a porta, sem ser visto.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🛗', phase: 8, enabled: false },
-  { slug: 'pega-ladrao', name: 'Pega-Ladrão', description: 'Persiga o ladrão pelos andares da loja antes que ele fuja.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '👮', phase: 8, enabled: false },
-  { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: false },
+  { slug: 'missao-elevador', name: 'Missão Elevador', description: 'Desça o prédio de elevador, porta a porta, sem ser visto.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🛗', phase: 8, enabled: true },
+  { slug: 'pega-ladrao', name: 'Pega-Ladrão', description: 'Persiga o ladrão pelos andares da loja antes que ele fuja.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '👮', phase: 8, enabled: true },
+  { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: true },
   { slug: 'invasores', name: 'Invasores', description: 'Segure as fileiras alienígenas antes que desçam até você.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '👾', phase: 8, enabled: true },
   { slug: 'duelo-palavras', name: 'Duelo de Palavras', description: 'A mesma palavra secreta para todos — quem acerta primeiro leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-cyan', icon: '🔠', phase: 8, enabled: false },
 ]
