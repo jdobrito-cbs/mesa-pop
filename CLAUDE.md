@@ -12,8 +12,30 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 0 — ✅ CONCLUÍDA (2026-07-04)
+- **Fase atual**: FASE 1 — ✅ CONCLUÍDA (2026-07-04). FASE 0 ✅.
 - **Última atualização**: 2026-07-04
+- **FASE 1 entregue**:
+  - API admin completa em `backend/src/routes/admin/` (todas exigem role
+    ADMIN via hook de escopo): stats (DAU/MAU/partidas/salas), CRUD de
+    usuários com busca+paginação, ban temporário/permanente com motivo
+    (ban/desativação revoga TODAS as sessões), export CSV, auditoria com
+    filtros (email/ação/período) + lista de ações distintas, toggle de jogos
+    (desabilitar fecha salas WAITING; partidas em andamento podem terminar —
+    decisão registrada), salas ao vivo + encerrar, rankings (jogos mais
+    jogados por período; jogadores por vitórias/partidas/recorde, global ou
+    por jogo), avisos (Announcement CRUD → banner no lobby).
+  - Guardas: admin não se rebaixa/desativa/exclui (SELF_LOCKOUT/SELF_DELETE);
+    delete de usuário com salas criadas → 409 sugerindo desativação.
+  - Model novo: Announcement (migração `announcements`).
+  - Frontend: /admin com sidebar (Visão geral, Usuários, Auditoria, Jogos,
+    Salas ao vivo, Rankings, Avisos), modais de criar/editar/banir, gráfico
+    de barras série única (cor única pop-purple, rótulos diretos + tabela).
+  - Lobby real na "Minha mesa": /api/games (habilitados), /api/rooms
+    (salas públicas WAITING), /api/announcements (banner 📣), seção
+    "Chegando na mesa" com o restante do catálogo.
+  - Client: api() renova sessão automaticamente num 401 (refresh + retry 1x).
+  - 37 testes passando (12 novos de admin). Fluxo verificado no browser:
+    habilitar Damas no admin → aparece no lobby; aviso criado → banner.
 - **Concluído até agora**:
   - Monorepo npm workspaces (`/shared`, `/backend`, `/frontend`) + git.
   - Backend Fastify + Prisma (schema completo: User, RefreshToken, AuditLog,
@@ -42,8 +64,8 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 1 (Painel Admin + Lobby)
-  e aguardar OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 2 (esqueleto de salas
+  com WebSocket + reconexão e Damas end-to-end) e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
