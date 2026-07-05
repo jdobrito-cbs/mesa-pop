@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Mesa from './pages/Mesa'
 import GameLobby from './pages/GameLobby'
+import MemoriaSoloPage from './pages/MemoriaSoloPage'
 import RoomPage from './pages/RoomPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
@@ -47,6 +48,7 @@ export default function App() {
               <Route path="/criar-conta" element={<Register />} />
               <Route element={<RequireAuth />}>
                 <Route path="/mesa" element={<Mesa />} />
+                <Route path="/jogos/memoria/solo" element={<MemoriaSoloPage />} />
                 <Route path="/jogos/:slug" element={<GameLobby />} />
                 <Route path="/sala/:code" element={<RoomPage />} />
                 <Route path="/admin" element={<AdminLayout />}>

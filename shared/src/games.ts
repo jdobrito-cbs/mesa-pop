@@ -61,4 +61,7 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: true },
   { slug: 'invasores', name: 'Invasores', description: 'Segure as fileiras alienígenas antes que desçam até você.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '👾', phase: 8, enabled: true },
   { slug: 'duelo-palavras', name: 'Duelo de Palavras', description: 'A mesma palavra secreta para todos — quem acerta primeiro leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-cyan', icon: '🔠', phase: 8, enabled: true },
+  // FASE 9
+  { slug: 'memoria', name: 'Jogo da Memória', description: 'Ache os pares — com amigos ou solo contra o relógio.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-cyan', icon: '🧠', phase: 9, enabled: true },
+  { slug: 'pife', name: 'Pife', description: 'Nove cartas, três jogos de três. Bata primeiro!', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-green', icon: '🂠', phase: 9, enabled: true },
 ]

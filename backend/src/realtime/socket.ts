@@ -15,6 +15,8 @@ import { desenhaModule } from '../games/desenha'
 import { dueloModule } from '../games/duelo'
 import { stopModule } from '../games/stop'
 import { trucoModule } from '../games/truco'
+import { pifeModule } from '../games/pife'
+import { memoriaModule } from '../games/memoria'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -33,6 +35,8 @@ registerGame(desenhaModule)
 registerGame(dueloModule)
 registerGame(stopModule)
 registerGame(trucoModule)
+registerGame(pifeModule)
+registerGame(memoriaModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {

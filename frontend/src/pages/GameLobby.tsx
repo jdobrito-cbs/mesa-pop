@@ -108,6 +108,20 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
         </p>
       )}
 
+      {/* memória também tem treino solo com ranking */}
+      {slug === 'memoria' && (
+        <button
+          onClick={() => navigate('/jogos/memoria/solo')}
+          className="card mt-8 flex w-full items-center gap-4 p-5 text-left transition hover:-translate-y-1 hover:ring-pop-yellow/60"
+        >
+          <span className="text-3xl" aria-hidden="true">⏱️</span>
+          <span>
+            <span className="block font-display text-lg font-bold">Treino solo contra o relógio</span>
+            <span className="block text-sm text-text-muted">Ache os 18 pares sozinho — menos tempo e menos erros valem mais no ranking.</span>
+          </span>
+        </button>
+      )}
+
       {/* modo do co-op */}
       {isCoop && (
         <div className="mt-8 grid gap-3 sm:grid-cols-2">

@@ -12,12 +12,46 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: 🏁 **FASE 8 — ✅ CONCLUÍDA (2026-07-05). TODAS as
-  fases do roadmap (0–8) estão entregues.** Lote 6 (Truco + Paciência +
-  Puzzle) fechou o catálogo: **23 jogos jogáveis, 23/23 do catálogo**.
-  Próximo: sem fase definida — melhorias futuras anotadas abaixo
-  aguardam priorização do usuário.
+- **Fase atual**: **FASE 9 — "A mesa da família" (9 jogos novos,
+  aprovada pelo usuário em 2026-07-05) — EM ANDAMENTO.** Plano em 5
+  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras; 3) Forca+Bingo;
+  4) Quiz Pop+Quiz Nostalgia (uma engine, dois jogos); 5) Cruzadinha.
+  Lote 6 opcional sugerido: Modo Conforto 60+ (fontes grandes, alto
+  contraste, timers relaxados). Roadmap original 0–8 ✅ completo
+  (23 jogos); FASE 9 leva a 32. **25 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FASE 9 · lote 1 entregue — JOGO DA MEMÓRIA + PIFE** (2026-07-05):
+  - **Jogo da Memória** (`shared/memoria.ts` tipos + `backend/games/
+    memoria.ts` + `MemoriaBoard.tsx`): 6×6 = 18 pares de emojis; os
+    VALORES das cartas ocultas vivem SÓ no servidor (view manda apenas
+    viradas/presas — teste garante que oculta não tem `valor`); achou o
+    par JOGA DE NOVO; erro → `ultimaJogada` revela a dupla e o cliente
+    SEGURA o par errado 1.3s na tela antes de esconder (o servidor já
+    virou de volta — animação sem timer no servidor). 2–4 jogadores,
+    espectadores, rotação. Empate geral = draw. `MemoriaGrid` (grade
+    burra com flip 3D rotateY) é REUTILIZADA pelo treino solo.
+  - **Memória SOLO** (`MemoriaSoloPage`, rota /jogos/memoria/solo +
+    card "Treino solo" no lobby): contra o relógio, +40/par, bônus
+    900−5×seg−8×erros (mín 100). PLAUSIBILITY 'memoria'. **Ajuste de
+    plataforma**: /api/solo/start não exige mais `maxPlayers === 1` —
+    o whitelist real é o mapa PLAUSIBILITY (memória é multiplayer E
+    solo). Convidado treina sem pontuar.
+  - **Pife** (`shared/pife.ts` regras + `backend/games/pife.ts` +
+    `PifeTable.tsx`): 2 baralhos (104), 9 cartas, 2–4 jogadores;
+    comprar do MONTE ou do LIXO → descartar; quem compra do lixo NÃO
+    devolve a mesma carta (presaDoLixo, destacada em amarelo); BATER =
+    10 cartas com descarte que deixa 3 jogos de 3 (trinca OU sequência
+    do MESMO naipe; A baixa A-2-3 e alta Q-K-A, sem virar esquina) —
+    `particiona9` por força bruta (280 partições), `melhorBatida` testa
+    os 10 descartes; monte esgotado recicla o lixo embaralhado (menos o
+    topo). `podeBater` calculado no servidor acende o botão. Jogos do
+    vencedor revelados só no fim. MÃO ESCONDIDA por assento (teste de
+    serialização com mãos determinísticas — mão do RIVAL e topo do lixo
+    também precisam ser fixados no teste, senão o aleatório vaza o rank
+    procurado). Espectadores + rotação. UI ordena a mão por naipe SÓ na
+    exibição (envia o índice real do servidor).
+  - 166 testes (13 novos). Typecheck limpo nos 3 workspaces. Seed
+    idempotente criou os 2 novos (catálogo no banco: 25 jogos).
 - **FASE 8 · lote 6 entregue — TRUCO, PACIÊNCIA E PUZZLE (fecha o
   catálogo)** (2026-07-05):
   - **Truco paulista** (`shared/truco.ts` + `backend/games/truco.ts` +
@@ -515,12 +549,13 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: roadmap 0–8 completo. Backlog de melhorias
-  anotadas (aguardando priorização do usuário): mão de onze/ferro no
-  Truco; dicionário de palavras aceitas no termo/duelo; votação de
-  respostas no Stop; moderação de chat no admin; arte da fazenda
-  (pendência abaixo); extração do esqArt do co-op; modo "desafio
-  diário" com seed nos puzzles.
+- **Próximo passo**: FASE 9 · lote 2 (Sudoku + Caça-palavras, solo com
+  seed) — mediante OK do usuário. Depois: lote 3 Forca+Bingo, lote 4
+  Quiz Pop+Nostalgia, lote 5 Cruzadinha, lote 6 opcional Modo Conforto.
+  Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
+  de palavras aceitas no termo/duelo; votação de respostas no Stop;
+  moderação de chat no admin; arte da fazenda (pendência abaixo);
+  extração do esqArt do co-op; desafio diário com seed nos puzzles.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.

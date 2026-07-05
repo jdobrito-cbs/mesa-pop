@@ -10,8 +10,10 @@ import type {
   DominoAction,
   DominoView,
   GameEndView,
+  MemoriaView,
   OneAction,
   OneView,
+  PifeView,
   RacingSnapshot,
   RoomView,
   StopView,
@@ -29,6 +31,8 @@ import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
+import PifeTable from '../components/PifeTable'
+import MemoriaBoard from '../components/MemoriaBoard'
 import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
 import AdSlot from '../components/AdSlot'
@@ -356,6 +360,20 @@ export default function RoomPage() {
               {room.gameSlug === 'truco' && (
                 <TrucoTable
                   view={game.state as TrucoView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'pife' && (
+                <PifeTable
+                  view={game.state as PifeView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'memoria' && (
+                <MemoriaBoard
+                  view={game.state as MemoriaView}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

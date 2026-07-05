@@ -22,6 +22,7 @@ const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints
   'missao-elevador': { maxPerSec: 120, minMs: 5000, maxPoints: 500_000 },
   paciencia: { maxPerSec: 30, minMs: 25000, maxPoints: 2_000 },
   puzzle: { maxPerSec: 80, minMs: 15000, maxPoints: 10_000 },
+  memoria: { maxPerSec: 60, minMs: 15000, maxPoints: 2_000 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })
@@ -39,8 +40,10 @@ export default async function soloRoutes(app: FastifyInstance) {
     const { gameSlug } = startBody.parse(req.body)
     const userId = req.auth!.sub
 
+    // o mapa PLAUSIBILITY é o whitelist do que pontua solo (a memória é
+    // multiplayer E treino solo, então maxPlayers não entra na conta)
     const game = await app.prisma.game.findUnique({ where: { slug: gameSlug } })
-    if (!game || !game.isEnabled || game.maxPlayers !== 1 || !PLAUSIBILITY[gameSlug]) {
+    if (!game || !game.isEnabled || !PLAUSIBILITY[gameSlug]) {
       return reply.code(400).send({ error: 'INVALID_GAME', message: 'Jogo indisponível' })
     }
 
