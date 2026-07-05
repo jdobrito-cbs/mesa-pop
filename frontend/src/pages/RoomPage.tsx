@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type {
   CheckersState,
@@ -38,6 +38,9 @@ export default function RoomPage() {
   const [room, setRoom] = useState<RoomView | null>(null)
   const [game, setGame] = useState<GamePayload | null>(null)
   const [end, setEnd] = useState<GameEndView | null>(null)
+  /** fim anunciado, overlay ainda não mostrado (a jogada final termina de animar) */
+  const [endSoon, setEndSoon] = useState(false)
+  const endShowingRef = useRef(false)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
 
@@ -52,13 +55,24 @@ export default function RoomPage() {
     if (!code || !user) return
     const socket = connectSocket()
 
+    let endTimer: ReturnType<typeof setTimeout> | null = null
     const onRoom = (r: RoomView) => {
       setRoom(r)
       // rotação: a sala voltou para a espera → limpa a mesa anterior
-      if (r.status === 'WAITING') setGame(null)
+      // (mas segura o tabuleiro enquanto o overlay de fim estiver na tela)
+      if (r.status === 'WAITING' && !endShowingRef.current) setGame(null)
+      if (r.status === 'PLAYING') endShowingRef.current = false
     }
     const onState = (payload: GamePayload) => setGame(payload)
-    const onEnd = (payload: GameEndView) => setEnd(payload)
+    const onEnd = (payload: GameEndView) => {
+      // deixa a jogada final terminar de animar antes do "venceu!"
+      endShowingRef.current = true
+      setEndSoon(true)
+      endTimer = setTimeout(() => setEnd(payload), 1100)
+      if (import.meta.env.DEV) {
+        ;(window as unknown as Record<string, unknown>).__end = payload
+      }
+    }
     socket.on('room:update', onRoom)
     socket.on('game:state', onState)
     socket.on('game:end', onEnd)
@@ -73,12 +87,21 @@ export default function RoomPage() {
     socket.on('connect', join)
 
     return () => {
+      if (endTimer) clearTimeout(endTimer)
       socket.off('room:update', onRoom)
       socket.off('game:state', onState)
       socket.off('game:end', onEnd)
       socket.off('connect', join)
     }
   }, [code, user])
+
+  /** fecha o overlay de fim e libera a mesa (rotação já pode ter resetado) */
+  function dismissEnd() {
+    setEnd(null)
+    setEndSoon(false)
+    endShowingRef.current = false
+    if (room?.status !== 'PLAYING') setGame(null)
+  }
 
   async function start() {
     const res = await emitAck('room:start')
@@ -127,7 +150,8 @@ export default function RoomPage() {
 
   const isHost = room.hostId === user.id
   const iAmPlayer = room.players.some((p) => p.userId === user.id)
-  const playing = room.status === 'PLAYING' && game
+  // endSoon mantém o tabuleiro na tela enquanto a jogada final anima
+  const playing = (room.status === 'PLAYING' || endSoon) && game
   const winnerNames = (end?.winnerUserIds ?? [])
     .map((id) => room.players.find((p) => p.userId === id)?.displayName)
     .filter(Boolean)
@@ -169,7 +193,7 @@ export default function RoomPage() {
       <div className="mt-6 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
         <div>
           {/* SALA DE ESPERA */}
-          {room.status === 'WAITING' && (
+          {room.status === 'WAITING' && !playing && (
             <div className="card p-6 text-center sm:p-8">
               <p className="text-sm font-bold tracking-widest text-text-muted uppercase">
                 {room.isPrivate ? 'Sala privada — chame com o código' : 'Sala pública'}
@@ -311,7 +335,7 @@ export default function RoomPage() {
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               {room.features.rotation ? (
                 <button
-                  onClick={() => setEnd(null)}
+                  onClick={dismissEnd}
                   className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-6 py-3 text-white"
                 >
                   Ficar na mesa
@@ -326,7 +350,7 @@ export default function RoomPage() {
               )}
               <button
                 onClick={() => {
-                  setEnd(null)
+                  dismissEnd()
                   void leave()
                 }}
                 className="btn-pop px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan"

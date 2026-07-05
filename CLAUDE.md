@@ -12,10 +12,43 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 8 — EM ANDAMENTO (lote 1: Xadrez ✅ 2026-07-05).
-  FASES 0–7 ✅. Próximo lote: aguardando OK do usuário (sugestão: turno
-  2p — Gamão/Reversi/Trilha — ou arcades solo — Snake/Campo Minado).
+- **Fase atual**: FASE 8 — EM ANDAMENTO (lote 1: Xadrez ✅ 2026-07-05,
+  incl. upgrade de animação). FASES 0–7 ✅. Próximo lote: aguardando OK
+  do usuário (sugestão: turno 2p — Gamão/Reversi/Trilha — ou arcades).
 - **Última atualização**: 2026-07-05
+- **Upgrade do Xadrez — PEÇAS-PERSONAGEM ANIMADAS (pedido do usuário,
+  2026-07-05: "peão como soldados, cavalo com cavaleiros, reis reais,
+  torres se arrastando deixando rastro, bispo com cajado")**:
+  - `ChessPieces.tsx`: peças SVG procedurais estilo Mesa Pop (chibi):
+    peão = soldadinho com lança e capacete, cavalo = CAVALEIRO MONTADO
+    com lança, bispo com mitra e CAJADO de voluta, torre de pedra com
+    ameias e carinha, rainha com coroa de pontas e joias, rei com coroa
+    fechada, barba, capa e cetro. Dois times (creme/ciano × roxo/magenta),
+    carinha própria, sombra no chão.
+  - Camada de sprites no `ChessBoard`: cada peça é um elemento
+    posicionado por translate(col%,row%) com TRANSIÇÃO — a peça ANDA de
+    casa em casa. Identidade rastreada por `advanceSprites` (aplica o
+    lastMove aos sprites: captura/en passant/roque/promoção) com
+    VERIFICAÇÃO contra o board oficial (mismatch → rebuild sem animar,
+    p/ reconexão/rotação).
+  - Animações por personagem (global.css): soldadinho MARCHA, cavaleiro
+    GALOPA em arco, bispo anda apoiado no cajado, torre SE ARRASTA (sem
+    pulo, espremendo no chão) deixando RASTRO na pista, rainha desliza
+    com rastro dourado, rei em passo solene; capturada cambaleia e some
+    com estouro (anel + 💨); coroação nasce com pop; rei em xeque PULSA
+    vermelho; respiração idle sutil em todas (delay dessincronizado);
+    moldura com coordenadas a–h/1–8.
+  - **RoomPage: overlay de fim ATRASADO 1.1s** segurando o tabuleiro na
+    tela (endSoon + endShowingRef) — sem isso a rotação volta a sala p/
+    WAITING no mesmo instante do mate e a animação da captura final
+    nunca aparecia. `dismissEnd()` centraliza o fechamento.
+  - **LIÇÃO de demo**: mate → sala WAITING → `window.__game` vira null;
+    roteiros de teste devem esperar 'venceu' no lance final, não o board.
+- **Lobby mostra AS PESSOAS das salas de espera (pedido do usuário,
+  2026-07-05)**: /api/rooms agora retorna `playerNames` (RoomPlayer →
+  user.displayName, ordem de chegada); componente `RoomPeople` (chips
+  com avatar-inicial + "N lugares livres") usado na "Minha mesa" e no
+  lobby de cada jogo.
 - **FASE 8 · lote 1 entregue — XADREZ** (2026-07-05):
   - `shared/src/chess.ts`: regras completas e puras — todos os movimentos,
     roque (rei/torre intactos, caminho livre, sem xeque no percurso), en

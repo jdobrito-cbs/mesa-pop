@@ -5,12 +5,14 @@ import { useFetch } from '../lib/useFetch'
 import { emitAck } from '../lib/socket'
 import SoloGamePage, { SOLO_GAMES } from './SoloGamePage'
 import FarmPage from './FarmPage'
+import { RoomPeople } from './Mesa'
 
 interface RoomRow {
   id: string
   code: string
   players: number
   maxPlayers: number
+  playerNames: string[]
   game: { slug: string; name: string; icon: string }
   host: { displayName: string }
 }
@@ -207,6 +209,7 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
               <div className="min-w-0 flex-1">
                 <p className="font-display font-bold">Mesa de {r.host.displayName}</p>
                 <p className="text-sm text-text-muted">{r.players}/{r.maxPlayers} jogadores</p>
+                <RoomPeople names={r.playerNames} maxPlayers={r.maxPlayers} />
               </div>
               <button
                 onClick={() => {

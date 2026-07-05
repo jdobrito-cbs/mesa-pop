@@ -18,7 +18,12 @@ export default async function gamesRoutes(app: FastifyInstance) {
       include: {
         game: { select: { slug: true, name: true, icon: true, color: true } },
         host: { select: { displayName: true } },
-        _count: { select: { players: { where: { leftAt: null } } } },
+        // quem está SENTADO na sala de espera (para o lobby mostrar as pessoas)
+        players: {
+          where: { leftAt: null },
+          select: { user: { select: { displayName: true } } },
+          orderBy: { joinedAt: 'asc' },
+        },
       },
     })
     return {
@@ -27,7 +32,8 @@ export default async function gamesRoutes(app: FastifyInstance) {
         code: r.code,
         status: r.status,
         maxPlayers: r.maxPlayers,
-        players: r._count.players,
+        players: r.players.length,
+        playerNames: r.players.map((p) => p.user.displayName),
         createdAt: r.createdAt.toISOString(),
         game: r.game,
         host: r.host,

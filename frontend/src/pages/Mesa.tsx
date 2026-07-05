@@ -8,8 +8,37 @@ interface RoomRow {
   code: string
   players: number
   maxPlayers: number
+  playerNames: string[]
   game: { slug: string; name: string; icon: string; color: string }
   host: { displayName: string }
+}
+
+/** quem já está sentado na sala de espera + lugares livres */
+export function RoomPeople({ names, maxPlayers }: { names: string[]; maxPlayers: number }) {
+  const free = maxPlayers - names.length
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      {names.map((n) => (
+        <span
+          key={n}
+          className="flex items-center gap-1.5 rounded-full bg-ink-900 py-0.5 pr-2.5 pl-0.5 text-xs font-semibold ring-1 ring-ink-700"
+        >
+          <span
+            className="flex size-5 items-center justify-center rounded-full bg-gradient-to-br from-pop-purple to-pop-magenta text-[10px] font-extrabold text-white"
+            aria-hidden="true"
+          >
+            {n.trim()[0]?.toUpperCase()}
+          </span>
+          {n}
+        </span>
+      ))}
+      {free > 0 && (
+        <span className="rounded-full border border-dashed border-ink-700 px-2.5 py-0.5 text-xs font-semibold text-text-muted">
+          {free === 1 ? '1 lugar livre' : `${free} lugares livres`}
+        </span>
+      )}
+    </div>
+  )
 }
 
 const toGameDef = (g: GameView): GameDef => ({ ...g, enabled: g.isEnabled })
@@ -79,13 +108,14 @@ export default function Mesa() {
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {roomsData.rooms.map((r) => (
-            <div key={r.id} className="card flex items-center gap-3 p-4">
+            <div key={r.id} className="card flex items-start gap-3 p-4">
               <span className="text-3xl" aria-hidden="true">{r.game.icon}</span>
               <div className="min-w-0 flex-1">
                 <p className="font-display font-bold">{r.game.name}</p>
                 <p className="text-sm text-text-muted">
-                  {r.host.displayName} · {r.players}/{r.maxPlayers} jogadores
+                  Mesa de {r.host.displayName} · {r.players}/{r.maxPlayers} jogadores
                 </p>
+                <RoomPeople names={r.playerNames} maxPlayers={r.maxPlayers} />
               </div>
               <span className="font-mono text-sm font-bold text-pop-cyan">{r.code}</span>
             </div>
