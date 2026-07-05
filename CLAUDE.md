@@ -12,8 +12,31 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 2 — ✅ CONCLUÍDA (2026-07-04). FASES 0 e 1 ✅.
+- **Fase atual**: FASE 3 — ✅ CONCLUÍDA (2026-07-04). FASES 0, 1 e 2 ✅.
 - **Última atualização**: 2026-07-04
+- **FASE 3 entregue** (mão escondida: Dominó e One + adendos):
+  - `/shared/domino.ts`: regras completas (duplo-seis, 4p em duplas 0+2 vs
+    1+3, abre com [6|6], captura de pontas com orientação, passe só sem
+    jogada, trancado aos 4 passes → menos pontos vence, empate possível).
+  - `/shared/one.ts`: baralho 108, combina cor/valor, curinga com escolha de
+    cor, pular/inverter (vira pular com 2), +2/+4 sem acúmulo, compra com
+    "jogar agora ou guardar", reembaralho do descarte.
+  - **MÃO ESCONDIDA**: `dominoViewFor`/`oneViewFor` — a visão que trafega só
+    tem a própria mão + contagens; testes garantem que nada vaza (inclusive
+    para espectador, assento -1).
+  - Refactor `winnerSeats[]` (vitória de dupla) em módulo/manager/UI.
+  - **Adendos implementados**: escolha de assento/dupla na espera
+    (`room:seat`, dupla cheia → outra automaticamente), espectadores (sem
+    ver mãos, limite 20, podem sentar se houver vaga) e ROTAÇÃO estilo bar
+    (dupla que perde vai pro fim da fila, próxima entra, vencedores ficam,
+    sala volta a WAITING sem fechar, chat contínuo).
+  - UI: SeatPicker (duplas Magenta/Ciano, fila numerada), DominoTable
+    (linha, mão com peças jogáveis acesas, escolha de ponta, passar),
+    OneTable (descarte com cor ativa, monte, comprada jogável, seletor de
+    cor do curinga), RoomPage genérico por gameSlug + modo espectador.
+  - 80 testes passando (22 novos de regras + 3 de integração da rotação com
+    5 sockets). Demos reais: Dominó 4p com espectadora Eva promovida pela
+    fila após a derrota da dupla Magenta; One 3p até a vitória.
 - **FASE 2 entregue** (esqueleto de salas + Damas end-to-end):
   - `/shared/checkers.ts`: regras brasileiras completas e puras (peão captura
     p/ trás, dama voadora, captura obrigatória + lei da maioria via DFS, peça
@@ -92,9 +115,9 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 3 (jogos de mão
-  escondida: Dominó e One — getStateFor filtrando por jogador) e aguardar
-  OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 4 (engine 2D top-down
+  em canvas + Esquadrão 42 single-player + Desvio Estelar + leaderboards)
+  e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
