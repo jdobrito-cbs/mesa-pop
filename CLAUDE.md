@@ -39,6 +39,19 @@ Base sólida primeiro; os jogos plugam nela.
   - 89 testes passando (4 novos: score implausível rejeitado, partida não
     reaproveitável, plausível entra no ranking). Demo real: bot jogou os
     dois jogos, 1950 pts no Esquadrão aceitos → 1º no ranking.
+  - **Upgrade v2 do Esquadrão (mesmo dia, pedidos do usuário)**: cenário
+    vivo no chão (campos com faixas, estrada curva com faixa tracejada,
+    árvores, casas, CARROS nos 2 sentidos — atingíveis, +50 — e TANQUES de
+    chão com torre que mira e atira, 3hp, +300); inimigos aéreos novos
+    (helicóptero com rotor animado 2hp/+150, aviãozinho rápido 1hp/+100,
+    avião grande 4hp/+400 com barra de vida); BOSS a cada 5 min (avião
+    gigante, hp escala por aparição, 2 padrões de ataque, barra no topo,
+    morte em cadeia de explosões, +5000, solta 2 power-ups); manobra de
+    LOOP (tecla L/Shift ou botão, invencível 0.9s, cooldown 6s, sombra se
+    afasta = sensação de altura); botões de toque LOOP/BOMBA sobre o canvas
+    (celular/tablet). Atalhos de dev gated por import.meta.env.DEV:
+    __bossEarly (boss aos 14s) e __photoMode (invulnerável p/ capturas) —
+    inertes em produção.
 - **FASE 3 entregue** (mão escondida: Dominó e One + adendos):
   - `/shared/domino.ts`: regras completas (duplo-seis, 4p em duplas 0+2 vs
     1+3, abre com [6|6], captura de pontas com orientação, passe só sem
@@ -405,6 +418,12 @@ Cada jogo é um módulo implementando interface comum, ex.:
 - **1942 (avião)**: shoot'em up com scroll vertical. **Armas pegas no caminho,
   usadas até acabar**: tiro reto, espalhado, laser, míssil teleguiado, bomba de
   tela. Posicionamento dos power-ups coreografa a curva emocional da fase.
+  **Especificação do usuário (2026-07-05)**: o fundo é um CENÁRIO VIVO com
+  nuvens, estradas, árvores, CARROS (atingíveis por tiro) e TANQUES no chão
+  (atingíveis E que atiram de volta). Inimigos aéreos: HELICÓPTEROS e aviões
+  grandes e pequenos. A cada **5 minutos** aparece um **AVIÃO ENORME (boss)**
+  para derrotar. Tecla/botão de **LOOP**: o avião faz um loop para escapar de
+  mísseis/tiros em excesso (invencível durante, com cooldown).
   Single-player primeiro (zero rede); depois **co-op** (aviões vs. máquina —
   latência tolerante pois não há PvP direto) com dois modos:
   (a) **time que sobrevive junto** — vida/pontuação coletiva, revive aliado;
@@ -474,6 +493,9 @@ Xadrez, Gamão, Truco, Buraco, Poker, Stop, Quiz, Gartic, puzzles, arcades.
   vaza estado alheio.
 - **Auditoria**: registrar ações sensíveis no AuditLog automaticamente.
 - **Responsivo**: desktop e mobile (canvas com input de toque onde couber).
+  **Reforço do usuário (2026-07-05): TODOS os jogos devem ser compatíveis
+  com celular e tablet** — arrastar o dedo move; ações extras (bomba, loop)
+  viram botões na tela sobre o canvas.
 - **i18n**: preparado para pt-BR (primário) e en.
 - **Testes**: unitários na lógica de jogo (crítico — validação de jogadas);
   integração no auth e admin.

@@ -20,6 +20,17 @@ interface FinishResult {
   isRecord: boolean
 }
 
+type SoloGame = GameHost & { input: Input }
+
+interface TouchAction {
+  id: string
+  icon: string
+  label: string
+  invoke(game: SoloGame): void
+  /** desabilitado com base no HUD atual */
+  disabled?(hud: Record<string, unknown>): boolean
+}
+
 export interface SoloGameDef {
   slug: string
   title: string
@@ -27,10 +38,12 @@ export interface SoloGameDef {
   width: number
   height: number
   controls: string
+  /** botões de toque sobre o canvas (celular/tablet) */
+  actions?: TouchAction[]
   create(callbacks: {
     onGameOver(points: number): void
     onHud(hud: Record<string, unknown>): void
-  }): GameHost & { input: Input }
+  }): SoloGame
 }
 
 export const SOLO_GAMES: Record<string, SoloGameDef> = {
@@ -50,7 +63,23 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     width: ESQ_W,
     height: ESQ_H,
     controls:
-      'Setas/WASD movem, fogo é automático. Pegue as armas no caminho (E, L, M) — elas acabam! Espaço/B solta a bomba. 3 vidas.',
+      'Setas/WASD ou arraste o dedo. Fogo automático; pegue armas no caminho (E, L, M). Espaço/B = bomba. L/Shift = LOOP de escape. Destrua carros, tanques, helicópteros e aviões — e o BOSS a cada 5 minutos!',
+    actions: [
+      {
+        id: 'loop',
+        icon: '➰',
+        label: 'Loop',
+        invoke: (g) => (g as EsquadraoGame).triggerLoop(),
+        disabled: (hud) => hud.loopReady === false,
+      },
+      {
+        id: 'bomba',
+        icon: '✹',
+        label: 'Bomba',
+        invoke: (g) => (g as EsquadraoGame).triggerBomb(),
+        disabled: (hud) => !hud.bombs,
+      },
+    ],
     create: (cb) => new EsquadraoGame(cb),
   },
 }
@@ -58,6 +87,7 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
 export default function SoloGamePage({ def }: { def: SoloGameDef }) {
   const navigate = useNavigate()
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const gameRef = useRef<SoloGame | null>(null)
   const matchIdRef = useRef<string | null>(null)
   const [hud, setHud] = useState<Record<string, unknown>>({})
   const [phase, setPhase] = useState<'ready' | 'playing' | 'over'>('ready')
@@ -97,6 +127,7 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
       onGameOver: (points) => void finish(points),
       onHud: (h) => setHud(h),
     })
+    gameRef.current = game
     game.input.attach(canvas, (px, py) => ({ x: px, y: py }))
     const stop = startLoop(canvas, game)
 
@@ -114,6 +145,7 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
     return () => {
       stop()
       game.input.detach()
+      gameRef.current = null
     }
   }, [phase, runNumber, def, finish])
 
@@ -165,6 +197,33 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
                   {Number(hud.bombs ?? 0) > 0 ? ` · ✹${hud.bombs}` : ''}
                 </span>
               )}
+            </div>
+          )}
+
+          {/* botões de toque (celular/tablet) */}
+          {phase === 'playing' && def.actions && (
+            <div className="absolute right-3 bottom-3 flex flex-col gap-2">
+              {def.actions.map((a) => {
+                const off = a.disabled?.(hud) ?? false
+                return (
+                  <button
+                    key={a.id}
+                    aria-label={a.label}
+                    onPointerDown={(e) => {
+                      e.preventDefault()
+                      if (!off && gameRef.current) a.invoke(gameRef.current)
+                    }}
+                    className={`flex size-14 flex-col items-center justify-center rounded-full bg-ink-950/75 font-display text-xl ring-2 backdrop-blur transition select-none ${
+                      off
+                        ? 'text-text-muted/50 ring-ink-700 opacity-60'
+                        : 'text-pop-yellow ring-pop-yellow/60 active:scale-90'
+                    }`}
+                  >
+                    <span aria-hidden="true">{a.icon}</span>
+                    <span className="text-[9px] font-bold tracking-wide uppercase">{a.label}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
 
