@@ -1,55 +1,89 @@
 /**
- * Dominó (4 jogadores, em duplas) — lógica pura e compartilhada.
+ * Dominó (4 jogadores, em duplas) — regras profissionais "All Fives"
+ * (Muggins), ref.: play-domino-online.com/pt/regras-de-domino/.
  *
- * Regras:
- * - Conjunto duplo-seis (28 peças), 7 para cada jogador — sem monte.
+ * - Conjunto duplo-seis (28 peças), 7 por jogador — sem monte.
  * - Duplas: assentos 0+2 contra 1+3.
- * - Começa quem tem o [6|6], obrigatoriamente jogando-o.
- * - Joga-se em uma das duas pontas da linha; sem peça válida, passa.
- * - Vitória: primeiro a esvaziar a mão ganha para a dupla.
- * - Trancado (4 passes seguidos): dupla com MENOS pontos na mão vence;
- *   empate em pontos = empate.
+ * - Abre quem tem o [6|6], obrigatoriamente jogando-o. Ele é o SPINNER:
+ *   o jogo cresce nas 4 direções a partir dele. Os braços de cima/baixo
+ *   só abrem depois que os dois braços laterais existirem.
+ * - PONTUAÇÃO PELAS PONTAS ABERTAS: após cada jogada, se a soma das
+ *   pontas externas for múltiplo de 5, a dupla marca essa soma.
+ *   Carroça na ponta conta as duas metades; o spinner conta 12 até os
+ *   dois lados laterais serem cobertos.
+ * - Bater: a dupla leva os pontos das mãos adversárias. Trancado (4
+ *   passes): a dupla com menos pontos na mão leva os pontos da outra;
+ *   empate em pontos, ninguém marca.
+ * - A partida tem VÁRIAS mãos: vence a primeira dupla a fazer `target`
+ *   pontos (padrão 100).
  *
- * A mão dos outros NUNCA é enviada ao cliente: `visibleStateFor` reduz o
- * estado à visão de um assento.
+ * A mão dos outros NUNCA é enviada ao cliente (`dominoViewFor`).
  */
 
 export type DominoTile = [number, number]
 
+/** braços a partir do spinner: 0=direita, 1=esquerda, 2=cima, 3=baixo */
+export type ArmIndex = 0 | 1 | 2 | 3
+
+export interface HandResult {
+  /** 'bate' | 'trancado' */
+  kind: 'bate' | 'trancado'
+  /** dupla que pontuou (0|1) ou null (trancado empatado) */
+  team: 0 | 1 | null
+  points: number
+  /** assento que bateu (se bate) */
+  seat: number | null
+}
+
 export interface DominoState {
   hands: DominoTile[][]
-  /** linha orientada: line[i][1] encosta em line[i+1][0] */
-  line: DominoTile[]
+  /** o [6|6] quando jogado */
+  spinner: DominoTile | null
+  /** peças de cada braço, da mais interna para a mais externa, orientadas [interno, externo] */
+  arms: [DominoTile[], DominoTile[], DominoTile[], DominoTile[]]
   turn: number
-  /** true até o [6|6] ser jogado */
   awaitingOpener: boolean
   consecutivePasses: number
-  /** assentos vencedores (dupla) ou vazio */
+  /** placar acumulado das duplas [dupla0, dupla1] */
+  scores: [number, number]
+  /** pontos para vencer a partida */
+  target: number
+  handNumber: number
+  /** pontos marcados na última jogada (para a UI comemorar) */
+  lastMoveScore: { seat: number; points: number } | null
+  /** resultado da última mão encerrada (para a UI mostrar entre mãos) */
+  lastHandResult: HandResult | null
+  lastAction: { seat: number; type: 'play' | 'pass' } | null
   winnerSeats: number[]
   draw: boolean
-  /** última ação, para feedback na UI */
-  lastAction: { seat: number; type: 'play' | 'pass' } | null
 }
 
 export type DominoAction =
-  | { type: 'play'; tile: DominoTile; side: 'left' | 'right' }
+  | { type: 'play'; tile: DominoTile; side: ArmIndex }
   | { type: 'pass' }
 
-/** Visão de um assento: própria mão + contagem dos demais. */
 export interface DominoView {
   yourHand: DominoTile[]
   handCounts: number[]
-  line: DominoTile[]
+  spinner: DominoTile | null
+  arms: [DominoTile[], DominoTile[], DominoTile[], DominoTile[]]
+  /** valor aberto de cada braço jogável (null = braço fechado no momento) */
+  openEnds: (number | null)[]
+  endsSum: number
   turn: number
   awaitingOpener: boolean
+  scores: [number, number]
+  target: number
+  handNumber: number
+  lastMoveScore: DominoState['lastMoveScore']
+  lastHandResult: HandResult | null
+  lastAction: DominoState['lastAction']
   winnerSeats: number[]
   draw: boolean
-  lastAction: DominoState['lastAction']
-  /** pontas abertas [esquerda, direita] ou null antes da 1ª peça */
-  ends: [number, number] | null
 }
 
 export const DOMINO_PLAYERS = 4
+export const DOMINO_DEFAULT_TARGET = 100
 
 export function allTiles(): DominoTile[] {
   const tiles: DominoTile[] = []
@@ -57,44 +91,100 @@ export function allTiles(): DominoTile[] {
   return tiles
 }
 
-export function initialDominoState(rng: () => number = Math.random): DominoState {
+function dealHands(rng: () => number): DominoTile[][] {
   const tiles = allTiles()
   for (let i = tiles.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[tiles[i], tiles[j]] = [tiles[j]!, tiles[i]!]
   }
-  const hands = [0, 1, 2, 3].map((p) => tiles.slice(p * 7, p * 7 + 7))
-  // com as 28 peças distribuídas, o [6|6] sempre está com alguém
-  const opener = hands.findIndex((h) => h.some(([a, b]) => a === 6 && b === 6))
+  return [0, 1, 2, 3].map((p) => tiles.slice(p * 7, p * 7 + 7))
+}
+
+function openerOf(hands: DominoTile[][]): number {
+  return hands.findIndex((h) => h.some(([a, b]) => a === 6 && b === 6))
+}
+
+export function initialDominoState(
+  rng: () => number = Math.random,
+  target: number = DOMINO_DEFAULT_TARGET,
+): DominoState {
+  const hands = dealHands(rng)
   return {
     hands,
-    line: [],
-    turn: opener,
+    spinner: null,
+    arms: [[], [], [], []],
+    turn: openerOf(hands),
     awaitingOpener: true,
     consecutivePasses: 0,
+    scores: [0, 0],
+    target,
+    handNumber: 1,
+    lastMoveScore: null,
+    lastHandResult: null,
+    lastAction: null,
     winnerSeats: [],
     draw: false,
-    lastAction: null,
   }
 }
 
-export function dominoEnds(state: Pick<DominoState, 'line'>): [number, number] | null {
-  if (state.line.length === 0) return null
-  return [state.line[0]![0], state.line[state.line.length - 1]![1]]
-}
-
+const isDouble = (t: DominoTile) => t[0] === t[1]
 const sameTile = (a: DominoTile, b: DominoTile) =>
   (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0])
+const pips = (t: DominoTile) => t[0] + t[1]
+const handPips = (h: DominoTile[]) => h.reduce((s, t) => s + pips(t), 0)
 
-/** Lados em que a peça encaixa (vazio = não joga). */
-export function playableSides(state: DominoState, tile: DominoTile): Array<'left' | 'right'> {
-  if (state.awaitingOpener) {
-    return tile[0] === 6 && tile[1] === 6 ? ['left'] : []
+/** os braços laterais (0 e 1) já existem? (condição para abrir cima/baixo) */
+function sidesCovered(state: DominoState): boolean {
+  return state.arms[0].length > 0 && state.arms[1].length > 0
+}
+
+/**
+ * Valor aberto de cada braço, ou null se o braço não é jogável agora.
+ * Braço vazio jogável casa com o valor do spinner (6).
+ */
+export function armOpenEnds(state: DominoState): (number | null)[] {
+  if (!state.spinner) return [null, null, null, null]
+  const spinnerValue = state.spinner[0]
+  return ([0, 1, 2, 3] as ArmIndex[]).map((arm) => {
+    const tiles = state.arms[arm]
+    if (tiles.length > 0) return tiles[tiles.length - 1]![1]
+    // braço vazio: laterais sempre abertos; cima/baixo só após os laterais
+    if (arm <= 1) return spinnerValue
+    return sidesCovered(state) ? spinnerValue : null
+  })
+}
+
+/**
+ * Soma das pontas abertas para pontuação (regra Muggins):
+ * - ponta com carroça conta as DUAS metades;
+ * - o spinner conta 12 enquanto os dois lados laterais não estiverem cobertos;
+ * - braço aberto mas vazio não soma nada (além do spinner, se exposto).
+ */
+export function endsSum(state: DominoState): number {
+  if (!state.spinner) return 0
+  let sum = 0
+  if (!sidesCovered(state)) sum += pips(state.spinner)
+  for (const arm of state.arms) {
+    if (arm.length === 0) continue
+    const outer = arm[arm.length - 1]!
+    sum += isDouble(outer) ? pips(outer) : outer[1]
   }
-  const ends = dominoEnds(state)!
-  const sides: Array<'left' | 'right'> = []
-  if (tile[0] === ends[0] || tile[1] === ends[0]) sides.push('left')
-  if (tile[0] === ends[1] || tile[1] === ends[1]) sides.push('right')
+  return sum
+}
+
+/** Braços em que a peça encaixa agora (vazio = não joga). */
+export function playableSides(state: DominoState, tile: DominoTile): ArmIndex[] {
+  if (state.winnerSeats.length || state.draw) return []
+  if (state.awaitingOpener) {
+    return tile[0] === 6 && tile[1] === 6 ? [0] : []
+  }
+  const ends = armOpenEnds(state)
+  const sides: ArmIndex[] = []
+  for (const arm of [0, 1, 2, 3] as ArmIndex[]) {
+    const end = ends[arm]
+    if (end === null) continue
+    if (tile[0] === end || tile[1] === end) sides.push(arm)
+  }
   return sides
 }
 
@@ -102,83 +192,148 @@ export function handCanPlay(state: DominoState, seat: number): boolean {
   return state.hands[seat]!.some((t) => playableSides(state, t).length > 0)
 }
 
-function teamPips(state: DominoState, team: 0 | 1): number {
-  return state.hands.reduce(
-    (sum, hand, seat) =>
-      seat % 2 === team ? sum + hand.reduce((s, [a, b]) => s + a + b, 0) : sum,
-    0,
-  )
+/** encerra a mão e ou fecha a partida (target) ou dá as cartas de novo */
+function settleHand(
+  state: DominoState,
+  result: HandResult,
+  rng: () => number,
+): DominoState {
+  const scores: [number, number] = [...state.scores]
+  if (result.team !== null) scores[result.team] += result.points
+
+  const winnerTeam = scores[0] >= state.target ? 0 : scores[1] >= state.target ? 1 : null
+  if (winnerTeam !== null) {
+    return {
+      ...state,
+      scores,
+      lastHandResult: result,
+      winnerSeats: [winnerTeam, winnerTeam + 2],
+      draw: false,
+    }
+  }
+
+  // próxima mão: redistribui, quem tem o [6|6] abre
+  const hands = dealHands(rng)
+  return {
+    ...state,
+    hands,
+    spinner: null,
+    arms: [[], [], [], []],
+    turn: openerOf(hands),
+    awaitingOpener: true,
+    consecutivePasses: 0,
+    scores,
+    handNumber: state.handNumber + 1,
+    lastMoveScore: null,
+    lastHandResult: result,
+    lastAction: null,
+  }
 }
 
 export function applyDominoAction(
   state: DominoState,
   seat: number,
   action: DominoAction,
+  rng: () => number = Math.random,
 ): { error: string } | { state: DominoState } {
   if (state.winnerSeats.length || state.draw) return { error: 'A partida já terminou' }
   if (state.turn !== seat) return { error: 'Não é a sua vez' }
 
   if (action.type === 'pass') {
-    if (handCanPlay(state, seat)) return { error: 'Você tem peça para jogar' }
+    if (handCanPlay(state, seat)) return { error: 'Você tem pedra para jogar' }
     const next: DominoState = {
       ...state,
       consecutivePasses: state.consecutivePasses + 1,
       turn: (seat + 1) % DOMINO_PLAYERS,
+      lastMoveScore: null,
       lastAction: { seat, type: 'pass' },
     }
     if (next.consecutivePasses >= DOMINO_PLAYERS) {
-      // trancado: menos pontos vence
-      const pips0 = teamPips(next, 0)
-      const pips1 = teamPips(next, 1)
-      if (pips0 === pips1) return { state: { ...next, draw: true } }
-      const winnerTeam = pips0 < pips1 ? 0 : 1
-      return { state: { ...next, winnerSeats: [winnerTeam, winnerTeam + 2] } }
+      // trancado: dupla com menos pontos leva os pontos da outra
+      const pips0 = handPips(next.hands[0]!) + handPips(next.hands[2]!)
+      const pips1 = handPips(next.hands[1]!) + handPips(next.hands[3]!)
+      if (pips0 === pips1) {
+        return {
+          state: settleHand(next, { kind: 'trancado', team: null, points: 0, seat: null }, rng),
+        }
+      }
+      const team = pips0 < pips1 ? 0 : 1
+      const points = team === 0 ? pips1 : pips0
+      return { state: settleHand(next, { kind: 'trancado', team, points, seat: null }, rng) }
     }
     return { state: next }
   }
 
   const hand = state.hands[seat]!
   const inHand = hand.find((t) => sameTile(t, action.tile))
-  if (!inHand) return { error: 'Essa peça não está na sua mão' }
+  if (!inHand) return { error: 'Essa pedra não está na sua mão' }
 
   const sides = playableSides(state, inHand)
-  if (!sides.includes(action.side)) {
-    return { error: state.awaitingOpener ? 'A partida abre com o [6|6]' : 'Essa peça não encaixa aí' }
-  }
-
-  // orienta a peça para o lado escolhido
-  const ends = dominoEnds(state)
-  let oriented: DominoTile
-  let line: DominoTile[]
-  if (!ends) {
-    oriented = [inHand[0], inHand[1]]
-    line = [oriented]
-  } else if (action.side === 'left') {
-    oriented = inHand[1] === ends[0] ? [inHand[0], inHand[1]] : [inHand[1], inHand[0]]
-    line = [oriented, ...state.line]
-  } else {
-    oriented = inHand[0] === ends[1] ? [inHand[0], inHand[1]] : [inHand[1], inHand[0]]
-    line = [...state.line, oriented]
+  const side = action.side
+  if (side !== 0 && side !== 1 && side !== 2 && side !== 3) return { error: 'Ponta inválida' }
+  if (!sides.includes(side)) {
+    return {
+      error: state.awaitingOpener ? 'A partida abre com o [6|6]' : 'Essa pedra não encaixa aí',
+    }
   }
 
   const hands = state.hands.map((h, i) =>
     i === seat ? h.filter((t) => !sameTile(t, inHand)) : h,
   )
 
-  const next: DominoState = {
-    ...state,
-    hands,
-    line,
-    awaitingOpener: false,
-    consecutivePasses: 0,
-    turn: (seat + 1) % DOMINO_PLAYERS,
-    lastAction: { seat, type: 'play' },
+  let next: DominoState
+  if (state.awaitingOpener) {
+    next = {
+      ...state,
+      hands,
+      spinner: inHand,
+      arms: [[], [], [], []],
+      awaitingOpener: false,
+      consecutivePasses: 0,
+      turn: (seat + 1) % DOMINO_PLAYERS,
+      lastAction: { seat, type: 'play' },
+      lastMoveScore: null,
+    }
+  } else {
+    const ends = armOpenEnds(state)
+    const endValue = ends[side]!
+    // orienta [interno, externo]
+    const oriented: DominoTile = inHand[0] === endValue ? [inHand[0], inHand[1]] : [inHand[1], inHand[0]]
+    const arms = state.arms.map((a, i) => (i === side ? [...a, oriented] : a)) as DominoState['arms']
+    next = {
+      ...state,
+      hands,
+      arms,
+      consecutivePasses: 0,
+      turn: (seat + 1) % DOMINO_PLAYERS,
+      lastAction: { seat, type: 'play' },
+      lastMoveScore: null,
+    }
   }
 
+  // pontuação pelas pontas abertas (múltiplos de 5)
+  const sum = endsSum(next)
+  if (sum > 0 && sum % 5 === 0) {
+    const team = (seat % 2) as 0 | 1
+    const scores: [number, number] = [...next.scores]
+    scores[team] += sum
+    next = { ...next, scores, lastMoveScore: { seat, points: sum } }
+    // pontuar já pode fechar a partida
+    if (scores[team] >= next.target && hands[seat]!.length > 0) {
+      return {
+        state: { ...next, winnerSeats: [team, team + 2] },
+      }
+    }
+  }
+
+  // bateu: leva os pontos das mãos adversárias
   if (hands[seat]!.length === 0) {
     const team = (seat % 2) as 0 | 1
-    return { state: { ...next, winnerSeats: [team, team + 2] } }
+    const opponents = team === 0 ? [1, 3] : [0, 2]
+    const points = opponents.reduce((s, p) => s + handPips(hands[p]!), 0)
+    return { state: settleHand(next, { kind: 'bate', team, points, seat }, rng) }
   }
+
   return { state: next }
 }
 
@@ -187,12 +342,19 @@ export function dominoViewFor(state: DominoState, seat: number): DominoView {
   return {
     yourHand: state.hands[seat] ?? [],
     handCounts: state.hands.map((h) => h.length),
-    line: state.line,
+    spinner: state.spinner,
+    arms: state.arms,
+    openEnds: armOpenEnds(state),
+    endsSum: endsSum(state),
     turn: state.turn,
     awaitingOpener: state.awaitingOpener,
+    scores: state.scores,
+    target: state.target,
+    handNumber: state.handNumber,
+    lastMoveScore: state.lastMoveScore,
+    lastHandResult: state.lastHandResult,
+    lastAction: state.lastAction,
     winnerSeats: state.winnerSeats,
     draw: state.draw,
-    lastAction: state.lastAction,
-    ends: dominoEnds(state),
   }
 }

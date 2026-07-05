@@ -182,6 +182,18 @@ casual alegre.
   escolher um jogo, tocar uma animação de ficha/moeda sendo inserida num
   arcade — ar de jogos antigos. Componente reutilizável (`CoinInsert`) usado
   como transição padrão de entrada em TODOS os jogos.
+- **Dominó profissional — All Fives com spinner** (pedido do usuário em
+  2026-07-04, ref. play-domino-online.com/pt/regras-de-domino/ + imagem de
+  mesa): a PRIMEIRA pedra ([6|6]) é o spinner — o jogo cresce **nas 4
+  direções (4 cantos)** a partir dela (braços cima/baixo só abrem depois
+  dos dois laterais). **Pontuação pelas pontas abertas**: a cada jogada,
+  se a soma das pontas externas for múltiplo de 5, a dupla marca essa soma
+  (carroça na ponta conta as duas metades; spinner conta 12 até os dois
+  lados serem cobertos). Quem bate leva os pontos das mãos adversárias;
+  trancado, a dupla com menos pontos leva os pontos da outra (empate: não
+  pontua). Partida em MÚLTIPLAS mãos até uma dupla fazer **100 pontos**.
+  Visual: mesa estilo feltro com pedras desenhadas (pontinhos/pips),
+  carroças atravessadas, linha serpenteando para os cantos.
 - **Assentos e duplas no Dominó** (pedido do usuário em 2026-07-04): o
   usuário ESCOLHE o assento na sala de espera; a dupla é sempre quem senta
   em frente (assentos 0+2 vs 1+3). Se preferir, escolhe a DUPLA em vez do

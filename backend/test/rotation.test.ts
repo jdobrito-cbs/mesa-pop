@@ -61,6 +61,8 @@ async function registerUser(i: number) {
 }
 
 beforeAll(async () => {
+  // alvo baixo: a partida (várias mãos até o alvo) termina rápido no teste
+  process.env.DOMINO_TARGET = '20'
   app = await buildApp({ disableRateLimit: true, logger: false })
   await app.listen({ port: 0, host: '127.0.0.1' })
   const addr = app.server.address()
@@ -128,15 +130,21 @@ describe('dominó: assentos, espectador e rotação', () => {
     expect(views[4]!.handCounts).toEqual([7, 7, 7, 7])
     expect(JSON.stringify(views[4])).not.toContain('"hands"')
 
-    // joga a partida inteira com a lógica compartilhada
-    for (let step = 0; step < 200 && !endEvent; step++) {
+    // joga a partida inteira (várias mãos até o alvo) com a lógica compartilhada
+    for (let step = 0; step < 500 && !endEvent; step++) {
       const turnIdx = views.findIndex((v, i) => i < 4 && v && seats[i] === v.turn)
       if (turnIdx < 0) {
         await wait(100)
         continue
       }
       const view = views[turnIdx]!
-      const pseudo = { awaitingOpener: view.awaitingOpener, line: view.line } as DominoState
+      const pseudo = {
+        winnerSeats: view.winnerSeats,
+        draw: view.draw,
+        awaitingOpener: view.awaitingOpener,
+        spinner: view.spinner,
+        arms: view.arms,
+      } as DominoState
       let played = false
       for (const tile of view.yourHand) {
         const sides = playableSides(pseudo, tile)
