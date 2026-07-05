@@ -10,6 +10,7 @@ import authRoutes from './routes/auth'
 import healthRoutes from './routes/health'
 import gamesRoutes from './routes/games'
 import adminRoutes from './routes/admin/index'
+import socketPlugin from './realtime/socket'
 
 export interface BuildAppOptions {
   /** Desliga rate limiting (testes de integração). */
@@ -57,6 +58,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(authRoutes)
   await app.register(gamesRoutes)
   await app.register(adminRoutes)
+  await app.register(socketPlugin)
 
   return app
 }
