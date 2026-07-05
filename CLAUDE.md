@@ -290,6 +290,18 @@ Cada jogo é um módulo implementando interface comum, ex.:
   (quebra-cabeça)** e **Paciência** (adicionados pelo usuário em 2026-07-04)
   — geráveis proceduralmente → **modo "desafio diário" com seed do dia**.
 - **Arcade**: Snake (confirmado pelo usuário), Tetris-like, Breakout, 2048.
+- **Arcade retrô side-view** (pedidos do usuário em 2026-07-04, usar NOMES
+  GENÉRICOS — sem marcas):
+  - **"Missão Elevador"** — clone de *Elevator Action* (NES) como referência
+    de design: espião desce pelo prédio de elevador, andares, portas e
+    inimigos. Visão lateral (variante side-view da engine 2D).
+  - **"Pega-Ladrão"** — clone de *Keystone Kapers* (Atari 2600) como
+    referência: guarda persegue o ladrão pelos andares de uma loja,
+    desviando de obstáculos, com escadas rolantes e elevador. Side-view.
+  - **"Come-Come"** — clone de *Pac-Man* como referência (pedido do usuário
+    em 2026-07-04): labirinto, pastilhas, 4 fantasmas com personalidades,
+    power-pellet que inverte a caçada. Visão de cima (usa a engine 2D
+    top-down da Fase 4 com grade de labirinto).
 - **Palavra**: Termo diário, caça-palavras.
 
 ### Ação 2D top-down (engine compartilhada)
