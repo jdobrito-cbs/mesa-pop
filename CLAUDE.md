@@ -12,10 +12,38 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 8 — EM ANDAMENTO (lote 1: Xadrez ✅ 2026-07-05,
-  incl. upgrade de animação). FASES 0–7 ✅. Próximo lote: aguardando OK
-  do usuário (sugestão: turno 2p — Gamão/Reversi/Trilha — ou arcades).
+- **Fase atual**: FASE 8 — EM ANDAMENTO. Lote 1: Xadrez ✅. Lote 2:
+  Snake + Campo Minado + Invasores ✅ (2026-07-05). FASES 0–7 ✅.
+  13 jogos jogáveis; faltam 10 do catálogo. Próximo lote: aguardando OK.
 - **Última atualização**: 2026-07-05
+- **FASE 8 · lote 2 entregue — ARCADES SOLO (Snake, Campo Minado,
+  Invasores)** (2026-07-05): três jogos plugados no esqueleto solo
+  (SoloGamePage + /api/solo start/finish + PLAUSIBILITY + leaderboard):
+  - **Snake** (`games/snake.ts`, 22×16): swipe do dedo OU setas (fila de
+    2 direções, sem meia-volta), fruta com glow que troca de cor, cobra
+    com carinha/língua, acelera a cada mordida (0.15s→0.07s), morte =
+    partículas + shake. 10 pts/fruta.
+  - **Campo Minado** (`games/campoMinado.ts`, 14×10, 22 minas): 1º clique
+    SEMPRE seguro (minas plantadas depois, longe do clique), flood fill,
+    +5/casa, vitória = bônus 500−4/s (mín 100) + confete; bandeira por
+    TOQUE LONGO 350ms (anel de progresso) ou botão 🚩 (modo bandeira).
+    **LIÇÃO (bug real)**: detectar clique por polling isDown perde toques
+    que começam E terminam entre dois frames — detectar pela mudança de
+    `input.downAt`. **LIÇÃO 2**: botões de toque flutuantes NÃO podem
+    cobrir tabuleiros de grade — novo `actionsOutside` no SoloGameDef
+    põe as ações abaixo do canvas.
+  - **Invasores** (`games/invasores.ts`, 560×640): 5×10 aliens (2 quadros
+    de dança, cores/pontos por fileira 10–30), bloco acelera conforme
+    encolhe, desce na borda; barreiras destrutíveis (blocos 3hp, arco);
+    tiro inimigo da fileira de baixo; NAVE BÔNUS (100–300) a cada 12–20s;
+    fogo automático 0.42s; 3 vidas c/ invulnerabilidade piscando; onda
+    limpa → +200 e próxima mais baixa/rápida. Alcançar as barreiras = fim.
+  - PLAUSIBILITY: snake 30/s, campo-minado 150/s (max 2000), invasores
+    80/s. Hook de dev `window.__solo` no SoloGamePage (gameRef).
+  - Demo real (bots): cobra comeu 6 frutas guiada por pathing; Campo
+    Minado VENCIDO (1078 pts, "LIMPO! +488" com confete); Invasores com
+    nave bônus abatida e barreiras roídas. Bots de teclado devem SEGURAR
+    a tecla (down+50ms+up) — press instantâneo cai entre frames.
 - **Upgrade do Xadrez — PEÇAS-PERSONAGEM ANIMADAS (pedido do usuário,
   2026-07-05: "peão como soldados, cavalo com cavaleiros, reis reais,
   torres se arrastando deixando rastro, bispo com cajado")**:

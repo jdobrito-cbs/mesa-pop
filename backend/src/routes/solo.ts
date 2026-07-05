@@ -14,6 +14,9 @@ const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints
   'esquadrao-1942': { maxPerSec: 400, minMs: 4000, maxPoints: 2_000_000 },
   'nave-espacial': { maxPerSec: 15, minMs: 3000, maxPoints: 200_000 },
   cardume: { maxPerSec: 80, minMs: 5000, maxPoints: 500_000 },
+  snake: { maxPerSec: 30, minMs: 2000, maxPoints: 50_000 },
+  'campo-minado': { maxPerSec: 150, minMs: 2500, maxPoints: 2_000 },
+  invasores: { maxPerSec: 80, minMs: 4000, maxPoints: 1_000_000 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })

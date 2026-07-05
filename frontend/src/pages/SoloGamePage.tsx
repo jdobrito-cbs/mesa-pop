@@ -6,6 +6,9 @@ import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
 import { EsquadraoGame, ESQ_W, ESQ_H } from '../games/esquadrao'
 import { CardumeGame, CARDUME_W, CARDUME_H } from '../games/cardume'
+import { SnakeGame, SNAKE_W, SNAKE_H } from '../games/snake'
+import { CampoMinadoGame, MINAS_W, MINAS_H } from '../games/campoMinado'
+import { InvasoresGame, INV_W, INV_H } from '../games/invasores'
 
 interface LeaderRow {
   rank: number
@@ -43,6 +46,8 @@ export interface SoloGameDef {
   controls: string
   /** botões de toque sobre o canvas (celular/tablet) */
   actions?: TouchAction[]
+  /** botões FORA do canvas (jogos de grade: nada pode cobrir o tabuleiro) */
+  actionsOutside?: boolean
   create(callbacks: {
     onGameOver(points: number): void
     onHud(hud: Record<string, unknown>): void
@@ -96,6 +101,47 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     ],
     create: (cb) => new EsquadraoGame(cb),
   },
+  snake: {
+    slug: 'snake',
+    title: 'Snake',
+    icon: '🐍',
+    width: SNAKE_W,
+    height: SNAKE_H,
+    wide: true,
+    controls:
+      'Setas/WASD ou DESLIZE o dedo na direção. Coma as frutas para crescer — e não bata na parede nem em você mesma. Fica mais rápido a cada mordida!',
+    create: (cb) => new SnakeGame(cb),
+  },
+  'campo-minado': {
+    slug: 'campo-minado',
+    title: 'Campo Minado',
+    icon: '💣',
+    width: MINAS_W,
+    height: MINAS_H,
+    wide: true,
+    controls:
+      'Toque/clique para revelar. SEGURE (ou use o botão 🚩) para marcar bandeira. O primeiro clique é sempre seguro. Cada casa vale pontos — limpar o campo rápido vale bônus!',
+    actionsOutside: true,
+    actions: [
+      {
+        id: 'bandeira',
+        icon: '🚩',
+        label: 'Bandeira',
+        invoke: (g) => (g as CampoMinadoGame).toggleFlagMode(),
+      },
+    ],
+    create: (cb) => new CampoMinadoGame(cb),
+  },
+  invasores: {
+    slug: 'invasores',
+    title: 'Invasores',
+    icon: '👾',
+    width: INV_W,
+    height: INV_H,
+    controls:
+      'Setas/WASD ou arraste o dedo — o fogo é automático. Segure as fileiras antes que desçam até as barreiras. Acerte a nave dourada para o bônus!',
+    create: (cb) => new InvasoresGame(cb),
+  },
 }
 
 export default function SoloGamePage({ def }: { def: SoloGameDef }) {
@@ -112,6 +158,13 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
   const { data: leaderboard, reload: reloadBoard } = useFetch<{ rows: LeaderRow[] }>(
     `/api/leaderboards/${def.slug}`,
   )
+
+  // hook de dev para testes automatizados de UI (não existe no build de produção)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      ;(window as unknown as Record<string, unknown>).__solo = gameRef
+    }
+  }, [])
 
   const finish = useCallback(
     async (points: number) => {
@@ -216,7 +269,13 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
 
           {/* botões de toque (celular/tablet) */}
           {phase === 'playing' && def.actions && (
-            <div className="absolute right-3 bottom-3 flex flex-col gap-2">
+            <div
+              className={
+                def.actionsOutside
+                  ? 'mt-3 flex justify-end gap-2'
+                  : 'absolute right-3 bottom-3 flex flex-col gap-2'
+              }
+            >
               {def.actions.map((a) => {
                 const off = a.disabled?.(hud) ?? false
                 return (
