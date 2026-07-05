@@ -37,6 +37,15 @@ Base sólida primeiro; os jogos plugam nela.
   - 80 testes passando (22 novos de regras + 3 de integração da rotação com
     5 sockets). Demos reais: Dominó 4p com espectadora Eva promovida pela
     fila após a derrota da dupla Magenta; One 3p até a vitória.
+  - **Upgrade All Fives (mesmo dia, feedback do usuário)**: Dominó refeito
+    no padrão profissional — spinner [6|6] com 4 braços, pontuação pelas
+    pontas abertas (múltiplos de 5; carroça conta dobrado; spinner vale 12
+    até cobrir os lados), bater leva pontos das mãos adversárias, trancado
+    decide por menos pontos, partida em VÁRIAS mãos até 100 (env
+    DOMINO_TARGET p/ testes). Mesa SVG de feltro com pedras de pips,
+    carroças atravessadas e serpente dobrando para os 4 cantos. Rotação
+    refinada: só com fila E sala pública; senão revanche das mesmas duplas.
+    83 testes passando.
 - **FASE 2 entregue** (esqueleto de salas + Damas end-to-end):
   - `/shared/checkers.ts`: regras brasileiras completas e puras (peão captura
     p/ trás, dama voadora, captura obrigatória + lei da maioria via DFS, peça
