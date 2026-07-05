@@ -20,18 +20,30 @@ import {
 export const PEGA_W = 560
 export const PEGA_H = 560
 
-const WORLD_W = 1500
+/** loja LARGA estilo Keystone Kapers: ~4,5 telas de rolagem lateral */
+const WORLD_W = 2500
 const FLOORS = 4
-const FLOOR_H = 110
-const FLOOR_Y = (f: number) => PEGA_H - 40 - f * FLOOR_H // y do CHÃO do andar
+const FLOOR_H = 104
+const RADAR_H = 52
+const FLOOR_Y = (f: number) => PEGA_H - RADAR_H - 46 - f * FLOOR_H // y do CHÃO do andar
 const ESCALATOR_W = 90
+const ELEV_X = WORLD_W / 2 // elevador central, como no clássico
+
+type HazardKind = 'carrinho' | 'bola' | 'aviao' | 'radinho'
 
 interface Hazard {
-  kind: 'carrinho' | 'bola' | 'aviao'
+  kind: HazardKind
   floor: number
   x: number
   vx: number
   phase: number
+}
+
+/** cada FASE libera obstáculos novos */
+function hazardsForRound(round: number): HazardKind[] {
+  if (round <= 1) return ['carrinho', 'bola']
+  if (round === 2) return ['carrinho', 'bola', 'aviao']
+  return ['carrinho', 'bola', 'aviao', 'radinho']
 }
 
 export class PegaLadraoGame implements GameHost {
@@ -48,6 +60,12 @@ export class PegaLadraoGame implements GameHost {
   private ducking = false
   private stunned = 0
   private onEscalator: { dir: 1; progress: number } | null = null
+  private inElevator = false
+
+  // elevador central: sobe e desce sozinho, parando em cada andar
+  private elevFloor = 0
+  private elevDir = 1
+  private elevPause = 1.2
 
   // ladrão
   private tx = 700
@@ -81,7 +99,7 @@ export class PegaLadraoGame implements GameHost {
     this.cb.onHud({
       points: this.points,
       lives: this.lives,
-      weapon: `⏱ ${Math.max(Math.ceil(this.timeLeft), 0)}s · rodada ${this.round}`,
+      weapon: `⏱ ${Math.max(Math.ceil(this.timeLeft), 0)}s · fase ${this.round}`,
     })
   }
 
@@ -106,12 +124,16 @@ export class PegaLadraoGame implements GameHost {
     this.jumpY = 0
     this.vy = 0
     this.onEscalator = null
+    this.inElevator = false
+    this.elevFloor = 0
+    this.elevDir = 1
+    this.elevPause = 1.2
     this.tx = 620 + rand(0, 200)
     this.tFloor = 1
     this.tOnEscalator = null
     this.escaped = false
     this.hazards = []
-    this.timeLeft = Math.max(60 - (this.round - 1) * 4, 40)
+    this.timeLeft = Math.max(75 - (this.round - 1) * 4, 50)
     this.stunned = 0
     this.pushHud()
   }
@@ -148,7 +170,32 @@ export class PegaLadraoGame implements GameHost {
     this.ducking = (a.y > 0 || this.duckTimer > 0) && this.jumpY === 0
     this.touchJump = false
 
-    if (this.onEscalator) {
+    // elevador central anda sozinho, parando em cada andar
+    if (this.elevPause > 0) {
+      this.elevPause -= dt
+    } else {
+      this.elevFloor += this.elevDir * dt / 1.3
+      if (this.elevFloor >= FLOORS - 1 || this.elevFloor <= 0) {
+        this.elevFloor = clamp(this.elevFloor, 0, FLOORS - 1)
+        this.elevDir *= -1
+        this.elevPause = 1.1
+      } else if (Math.abs(this.elevFloor - Math.round(this.elevFloor)) < dt / 1.3) {
+        this.elevFloor = Math.round(this.elevFloor)
+        this.elevPause = 1.1
+      }
+    }
+    const elevParked = this.elevPause > 0
+    const elevAtFloor = Math.round(this.elevFloor)
+
+    if (this.inElevator) {
+      // dentro da cabine: acompanha; sai andando quando ela para
+      this.floor = elevAtFloor
+      this.x = ELEV_X
+      if (elevParked && Math.abs(move) > 0.3) {
+        this.inElevator = false
+        this.x = ELEV_X + Math.sign(move) * 34
+      }
+    } else if (this.onEscalator) {
       // sobe a escada automaticamente
       this.onEscalator.progress += dt * 1.6
       if (this.onEscalator.progress >= 1) {
@@ -164,6 +211,16 @@ export class PegaLadraoGame implements GameHost {
       const ex = this.escalatorX(this.floor)
       if (this.floor < FLOORS - 1 && Math.abs(this.x - ex) < 16 && this.jumpY === 0) {
         this.onEscalator = { dir: 1, progress: 0 }
+      }
+      // entra no elevador se a cabine estiver parada neste andar
+      if (
+        elevParked &&
+        elevAtFloor === this.floor &&
+        Math.abs(this.x - ELEV_X) < 14 &&
+        this.jumpY === 0
+      ) {
+        this.inElevator = true
+        this.x = ELEV_X
       }
     }
     if (this.vy !== 0 || this.jumpY > 0) {
@@ -190,7 +247,7 @@ export class PegaLadraoGame implements GameHost {
         }
       } else {
         const ex = this.escalatorX(this.tFloor)
-        const tSpeed = 120 + this.round * 12
+        const tSpeed = 112 + this.round * 10
         this.tx += Math.sign(ex - this.tx) * tSpeed * dt
         if (Math.abs(this.tx - ex) < 10) this.tOnEscalator = { progress: 0 }
       }
@@ -214,17 +271,20 @@ export class PegaLadraoGame implements GameHost {
     // ---- obstáculos ----
     this.spawnTimer -= dt
     if (this.spawnTimer <= 0) {
-      const kind = (['carrinho', 'bola', 'aviao'] as const)[Math.floor(rand(0, 3))]!
+      const pool = hazardsForRound(this.round)
+      const kind = pool[Math.floor(rand(0, pool.length))]!
       const floor = Math.floor(rand(0, FLOORS))
       const fromLeft = rand(0, 1) < 0.5
+      const base =
+        kind === 'radinho' ? 290 : kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130
       this.hazards.push({
         kind,
         floor,
         x: fromLeft ? -30 : WORLD_W + 30,
-        vx: (fromLeft ? 1 : -1) * (kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130) * (1 + this.round * 0.06),
+        vx: (fromLeft ? 1 : -1) * base * (1 + this.round * 0.06),
         phase: rand(0, Math.PI * 2),
       })
-      this.spawnTimer = Math.max(1.6 - this.round * 0.1, 0.7)
+      this.spawnTimer = Math.max(1.6 - this.round * 0.12, 0.55)
     }
     for (const h of this.hazards) {
       h.x += h.vx * dt
@@ -233,10 +293,11 @@ export class PegaLadraoGame implements GameHost {
     this.hazards = this.hazards.filter((h) => h.x > -60 && h.x < WORLD_W + 60)
 
     // colisão com o guarda
-    if (this.stunned <= 0 && !this.onEscalator) {
+    if (this.stunned <= 0 && !this.onEscalator && !this.inElevator) {
       for (const h of this.hazards) {
         if (h.floor !== this.floor || Math.abs(h.x - this.x) > 20) continue
-        const low = h.kind === 'carrinho' || (h.kind === 'bola' && Math.sin(h.phase) < 0.2)
+        const low =
+          h.kind === 'carrinho' || h.kind === 'radinho' || (h.kind === 'bola' && Math.sin(h.phase) < 0.2)
         const high = h.kind === 'aviao'
         const dodged = (low && this.jumpY > 24) || (high && this.ducking)
         if (!dodged) {
@@ -284,19 +345,57 @@ export class PegaLadraoGame implements GameHost {
     // andares
     for (let f = 0; f < FLOORS; f++) {
       const y = FLOOR_Y(f)
-      // vitrines de fundo
+      // vitrines de fundo — cada SEÇÃO da loja tem cara própria
       for (let vx = 60; vx < WORLD_W; vx += 180) {
-        const hue = ['#2E2058', '#31255E', '#2A1E52'][(vx / 180) % 3 | 0]!
+        const sec = ((vx / 180) | 0) + f * 3
+        const hue = ['#2E2058', '#31255E', '#2A1E52', '#332262'][sec % 4]!
+        const accent = ['#F252C1', '#33E0D6', '#FFC53D', '#55E07F'][sec % 4]!
         ctx.fillStyle = hue
         ctx.fillRect(vx, y - 82, 120, 70)
         ctx.fillStyle = 'rgba(157,92,255,0.16)'
         ctx.fillRect(vx + 6, y - 76, 108, 44)
-        // manequim/prateleira
+        // conteúdo da vitrine varia (manequim / TVs / araras / plantas)
+        ctx.fillStyle = `${accent}55`
+        if (sec % 4 === 0) {
+          ctx.beginPath()
+          ctx.arc(vx + 34, y - 56, 8, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillRect(vx + 26, y - 50, 16, 18)
+        } else if (sec % 4 === 1) {
+          ctx.fillRect(vx + 16, y - 60, 26, 16)
+          ctx.fillRect(vx + 50, y - 60, 26, 16)
+        } else if (sec % 4 === 2) {
+          ctx.fillRect(vx + 14, y - 66, 3, 30)
+          for (let r = 0; r < 4; r++) ctx.fillRect(vx + 20 + r * 12, y - 62, 8, 22)
+        } else {
+          ctx.beginPath()
+          ctx.arc(vx + 30, y - 60, 10, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillRect(vx + 27, y - 52, 6, 16)
+        }
         ctx.fillStyle = 'rgba(244,239,255,0.18)'
+        ctx.fillRect(vx + 76, y - 46, 34, 22)
+      }
+      // pilares estruturais (referência forte de rolagem)
+      for (let px = 300; px < WORLD_W; px += 500) {
+        const pg = ctx.createLinearGradient(px, 0, px + 18, 0)
+        pg.addColorStop(0, '#453077')
+        pg.addColorStop(0.5, '#5A3DA8')
+        pg.addColorStop(1, '#392764')
+        ctx.fillStyle = pg
+        ctx.fillRect(px, y - FLOOR_H + 12, 18, FLOOR_H - 12)
+      }
+      // placas de seção penduradas
+      for (let sx = 250; sx < WORLD_W; sx += 620) {
+        const label = ['BRINQUEDOS', 'ESPORTES', 'MODA', 'ELETRO'][(((sx / 620) | 0) + f) % 4]!
+        ctx.fillStyle = '#171029'
         ctx.beginPath()
-        ctx.arc(vx + 30 + ((vx / 180) % 3 | 0) * 20, y - 48, 8, 0, Math.PI * 2)
+        ctx.roundRect(sx, y - FLOOR_H + 16, 92, 20, 5)
         ctx.fill()
-        ctx.fillRect(vx + 60, y - 46, 40, 22)
+        ctx.font = '800 10px "Baloo 2 Variable", sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillStyle = '#FFC53D'
+        ctx.fillText(label, sx + 46, y - FLOOR_H + 30)
       }
       // piso
       const g = ctx.createLinearGradient(0, y, 0, y + 14)
@@ -331,6 +430,38 @@ export class PegaLadraoGame implements GameHost {
     ctx.fillStyle = '#171029'
     ctx.fillRect(0, FLOOR_Y(FLOORS - 1) - 96, WORLD_W, 8)
 
+    // ELEVADOR central: poço + cabine que sobe e desce sozinha
+    {
+      const topY = FLOOR_Y(FLOORS - 1) - 88
+      const botY = FLOOR_Y(0) + 12
+      ctx.fillStyle = 'rgba(18,12,36,0.55)'
+      ctx.fillRect(ELEV_X - 30, topY, 60, botY - topY)
+      ctx.strokeStyle = '#5A3DA8'
+      ctx.lineWidth = 3
+      ctx.strokeRect(ELEV_X - 30, topY, 60, botY - topY)
+      // cabo
+      const f = Math.floor(this.elevFloor)
+      const cabY =
+        FLOOR_Y(f) + (FLOOR_Y(Math.min(f + 1, FLOORS - 1)) - FLOOR_Y(f)) * (this.elevFloor - f)
+      ctx.strokeStyle = 'rgba(180,168,216,0.5)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(ELEV_X, topY)
+      ctx.lineTo(ELEV_X, cabY - 66)
+      ctx.stroke()
+      // cabine
+      const parked = this.elevPause > 0
+      withGlow(ctx, parked ? '#FFC53D' : '#9D5CFF', parked ? 10 : 5, () => {
+        ctx.fillStyle = '#3A2A6B'
+        ctx.fillRect(ELEV_X - 26, cabY - 66, 52, 66)
+        ctx.strokeStyle = parked ? '#FFC53D' : '#9D5CFF'
+        ctx.lineWidth = 2.5
+        ctx.strokeRect(ELEV_X - 26, cabY - 66, 52, 66)
+        ctx.fillStyle = parked ? '#FFC53D' : '#9D5CFF'
+        ctx.fillRect(ELEV_X - 26, cabY - 5, 52, 5)
+      })
+    }
+
     // obstáculos
     for (const h of this.hazards) this.drawHazard(ctx, h)
 
@@ -345,8 +476,58 @@ export class PegaLadraoGame implements GameHost {
 
     this.particles.draw(ctx)
     ctx.restore()
+
+    // RADAR estilo Keystone Kapers: a loja inteira, com guarda e ladrão
+    this.drawRadar(ctx, cam)
+
     this.texts.draw(ctx)
     drawVignette(ctx, PEGA_W, PEGA_H, 0.35)
+  }
+
+  private drawRadar(ctx: CanvasRenderingContext2D, cam: number) {
+    const rx = 14
+    const ry = PEGA_H - RADAR_H + 6
+    const rw = PEGA_W - 28
+    const rh = RADAR_H - 14
+    ctx.fillStyle = 'rgba(18,12,36,0.92)'
+    ctx.beginPath()
+    ctx.roundRect(rx, ry, rw, rh, 8)
+    ctx.fill()
+    ctx.strokeStyle = '#5A3DA8'
+    ctx.lineWidth = 2
+    ctx.stroke()
+
+    const mapX = (x: number) => rx + 8 + (x / WORLD_W) * (rw - 16)
+    const mapY = (f: number, prog = 0) => ry + rh - 7 - ((f + prog) / (FLOORS - 1)) * (rh - 14)
+
+    // linhas dos andares
+    ctx.strokeStyle = 'rgba(157,92,255,0.4)'
+    ctx.lineWidth = 1.5
+    for (let f = 0; f < FLOORS; f++) {
+      ctx.beginPath()
+      ctx.moveTo(rx + 8, mapY(f))
+      ctx.lineTo(rx + rw - 8, mapY(f))
+      ctx.stroke()
+    }
+    // janela visível (o que a câmera mostra)
+    ctx.strokeStyle = 'rgba(244,239,255,0.35)'
+    ctx.strokeRect(mapX(cam), ry + 3, ((PEGA_W / WORLD_W) * (rw - 16)), rh - 6)
+
+    // ladrão (pisca) e guarda
+    if (!this.escaped) {
+      const tGlow = Math.floor(this.time * 5) % 2 === 0
+      ctx.fillStyle = tGlow ? '#F252C1' : '#B01D86'
+      ctx.beginPath()
+      ctx.arc(mapX(this.tx), mapY(this.tFloor, this.tOnEscalator?.progress ?? 0), 4, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    const copFloorViz = this.inElevator ? this.elevFloor : this.floor + (this.onEscalator?.progress ?? 0)
+    withGlow(ctx, '#33E0D6', 6, () => {
+      ctx.fillStyle = '#33E0D6'
+      ctx.beginPath()
+      ctx.arc(mapX(this.x), mapY(copFloorViz), 4.5, 0, Math.PI * 2)
+      ctx.fill()
+    })
   }
 
   private thiefY(): number {
@@ -359,6 +540,12 @@ export class PegaLadraoGame implements GameHost {
   }
 
   private copY(): number {
+    if (this.inElevator) {
+      const f = Math.floor(this.elevFloor)
+      const from = FLOOR_Y(f)
+      const to = FLOOR_Y(Math.min(f + 1, FLOORS - 1))
+      return from + (to - from) * (this.elevFloor - f)
+    }
     if (this.onEscalator) {
       const from = FLOOR_Y(this.floor)
       const to = FLOOR_Y(this.floor + 1)
@@ -485,6 +672,29 @@ export class PegaLadraoGame implements GameHost {
         ctx.arc(0, 0, 4, 0.9, -0.6, true)
         ctx.fill()
       })
+    } else if (h.kind === 'radinho') {
+      // radinho de pilha em disparada (fase 3+)
+      ctx.translate(h.x, floorY - 9)
+      ctx.rotate(Math.sin(h.phase * 2) * 0.12)
+      ctx.fillStyle = '#33E0D6'
+      ctx.beginPath()
+      ctx.roundRect(-11, -8, 22, 14, 4)
+      ctx.fill()
+      ctx.fillStyle = '#140E26'
+      ctx.beginPath()
+      ctx.arc(-4.5, -1, 3.4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillRect(3, -5, 6, 8)
+      ctx.strokeStyle = '#33E0D6'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(8, -8)
+      ctx.lineTo(13, -16)
+      ctx.stroke()
+      // nota musical saltitando
+      ctx.fillStyle = '#F4EFFF'
+      ctx.font = '10px sans-serif'
+      ctx.fillText('♪', -2 + Math.sin(h.phase * 3) * 4, -14)
     } else {
       const ay = floorY - 52 + Math.sin(h.phase * 0.7) * 5
       ctx.translate(h.x, ay)

@@ -41,16 +41,28 @@ Base sólida primeiro; os jogos plugam nela.
     de perto), power pellet inverte 7s (azuis, pisca no fim, 200/400/800/
     1600 em combo; comido vira olhos que voltam p/ casa), viradas só no
     centro do tile (meia-volta livre), fases + rápidas. Paredes neon.
-  - **Pega-Ladrão** (`games/pegaLadrao.ts`, side-view, mundo 1500px com
-    câmera): 4 andares + escadas rolantes em pontas alternadas, ladrão
-    listrado com saco de $ correndo p/ o telhado, carrinhos/bolas (PULE)
-    e aviõezinhos (ABAIXE; toque = triggerDuck com timer 0.8s), acerto =
-    stun + −8s no cronômetro; pegar = segundos restantes ×20 + 500.
+  - **Pega-Ladrão** (`games/pegaLadrao.ts`, side-view): **upgrade pedido
+    pelo usuário (2026-07-05): rolagem lateral evidente estilo Keystone
+    Kapers + FASES múltiplas + ELEVADOR** — mundo 2500px (~4,5 telas) com
+    câmera, RADAR na base (loja inteira: guarda ciano, ladrão magenta
+    piscando, retângulo da janela visível — assinatura do KK), seções
+    temáticas (BRINQUEDOS/ESPORTES/MODA/ELETRO) com vitrines variadas e
+    pilares p/ sensação de rolagem; ELEVADOR central automático (cabine
+    para 1.1s em cada andar, borda dourada = embarcável; entra parado
+    sobre ele, sai andando); FASES liberam obstáculos novos: 1 =
+    carrinhos+bolas, 2 = +aviõezinhos, 3+ = +RADINHOS velozes (♪, pular),
+    tudo mais rápido/frequente por fase; acerto = stun + −8s; pegar =
+    segundos restantes ×20 + 500.
   - **Missão Elevador** (`games/missaoElevador.ts`, prédio 8+ andares,
     câmera vertical): elevador dirigível (↑/↓ a bordo; poço bloqueia sem
     cabine), portas VERMELHAS = documentos (+500, coleta ao passar),
     agentes saem das portas e atiram, tiro do espião (espaço/botão),
     tudo coletado → "DESÇA À GARAGEM" → +1000 e próximo prédio maior.
+    **Upgrade (pedido 2026-07-05): fases infinitas com dificuldade
+    crescente** — prédios até 14 andares/10 docs, mais agentes
+    simultâneos, balas mais rápidas por prédio, e do prédio 3 em diante
+    AGENTES DE ELITE (terno vermelho, 2 de vida, +rápidos, atiram mais,
+    valem 250).
   - PLAUSIBILITY dos 3; demos com bots (pathing de pastilhas no
     Come-Come; pulo/abaixo reativo; doc coletado no Elevador).
     **LIÇÃO**: page.evaluate com funções internas via tsx quebra

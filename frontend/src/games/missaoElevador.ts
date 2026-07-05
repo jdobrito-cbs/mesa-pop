@@ -31,6 +31,9 @@ interface Agent {
   dir: number
   shootTimer: number
   alive: boolean
+  /** elite (prédio 3+): terno vermelho, 2 de vida, mais rápido */
+  elite: boolean
+  hp: number
 }
 
 interface Shot {
@@ -102,8 +105,8 @@ export class MissaoElevadorGame implements GameHost {
   }
 
   private buildBuilding() {
-    this.floors = Math.min(7 + this.building, 12)
-    this.docsTotal = Math.min(4 + this.building, 8)
+    this.floors = Math.min(7 + this.building, 14)
+    this.docsTotal = Math.min(4 + this.building, 10)
     this.docs = 0
     this.px = ELEV_W / 2
     this.pt = 0
@@ -209,20 +212,30 @@ export class MissaoElevadorGame implements GameHost {
     // agentes
     this.spawnTimer -= dt
     const aliveAgents = this.agents.filter((g) => g.alive).length
-    if (this.spawnTimer <= 0 && aliveAgents < 2 + Math.min(this.building, 3)) {
+    if (this.spawnTimer <= 0 && aliveAgents < 2 + Math.min(this.building, 4)) {
       const myT = Math.round(this.pt)
       const doorPool = this.doors.filter((d) => Math.abs(d.t - myT) <= 1 && Math.abs(d.x - this.px) > 90)
       const door = doorPool[Math.floor(rand(0, doorPool.length))]
       if (door) {
-        this.agents.push({ x: door.x, t: door.t, dir: Math.sign(this.px - door.x) || 1, shootTimer: rand(0.8, 1.6), alive: true })
+        // prédios altos mandam AGENTES DE ELITE (vermelhos, 2 de vida)
+        const elite = this.building >= 3 && rand(0, 1) < Math.min((this.building - 2) * 0.25, 0.6)
+        this.agents.push({
+          x: door.x,
+          t: door.t,
+          dir: Math.sign(this.px - door.x) || 1,
+          shootTimer: rand(0.8, 1.6),
+          alive: true,
+          elite,
+          hp: elite ? 2 : 1,
+        })
       }
-      this.spawnTimer = Math.max(2.4 - this.building * 0.2, 1)
+      this.spawnTimer = Math.max(2.4 - this.building * 0.25, 0.8)
     }
     for (const g of this.agents) {
       if (!g.alive) continue
       const sameFloor = g.t === Math.round(this.pt)
       if (sameFloor) g.dir = Math.sign(this.px - g.x) || g.dir
-      g.x = clamp(g.x + g.dir * 80 * dt, WALL + 12, ELEV_W - WALL - 12)
+      g.x = clamp(g.x + g.dir * (g.elite ? 115 : 80) * dt, WALL + 12, ELEV_W - WALL - 12)
       // não entra no poço
       if (Math.abs(g.x - SHAFT_X) < SHAFT_HALF - 4) {
         g.x = g.x < SHAFT_X ? SHAFT_X - SHAFT_HALF + 4 : SHAFT_X + SHAFT_HALF - 4
@@ -230,8 +243,9 @@ export class MissaoElevadorGame implements GameHost {
       }
       g.shootTimer -= dt
       if (sameFloor && g.shootTimer <= 0 && Math.abs(g.x - this.px) < 280) {
-        this.shots.push({ x: g.x + g.dir * 12, y: this.groundY(g.t) - 26, vx: g.dir * 250, mine: false })
-        g.shootTimer = rand(1.2, 2.2) - this.building * 0.08
+        const bulletSpeed = (g.elite ? 320 : 250) + this.building * 12
+        this.shots.push({ x: g.x + g.dir * 12, y: this.groundY(g.t) - 26, vx: g.dir * bulletSpeed, mine: false })
+        g.shootTimer = Math.max(rand(1.2, 2.2) - this.building * 0.1 - (g.elite ? 0.4 : 0), 0.45)
       }
       // contato direto
       if (sameFloor && this.invuln <= 0 && Math.abs(g.x - this.px) < 18) this.hit()
@@ -245,10 +259,16 @@ export class MissaoElevadorGame implements GameHost {
         for (const g of this.agents) {
           if (!g.alive || Math.abs(this.groundY(g.t) - 26 - s.y) > 30) continue
           if (Math.abs(g.x - s.x) < 14) {
-            g.alive = false
+            g.hp--
             s.x = -999
-            this.points += 100
-            this.texts.add(g.x, s.y - 12, '+100', '#33E0D6', 14)
+            if (g.hp > 0) {
+              this.texts.add(g.x, s.y - 12, '💢', '#E8455A', 14)
+              break
+            }
+            g.alive = false
+            const pts = g.elite ? 250 : 100
+            this.points += pts
+            this.texts.add(g.x, s.y - 12, `+${pts}`, '#33E0D6', 14)
             for (let k = 0; k < 10; k++) {
               this.particles.list.push({
                 x: g.x, y: s.y, vx: rand(-110, 110), vy: rand(-110, 110),
@@ -378,9 +398,11 @@ export class MissaoElevadorGame implements GameHost {
       ctx.strokeRect(SHAFT_X - SHAFT_HALF + 6, ey - 62, SHAFT_HALF * 2 - 12, 62)
     })
 
-    // agentes
+    // agentes (elite = terno vermelho)
     for (const g of this.agents) {
-      if (g.alive) this.person(ctx, g.x, this.groundY(g.t), '#4A4160', '#2A2140', g.dir)
+      if (g.alive) {
+        this.person(ctx, g.x, this.groundY(g.t), g.elite ? '#C2334B' : '#4A4160', g.elite ? '#8A1F33' : '#2A2140', g.dir)
+      }
     }
 
     // balas
