@@ -198,9 +198,10 @@ casual alegre.
   dos dois laterais). **Pontuação pelas pontas abertas**: a cada jogada,
   se a soma das pontas externas for múltiplo de 5, a dupla marca essa soma
   (carroça na ponta conta as duas metades; spinner conta 12 até os dois
-  lados serem cobertos). Quem bate leva os pontos das mãos adversárias;
-  trancado, a dupla com menos pontos leva os pontos da outra (empate: não
-  pontua). Partida em MÚLTIPLAS mãos até uma dupla fazer **100 pontos**.
+  lados serem cobertos). **CORREÇÃO do usuário (2026-07-04): bater NÃO soma
+  as mãos adversárias — os pontos vêm SÓ das pontas abertas. Quando alguém
+  bate (ou o jogo tranca), vence a dupla que PONTUOU MAIS; empate em pontos
+  → joga-se nova mão (placar mantido) até desempatar.**
   Visual: mesa estilo feltro com pedras desenhadas (pontinhos/pips),
   carroças atravessadas, linha serpenteando para os cantos.
 - **Assentos e duplas no Dominó** (pedido do usuário em 2026-07-04): o

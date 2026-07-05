@@ -2,7 +2,6 @@ import {
   applyDominoAction,
   dominoViewFor,
   initialDominoState,
-  DOMINO_DEFAULT_TARGET,
   type DominoAction,
   type DominoState,
 } from '@mesapop/shared'
@@ -17,9 +16,7 @@ export const dominoModule: GameModule<DominoState, DominoAction> = {
   rotation: true,
 
   init() {
-    // alvo da partida (múltiplos de 5); override por env facilita testes
-    const target = Number(process.env.DOMINO_TARGET ?? DOMINO_DEFAULT_TARGET)
-    return initialDominoState(Math.random, target)
+    return initialDominoState()
   },
 
   play(state, seat, action) {

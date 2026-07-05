@@ -7,15 +7,13 @@
  * - Abre quem tem o [6|6], obrigatoriamente jogando-o. Ele é o SPINNER:
  *   o jogo cresce nas 4 direções a partir dele. Os braços de cima/baixo
  *   só abrem depois que os dois braços laterais existirem.
- * - PONTUAÇÃO PELAS PONTAS ABERTAS: após cada jogada, se a soma das
- *   pontas externas for múltiplo de 5, a dupla marca essa soma.
- *   Carroça na ponta conta as duas metades; o spinner conta 12 até os
- *   dois lados laterais serem cobertos.
- * - Bater: a dupla leva os pontos das mãos adversárias. Trancado (4
- *   passes): a dupla com menos pontos na mão leva os pontos da outra;
- *   empate em pontos, ninguém marca.
- * - A partida tem VÁRIAS mãos: vence a primeira dupla a fazer `target`
- *   pontos (padrão 100).
+ * - PONTUAÇÃO PELAS PONTAS ABERTAS (única fonte de pontos): após cada
+ *   jogada, se a soma das pontas externas for múltiplo de 5, a dupla marca
+ *   essa soma. Carroça na ponta conta as duas metades; o spinner conta 12
+ *   até os dois lados laterais serem cobertos.
+ * - Fim de mão (alguém bate, ou tranca com 4 passes): vence a partida a
+ *   dupla que PONTUOU MAIS — sem somar as mãos adversárias. Empate em
+ *   pontos → nova mão (placar mantido) até desempatar.
  *
  * A mão dos outros NUNCA é enviada ao cliente (`dominoViewFor`).
  */
@@ -28,9 +26,10 @@ export type ArmIndex = 0 | 1 | 2 | 3
 export interface HandResult {
   /** 'bate' | 'trancado' */
   kind: 'bate' | 'trancado'
-  /** dupla que pontuou (0|1) ou null (trancado empatado) */
+  /** dupla vencedora pelo placar (0|1) ou null (empate → nova mão) */
   team: 0 | 1 | null
-  points: number
+  /** placar no momento do fim da mão */
+  scores: [number, number]
   /** assento que bateu (se bate) */
   seat: number | null
 }
@@ -46,8 +45,6 @@ export interface DominoState {
   consecutivePasses: number
   /** placar acumulado das duplas [dupla0, dupla1] */
   scores: [number, number]
-  /** pontos para vencer a partida */
-  target: number
   handNumber: number
   /** pontos marcados na última jogada (para a UI comemorar) */
   lastMoveScore: { seat: number; points: number } | null
@@ -73,7 +70,6 @@ export interface DominoView {
   turn: number
   awaitingOpener: boolean
   scores: [number, number]
-  target: number
   handNumber: number
   lastMoveScore: DominoState['lastMoveScore']
   lastHandResult: HandResult | null
@@ -83,7 +79,6 @@ export interface DominoView {
 }
 
 export const DOMINO_PLAYERS = 4
-export const DOMINO_DEFAULT_TARGET = 100
 
 export function allTiles(): DominoTile[] {
   const tiles: DominoTile[] = []
@@ -104,10 +99,7 @@ function openerOf(hands: DominoTile[][]): number {
   return hands.findIndex((h) => h.some(([a, b]) => a === 6 && b === 6))
 }
 
-export function initialDominoState(
-  rng: () => number = Math.random,
-  target: number = DOMINO_DEFAULT_TARGET,
-): DominoState {
+export function initialDominoState(rng: () => number = Math.random): DominoState {
   const hands = dealHands(rng)
   return {
     hands,
@@ -117,7 +109,6 @@ export function initialDominoState(
     awaitingOpener: true,
     consecutivePasses: 0,
     scores: [0, 0],
-    target,
     handNumber: 1,
     lastMoveScore: null,
     lastHandResult: null,
@@ -131,7 +122,6 @@ const isDouble = (t: DominoTile) => t[0] === t[1]
 const sameTile = (a: DominoTile, b: DominoTile) =>
   (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0])
 const pips = (t: DominoTile) => t[0] + t[1]
-const handPips = (h: DominoTile[]) => h.reduce((s, t) => s + pips(t), 0)
 
 /** os braços laterais (0 e 1) já existem? (condição para abrir cima/baixo) */
 function sidesCovered(state: DominoState): boolean {
@@ -192,27 +182,30 @@ export function handCanPlay(state: DominoState, seat: number): boolean {
   return state.hands[seat]!.some((t) => playableSides(state, t).length > 0)
 }
 
-/** encerra a mão e ou fecha a partida (target) ou dá as cartas de novo */
+/**
+ * Fim de mão (bate ou trancado): vence a dupla com MAIS pontos no placar
+ * — sem somar as mãos adversárias. Empate → nova mão, placar mantido.
+ */
 function settleHand(
   state: DominoState,
-  result: HandResult,
+  kind: HandResult['kind'],
+  seat: number | null,
   rng: () => number,
 ): DominoState {
-  const scores: [number, number] = [...state.scores]
-  if (result.team !== null) scores[result.team] += result.points
+  const scores = state.scores
+  const team: 0 | 1 | null = scores[0] > scores[1] ? 0 : scores[1] > scores[0] ? 1 : null
+  const result: HandResult = { kind, team, scores: [...scores], seat }
 
-  const winnerTeam = scores[0] >= state.target ? 0 : scores[1] >= state.target ? 1 : null
-  if (winnerTeam !== null) {
+  if (team !== null) {
     return {
       ...state,
-      scores,
       lastHandResult: result,
-      winnerSeats: [winnerTeam, winnerTeam + 2],
+      winnerSeats: [team, team + 2],
       draw: false,
     }
   }
 
-  // próxima mão: redistribui, quem tem o [6|6] abre
+  // empate em pontos: nova mão para desempatar (quem tem o [6|6] abre)
   const hands = dealHands(rng)
   return {
     ...state,
@@ -222,7 +215,6 @@ function settleHand(
     turn: openerOf(hands),
     awaitingOpener: true,
     consecutivePasses: 0,
-    scores,
     handNumber: state.handNumber + 1,
     lastMoveScore: null,
     lastHandResult: result,
@@ -249,17 +241,8 @@ export function applyDominoAction(
       lastAction: { seat, type: 'pass' },
     }
     if (next.consecutivePasses >= DOMINO_PLAYERS) {
-      // trancado: dupla com menos pontos leva os pontos da outra
-      const pips0 = handPips(next.hands[0]!) + handPips(next.hands[2]!)
-      const pips1 = handPips(next.hands[1]!) + handPips(next.hands[3]!)
-      if (pips0 === pips1) {
-        return {
-          state: settleHand(next, { kind: 'trancado', team: null, points: 0, seat: null }, rng),
-        }
-      }
-      const team = pips0 < pips1 ? 0 : 1
-      const points = team === 0 ? pips1 : pips0
-      return { state: settleHand(next, { kind: 'trancado', team, points, seat: null }, rng) }
+      // trancado: vence quem pontuou mais (empate → nova mão)
+      return { state: settleHand(next, 'trancado', null, rng) }
     }
     return { state: next }
   }
@@ -311,27 +294,18 @@ export function applyDominoAction(
     }
   }
 
-  // pontuação pelas pontas abertas (múltiplos de 5)
+  // pontuação pelas pontas abertas (múltiplos de 5) — única fonte de pontos
   const sum = endsSum(next)
   if (sum > 0 && sum % 5 === 0) {
     const team = (seat % 2) as 0 | 1
     const scores: [number, number] = [...next.scores]
     scores[team] += sum
     next = { ...next, scores, lastMoveScore: { seat, points: sum } }
-    // pontuar já pode fechar a partida
-    if (scores[team] >= next.target && hands[seat]!.length > 0) {
-      return {
-        state: { ...next, winnerSeats: [team, team + 2] },
-      }
-    }
   }
 
-  // bateu: leva os pontos das mãos adversárias
+  // bateu: fim de mão — vence quem pontuou mais (sem somar mãos adversárias)
   if (hands[seat]!.length === 0) {
-    const team = (seat % 2) as 0 | 1
-    const opponents = team === 0 ? [1, 3] : [0, 2]
-    const points = opponents.reduce((s, p) => s + handPips(hands[p]!), 0)
-    return { state: settleHand(next, { kind: 'bate', team, points, seat }, rng) }
+    return { state: settleHand(next, 'bate', seat, rng) }
   }
 
   return { state: next }
@@ -349,7 +323,6 @@ export function dominoViewFor(state: DominoState, seat: number): DominoView {
     turn: state.turn,
     awaitingOpener: state.awaitingOpener,
     scores: state.scores,
-    target: state.target,
     handNumber: state.handNumber,
     lastMoveScore: state.lastMoveScore,
     lastHandResult: state.lastHandResult,

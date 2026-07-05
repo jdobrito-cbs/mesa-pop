@@ -61,8 +61,6 @@ async function registerUser(i: number) {
 }
 
 beforeAll(async () => {
-  // alvo baixo: a partida (várias mãos até o alvo) termina rápido no teste
-  process.env.DOMINO_TARGET = '20'
   app = await buildApp({ disableRateLimit: true, logger: false })
   await app.listen({ port: 0, host: '127.0.0.1' })
   const addr = app.server.address()
