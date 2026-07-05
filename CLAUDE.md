@@ -30,6 +30,9 @@ Base sólida primeiro; os jogos plugam nela.
      com tracinhos, painel REGISTROS (entrou/saiu). **Ao acertar, NÃO
      mostrar a palavra acertada — aparece só "✓ Fulana acertou!" em verde
      (e o input do acertador vira "Você acertou!").**
+  3. **Salas: favoritos e compartilhamento**: salas PÚBLICAS podem ser
+     FAVORITADAS; TODAS as salas (públicas e privadas) ganham opção de
+     COMPARTILHAR O LINK da sala para amigos/família entrarem direto.
 - **FASE 8 · lote 3 entregue — RETRÔS (Come-Come, Pega-Ladrão, Missão
   Elevador)** (2026-07-05), todos no esqueleto solo:
   - **Come-Come** (`games/comeCome.ts`, labirinto 19×17 em string-art com
