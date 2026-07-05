@@ -4,6 +4,7 @@ import type { GameView, RoomView } from '@mesapop/shared'
 import { useFetch } from '../lib/useFetch'
 import { emitAck } from '../lib/socket'
 import SoloGamePage, { SOLO_GAMES } from './SoloGamePage'
+import FarmPage from './FarmPage'
 
 interface RoomRow {
   id: string
@@ -20,6 +21,7 @@ interface RoomRow {
  */
 export default function GameLobby() {
   const { slug } = useParams<{ slug: string }>()
+  if (slug === 'fazenda') return <FarmPage />
   const solo = slug ? SOLO_GAMES[slug] : undefined
   if (solo) return <SoloGamePage key={solo.slug} def={solo} />
   return <MultiplayerLobby slug={slug} />

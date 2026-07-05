@@ -41,6 +41,11 @@ export class Input {
   private keys = new Set<string>()
   /** alvo do toque em coordenadas do jogo, ou null */
   pointer: { x: number; y: number } | null = null
+  /** posição do ponteiro SEM clique (hover) — para jogos de cursor */
+  hover: { x: number; y: number } | null = null
+  /** botão/toque pressionado agora? desde quando (ms epoch)? */
+  isDown = false
+  downAt = 0
   private cleanup: Array<() => void> = []
 
   attach(canvas: HTMLCanvasElement, toGameCoords: (px: number, py: number) => { x: number; y: number }) {
@@ -56,21 +61,29 @@ export class Input {
     this.cleanup.push(() => window.removeEventListener('keydown', down))
     this.cleanup.push(() => window.removeEventListener('keyup', up))
 
-    const updatePointer = (e: PointerEvent) => {
+    const coords = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
       const px = ((e.clientX - rect.left) / rect.width) * canvas.width
       const py = ((e.clientY - rect.top) / rect.height) * canvas.height
-      this.pointer = toGameCoords(px, py)
+      return toGameCoords(px, py)
+    }
+    const updatePointer = (e: PointerEvent) => {
+      this.pointer = coords(e)
     }
     const pointerDown = (e: PointerEvent) => {
       canvas.setPointerCapture(e.pointerId)
+      this.isDown = true
+      this.downAt = performance.now()
+      this.hover = coords(e)
       updatePointer(e)
     }
     const pointerMove = (e: PointerEvent) => {
+      this.hover = coords(e)
       if (e.buttons > 0 || e.pointerType === 'touch') updatePointer(e)
     }
     const pointerUp = () => {
       this.pointer = null
+      this.isDown = false
     }
     canvas.addEventListener('pointerdown', pointerDown)
     canvas.addEventListener('pointermove', pointerMove)
@@ -89,6 +102,8 @@ export class Input {
     this.cleanup = []
     this.keys.clear()
     this.pointer = null
+    this.hover = null
+    this.isDown = false
   }
 
   /** vetor de direção -1..1 combinando teclado */

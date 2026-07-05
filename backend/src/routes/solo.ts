@@ -13,6 +13,7 @@ import { z } from 'zod'
 const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints: number }> = {
   'esquadrao-1942': { maxPerSec: 400, minMs: 4000, maxPoints: 2_000_000 },
   'nave-espacial': { maxPerSec: 15, minMs: 3000, maxPoints: 200_000 },
+  cardume: { maxPerSec: 80, minMs: 5000, maxPoints: 500_000 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })

@@ -57,6 +57,7 @@ model User {
   matchPlayers  MatchPlayer[]
   scores        Score[]
   hostedRooms   Room[]         @relation("RoomHost")
+  farm          Farm?
 }
 
 model RefreshToken {
@@ -164,6 +165,22 @@ model MatchPlayer {
 
   @@id([matchId, userId])
   @@index([userId])
+}
+
+/// Fazenda Pop — estado econômico persistente por usuário.
+/// O crescimento é calculado pelo SERVIDOR a partir de plantedAt (funciona
+/// offline: plantou às 14h, colhe às 18h).
+model Farm {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coins     Int      @default(50)
+  /// canteiros: [{ id, crop: string|null, plantedAt: ISO|null }]
+  plots     Json
+  /// melhorias: { fertilizer: number }
+  upgrades  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /// Aviso global exibido no lobby (criado pelo admin).

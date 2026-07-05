@@ -42,8 +42,8 @@ export const GAME_CATALOG: GameDef[] = [
   // FASE 5
   { slug: 'esquadrao-coop', name: 'Esquadrão 42 Co-op', description: 'Dois aviões, um céu hostil. Reanime o parceiro e sobrevivam juntos.', family: 'ACTION', minPlayers: 2, maxPlayers: 2, color: 'pop-orange', icon: '🛩️', phase: 5, enabled: true },
   // FASE 6
-  { slug: 'fazenda', name: 'Fazenda Pop', description: 'Plante, colha, venda e cresça — até offline.', family: 'ECONOMY', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🌾', phase: 6, enabled: false },
-  { slug: 'cardume', name: 'Cardume', description: 'Comande um cardume vivo contra peixes gigantes.', family: 'FLOCKING', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '🐠', phase: 6, enabled: false },
+  { slug: 'fazenda', name: 'Fazenda Pop', description: 'Plante, colha, venda e cresça — até offline.', family: 'ECONOMY', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🌾', phase: 6, enabled: true },
+  { slug: 'cardume', name: 'Cardume', description: 'Comande um cardume vivo contra peixes gigantes.', family: 'FLOCKING', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '🐠', phase: 6, enabled: true },
   // FASE 7
   { slug: 'corrida', name: 'Corrida Pop', description: 'Corrida vista de cima com drift e boost. Até 4.', family: 'ACTION', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🏎️', phase: 7, enabled: false },
   // FASE 8

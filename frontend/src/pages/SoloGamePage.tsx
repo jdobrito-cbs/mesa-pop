@@ -5,6 +5,7 @@ import { useFetch } from '../lib/useFetch'
 import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
 import { EsquadraoGame, ESQ_W, ESQ_H } from '../games/esquadrao'
+import { CardumeGame, CARDUME_W, CARDUME_H } from '../games/cardume'
 
 interface LeaderRow {
   rank: number
@@ -47,6 +48,16 @@ export interface SoloGameDef {
 }
 
 export const SOLO_GAMES: Record<string, SoloGameDef> = {
+  cardume: {
+    slug: 'cardume',
+    title: 'Cardume',
+    icon: '🐠',
+    width: CARDUME_W,
+    height: CARDUME_H,
+    controls:
+      'Mova o ponteiro (ou setas): o cardume segue. Toque rápido/espaço: os peixes se ESPALHAM. Segure/Shift: eles ORBITAM em alta velocidade — sua arma contra os peixões. Coma peixinhos dourados para crescer!',
+    create: (cb) => new CardumeGame(cb),
+  },
   'nave-espacial': {
     slug: 'nave-espacial',
     title: 'Desvio Estelar',
