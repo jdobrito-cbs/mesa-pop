@@ -558,40 +558,47 @@ export class RoomManager {
 
     this.io.to(room.id).emit('game:end', { winnerUserIds, draw, reason } satisfies GameEndView)
 
-    // ROTAÇÃO (ex.: Dominó): perdedores vão para o fim da fila, próxima
-    // dupla entra, vencedores ficam — e a sala volta para a espera.
+    // Salas com rotação (ex.: Dominó) não fecham: voltam para a espera.
+    // A dupla perdedora só sai se HOUVER fila e a sala for PÚBLICA;
+    // sem fila (ou sala privada), as mesmas duplas continuam (revanche).
     if (room.module.rotation && !draw && winnerUserIds.length) {
-      const losers = [...room.players.values()].filter((p) => !winnerUserIds.includes(p.userId))
-      const winnerSeatsFreed: number[] = []
-      for (const loser of losers) {
-        winnerSeatsFreed.push(loser.seat!)
-        room.players.delete(loser.userId)
-        room.spectators.set(loser.userId, {
-          userId: loser.userId,
-          displayName: loser.displayName,
-          socketId: loser.socketId,
-        })
+      const waitingQueue = [...room.spectators.values()].filter((s) => s.socketId !== null)
+      const shouldRotate = !room.isPrivate && waitingQueue.length > 0
+
+      if (shouldRotate) {
+        const losers = [...room.players.values()].filter((p) => !winnerUserIds.includes(p.userId))
+        const freedSeats: number[] = []
+        for (const loser of losers) {
+          freedSeats.push(loser.seat!)
+          room.players.delete(loser.userId)
+          room.spectators.set(loser.userId, {
+            userId: loser.userId,
+            displayName: loser.displayName,
+            socketId: loser.socketId,
+          })
+        }
+        // chama a próxima dupla da fila (em ordem de chegada, só conectados)
+        const queue = [...room.spectators.values()].filter(
+          (s) => s.socketId !== null && !losers.some((l) => l.userId === s.userId),
+        )
+        for (const seat of freedSeats.sort()) {
+          const next = queue.shift()
+          if (!next) break
+          room.spectators.delete(next.userId)
+          room.players.set(next.userId, {
+            userId: next.userId,
+            displayName: next.displayName,
+            socketId: next.socketId,
+            seat,
+          })
+          await this.prisma.roomPlayer.upsert({
+            where: { roomId_userId: { roomId: room.id, userId: next.userId } },
+            create: { roomId: room.id, userId: next.userId },
+            update: { isConnected: true, leftAt: null },
+          })
+        }
       }
-      // chama a próxima dupla da fila (em ordem de chegada, só conectados)
-      const queue = [...room.spectators.values()].filter(
-        (s) => s.socketId !== null && !losers.some((l) => l.userId === s.userId),
-      )
-      for (const seat of winnerSeatsFreed.sort()) {
-        const next = queue.shift()
-        if (!next) break
-        room.spectators.delete(next.userId)
-        room.players.set(next.userId, {
-          userId: next.userId,
-          displayName: next.displayName,
-          socketId: next.socketId,
-          seat,
-        })
-        await this.prisma.roomPlayer.upsert({
-          where: { roomId_userId: { roomId: room.id, userId: next.userId } },
-          create: { roomId: room.id, userId: next.userId },
-          update: { isConnected: true, leftAt: null },
-        })
-      }
+
       room.status = 'WAITING'
       room.state = null
       room.matchId = null

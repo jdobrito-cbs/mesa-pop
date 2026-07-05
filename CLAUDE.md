@@ -208,9 +208,12 @@ casual alegre.
   o usuário PODE escolher a dupla desde já (senta se houver vaga); senão,
   fica aguardando ser chamado. **Rotação estilo bar**: quando uma dupla
   perde, ela sai para o fim da fila e a próxima dupla da fila entra em
-  seguida para jogar — os vencedores FICAM na mesa. A sala não fecha entre
-  partidas (chat contínuo). Flags no GameModule: `allowSpectators`,
-  `seatPicking`, `rotation` (ligar também no Xadrez na Fase 8).
+  seguida para jogar — os vencedores FICAM na mesa. **Refinamento
+  (2026-07-04): o placar é POR DUPLA; a rotação só acontece se HOUVER fila
+  e a sala for PÚBLICA — sem fila, ou em sala privada, as mesmas duplas
+  continuam (revanche direto).** A sala não fecha entre partidas (chat
+  contínuo). Flags no GameModule: `allowSpectators`, `seatPicking`,
+  `rotation` (ligar também no Xadrez na Fase 8).
 - **Chat da sala** (pedido do usuário em 2026-07-04): TODO jogo multijogador
   tem uma janela de chat geral para conversar com os parceiros da sala.
   Implementado no esqueleto de salas (Fase 2) — vale automaticamente para

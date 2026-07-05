@@ -268,9 +268,11 @@ export default function RoomPage() {
             )}
             {room.features.rotation && !end.draw && (
               <p className="mt-2 text-sm text-text-muted">
-                {youWon
-                  ? 'Vocês ficam na mesa — a próxima dupla já foi chamada!'
-                  : 'A dupla que perdeu vai para a fila. A mesa continua!'}
+                {room.isPrivate || room.spectators.length === 0
+                  ? 'A mesa continua com as mesmas duplas — revanche!'
+                  : youWon
+                    ? 'Vocês ficam na mesa — a próxima dupla já foi chamada!'
+                    : 'A dupla que perdeu vai para a fila. A mesa continua!'}
               </p>
             )}
             <div className="mt-7 flex flex-wrap justify-center gap-3">
