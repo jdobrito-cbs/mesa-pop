@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum GameFamily {
+  TURN
+  PARTY
+  PUZZLE
+  ARCADE
+  ACTION
+  ECONOMY
+  FLOCKING
+}
+
+enum RoomStatus {
+  WAITING
+  PLAYING
+  FINISHED
+  CLOSED
+}
+
+enum MatchStatus {
+  IN_PROGRESS
+  FINISHED
+  ABANDONED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  displayName  String
+  phone        String
+  passwordHash String
+  role         Role      @default(USER)
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  bannedUntil  DateTime?
+  banReason    String?
+  emailVerifiedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  roomPlayers   RoomPlayer[]
+  matchPlayers  MatchPlayer[]
+  scores        Score[]
+  hostedRooms   Room[]         @relation("RoomHost")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  detail    Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model Game {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  name        String
+  description String
+  family      GameFamily
+  minPlayers  Int
+  maxPlayers  Int
+  color       String
+  icon        String
+  phase       Int
+  isEnabled   Boolean    @default(false)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  rooms   Room[]
+  matches Match[]
+  scores  Score[]
+}
+
+model Room {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  gameId     String
+  game       Game       @relation(fields: [gameId], references: [id])
+  hostId     String
+  host       User       @relation("RoomHost", fields: [hostId], references: [id])
+  isPrivate  Boolean    @default(false)
+  status     RoomStatus @default(WAITING)
+  maxPlayers Int
+  createdAt  DateTime   @default(now())
+  closedAt   DateTime?
+
+  players RoomPlayer[]
+  matches Match[]
+
+  @@index([gameId, status])
+}
+
+model RoomPlayer {
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  isConnected Boolean   @default(true)
+
+  @@id([roomId, userId])
+}
+
+model Match {
+  id            String      @id @default(cuid())
+  gameId        String
+  game          Game        @relation(fields: [gameId], references: [id])
+  roomId        String?
+  room          Room?       @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  status        MatchStatus @default(IN_PROGRESS)
+  stateSnapshot Json?
+  startedAt     DateTime    @default(now())
+  endedAt       DateTime?
+
+  players MatchPlayer[]
+
+  @@index([gameId, startedAt])
+}
+
+model MatchPlayer {
+  matchId   String
+  match     Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int     @default(0)
+  placement Int?
+  isWinner  Boolean @default(false)
+
+  @@id([matchId, userId])
+  @@index([userId])
+}
+
+/// Entrada de leaderboard — sempre gravada pelo servidor, nunca pelo cliente.
+model Score {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id])
+  points    Int
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([gameId, points])
+  @@index([userId, gameId])
+}

@@ -1,0 +1,122 @@
+import type { FastifyInstance, FastifyReply } from 'fastify'
+import { loginSchema, registerSchema } from '@mesapop/shared'
+import { hashPassword, verifyPassword } from '../lib/password'
+import {
+  createRefreshToken,
+  revokeRefreshToken,
+  rotateRefreshToken,
+  signAccessToken,
+} from '../lib/tokens'
+import { audit } from '../lib/audit'
+import { toPublicUser } from '../lib/user'
+import { config, REFRESH_COOKIE } from '../config'
+
+function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
+  reply.setCookie(REFRESH_COOKIE, token, {
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: 'lax',
+    path: '/api/auth',
+    expires: expiresAt,
+  })
+}
+
+// Limite mais rígido nas rotas de auth (força bruta).
+const authRateLimit = {
+  config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+}
+
+export default async function authRoutes(app: FastifyInstance) {
+  app.post('/api/auth/register', authRateLimit, async (req, reply) => {
+    const input = registerSchema.parse(req.body)
+
+    const existing = await app.prisma.user.findUnique({ where: { email: input.email } })
+    if (existing) {
+      return reply.code(409).send({ error: 'EMAIL_TAKEN', message: 'Este e-mail já está cadastrado' })
+    }
+
+    const user = await app.prisma.user.create({
+      data: {
+        email: input.email,
+        name: input.name,
+        displayName: input.name,
+        phone: input.phone,
+        passwordHash: await hashPassword(input.password),
+      },
+    })
+    await audit(app.prisma, 'user.register', { userId: user.id, req })
+
+    const refresh = await createRefreshToken(app.prisma, user.id)
+    setRefreshCookie(reply, refresh.token, refresh.expiresAt)
+    return reply.code(201).send({
+      user: toPublicUser(user),
+      accessToken: signAccessToken(user.id, user.role),
+    })
+  })
+
+  app.post('/api/auth/login', authRateLimit, async (req, reply) => {
+    const input = loginSchema.parse(req.body)
+    const invalid = () =>
+      reply.code(401).send({ error: 'INVALID_CREDENTIALS', message: 'E-mail ou senha incorretos' })
+
+    const user = await app.prisma.user.findUnique({ where: { email: input.email } })
+    if (!user) return invalid()
+
+    const ok = await verifyPassword(user.passwordHash, input.password)
+    if (!ok) {
+      await audit(app.prisma, 'auth.login_failed', { userId: user.id, req })
+      return invalid()
+    }
+    if (!user.isActive) {
+      return reply.code(403).send({ error: 'ACCOUNT_DISABLED', message: 'Conta desativada' })
+    }
+    if (user.bannedUntil && user.bannedUntil > new Date()) {
+      return reply.code(403).send({
+        error: 'ACCOUNT_BANNED',
+        message: `Conta suspensa até ${user.bannedUntil.toLocaleDateString('pt-BR')}`,
+      })
+    }
+
+    await audit(app.prisma, 'auth.login', { userId: user.id, req })
+    const refresh = await createRefreshToken(app.prisma, user.id)
+    setRefreshCookie(reply, refresh.token, refresh.expiresAt)
+    return {
+      user: toPublicUser(user),
+      accessToken: signAccessToken(user.id, user.role),
+    }
+  })
+
+  app.post('/api/auth/refresh', authRateLimit, async (req, reply) => {
+    const token = req.cookies[REFRESH_COOKIE]
+    if (!token) {
+      return reply.code(401).send({ error: 'NO_REFRESH', message: 'Sessão expirada' })
+    }
+    const rotated = await rotateRefreshToken(app.prisma, token)
+    if (!rotated) {
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
+      return reply.code(401).send({ error: 'INVALID_REFRESH', message: 'Sessão expirada' })
+    }
+    setRefreshCookie(reply, rotated.token, rotated.expiresAt)
+    return {
+      user: toPublicUser(rotated.user),
+      accessToken: signAccessToken(rotated.user.id, rotated.user.role),
+    }
+  })
+
+  app.post('/api/auth/logout', async (req, reply) => {
+    const token = req.cookies[REFRESH_COOKIE]
+    if (token) {
+      await revokeRefreshToken(app.prisma, token)
+    }
+    reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
+    return { ok: true }
+  })
+
+  app.get('/api/auth/me', { preHandler: [app.authenticate] }, async (req, reply) => {
+    const user = await app.prisma.user.findUnique({ where: { id: req.auth!.sub } })
+    if (!user || !user.isActive) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED', message: 'Usuário não encontrado' })
+    }
+    return { user: toPublicUser(user) }
+  })
+}
