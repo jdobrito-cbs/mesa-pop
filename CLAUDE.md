@@ -12,8 +12,29 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 5 — ✅ CONCLUÍDA (2026-07-05). FASES 0–4 ✅.
+- **Fase atual**: FASE 6 — ✅ CONCLUÍDA (2026-07-05). FASES 0–5 ✅.
 - **Última atualização**: 2026-07-05
+- **FASE 6 entregue** (jogos autorais):
+  - **Fazenda Pop** (`routes/farm.ts` + model Farm com plots/upgrades/
+    animals em Json): economia 100% validada no servidor — crescimento
+    derivado de plantedAt (funciona OFFLINE; testado com viagem no tempo),
+    colher antes da hora → NOT_READY. 5 culturas (cenoura 1min → cacau 8h),
+    loja (canteiros 4→12 com preço crescente, adubo −8%/nível). **CURRAL**
+    (adendo do usuário): galinha 🐔 (ovo a cada 3min, carne 55 após 10min),
+    porco 🐖 (carne 220 após 30min), vaca 🐄 (leite a cada 10min, carne 600
+    após 1h) — coleta e abate validados pelo relógio do servidor
+    (NOT_READY/NOT_MATURE). Rotas /api/farm(/plant|/harvest|/buy|
+    /animal/buy|/animal/collect|/animal/slaughter). FarmPage com canteiros
+    marrons, countdowns ao vivo, seletor de sementes, curral e loja.
+  - **Cardume** (`games/cardume.ts`, solo com leaderboard): boids
+    (separação+alinhamento+coesão) com os 3 comandos da visão — ponteiro
+    move → cardume segue; toque rápido/espaço → DISPERSA; segurar/Shift →
+    ORBITA em alta velocidade (arma). Peixinhos dourados = comida (+1
+    peixe, cap 90); peixões perseguem e comem; cardume orbitando em
+    velocidade ricocheteia e dá dano — peixão devorado = +200 e +3 peixes.
+    Oceano com raios de luz, bolhas, vinheta. Engine Input ganhou
+    hover/isDown/downAt (cursor sem clique). PLAUSIBILITY 'cardume'.
+  - 103 testes (8 fazenda + curral). Migrações farm + farm_animals.
 - **FASE 5 entregue** (tempo real tolerante — Esquadrão 42 Co-op):
   - Arquitetura: o SERVIDOR simula o mundo (inimigos, boss, balas,
     colisões, pontos) em `backend/src/games/esquadraoCoop.ts`; cada
@@ -192,9 +213,9 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 6 (jogos autorais:
-  Fazenda Pop com persistência econômica no servidor + Cardume com
-  flocking/boids) e aguardar OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 7 (boss final técnico:
+  Corrida Pop PvP em tempo real com client-side prediction/reconciliação,
+  drift + boost) e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
