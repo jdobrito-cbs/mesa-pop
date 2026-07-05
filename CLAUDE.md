@@ -12,10 +12,38 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 0 — aguardando aprovação do plano
+- **Fase atual**: FASE 0 — ✅ CONCLUÍDA (2026-07-04)
 - **Última atualização**: 2026-07-04
-- **Concluído até agora**: nada (projeto recém-iniciado, apenas este CLAUDE.md)
-- **Próximo passo**: apresentar plano da FASE 0 ao usuário e aguardar OK
+- **Concluído até agora**:
+  - Monorepo npm workspaces (`/shared`, `/backend`, `/frontend`) + git.
+  - Backend Fastify + Prisma (schema completo: User, RefreshToken, AuditLog,
+    Game, Room, RoomPlayer, Match, MatchPlayer, Score) + migração `init`.
+  - Auth completo: register/login/refresh/logout/me. JWT access (15min) +
+    refresh token OPACO rotativo (hash SHA-256 no banco, cookie httpOnly em
+    `/api/auth`). Senhas argon2id. Rate limit nas rotas de auth. Auditoria
+    automática (register, login, login_failed).
+  - Seed idempotente: admin (via ADMIN_EMAIL/ADMIN_PASSWORD do .env) +
+    14 jogos do catálogo (fonte: `shared/src/games.ts`; seed NÃO sobrescreve
+    `isEnabled` de jogos existentes).
+  - Identidade visual completa: tokens em `frontend/src/styles/global.css`
+    (@theme Tailwind v4), logos em `/branding`, favicon.svg, PWA manifest +
+    ícones 192/512 (gerados por `npm run icons -w frontend`), STYLE_GUIDE.md.
+  - Frontend: landing, cadastro, login, "Minha mesa" (rota protegida),
+    header/footer, GameCard, animação CoinInsert (ficha no fliperama).
+  - Docker: compose com db (sempre) + backend/frontend (profile `full`,
+    nginx proxy /api → mesmo origin em produção).
+  - 25 testes passando (validação compartilhada + integração completa do auth
+    com rotação/replay/revogação). Typecheck limpo nos 3 workspaces.
+  - Fluxo verificado de ponta a ponta no browser (cadastro real pela UI →
+    área logada) — desktop e mobile.
+- **Decisões técnicas tomadas**:
+  - Backend roda via tsx (build = typecheck apenas) — evita fricção ESM.
+  - Prisma lê `backend/.env` (copiar o `.env` da raiz para lá em dev).
+  - Refresh token opaco (não JWT) com rotação e revogação por hash.
+  - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
+  - Fontes self-hosted via @fontsource (privacidade, sem CDN).
+- **Próximo passo**: apresentar plano curto da FASE 1 (Painel Admin + Lobby)
+  e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
