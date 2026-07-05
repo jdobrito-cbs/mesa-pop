@@ -33,14 +33,20 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [coopMode, setCoopMode] = useState<'juntos' | 'lado-a-lado'>('juntos')
 
   const game = gamesData?.games.find((g) => g.slug === slug)
   const rooms = (roomsData?.rooms ?? []).filter((r) => r.game.slug === slug)
+  const isCoop = slug === 'esquadrao-coop'
 
   async function createRoom(isPrivate: boolean) {
     setBusy(true)
     setError('')
-    const res = await emitAck<RoomView>('room:create', { gameSlug: slug, isPrivate })
+    const res = await emitAck<RoomView>('room:create', {
+      gameSlug: slug,
+      isPrivate,
+      ...(isCoop ? { options: { mode: coopMode } } : {}),
+    })
     setBusy(false)
     if (!res.ok) return setError(res.error ?? 'Não deu para criar a sala')
     navigate(`/sala/${res.data!.code}`)
@@ -87,7 +93,33 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
         </p>
       )}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      {/* modo do co-op */}
+      {isCoop && (
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <button
+            onClick={() => setCoopMode('juntos')}
+            aria-pressed={coopMode === 'juntos'}
+            className={`card p-4 text-left transition ${coopMode === 'juntos' ? 'ring-2 ring-pop-green' : 'opacity-70 hover:opacity-100'}`}
+          >
+            <p className="font-display font-bold text-pop-green">🤝 Sobrevive junto</p>
+            <p className="mt-1 text-xs text-text-muted">
+              Pontuação do time. Derrubado? Seu parceiro voa até você e te reanima.
+            </p>
+          </button>
+          <button
+            onClick={() => setCoopMode('lado-a-lado')}
+            aria-pressed={coopMode === 'lado-a-lado'}
+            className={`card p-4 text-left transition ${coopMode === 'lado-a-lado' ? 'ring-2 ring-pop-yellow' : 'opacity-70 hover:opacity-100'}`}
+          >
+            <p className="font-display font-bold text-pop-yellow">⚔️ Lado a lado</p>
+            <p className="mt-1 text-xs text-text-muted">
+              3 vidas e placar para cada um — cooperam, mas o maior placar leva.
+            </p>
+          </button>
+        </div>
+      )}
+
+      <div className={`${isCoop ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
         <button
           onClick={() => void createRoom(false)}
           disabled={busy}

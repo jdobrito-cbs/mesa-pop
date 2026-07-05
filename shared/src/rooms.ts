@@ -38,6 +38,8 @@ export interface RoomView {
   /** fila de espera / espectadores, em ordem de chegada */
   spectators: SpectatorView[]
   features: RoomFeatures
+  /** opções escolhidas na criação (ex.: modo do co-op) */
+  options: Record<string, unknown> | null
 }
 
 export interface ChatMessageView {
@@ -66,7 +68,7 @@ export interface Ack<T = unknown> {
 /** cliente → servidor */
 export interface ClientEvents {
   'room:create': (
-    input: { gameSlug: string; isPrivate: boolean },
+    input: { gameSlug: string; isPrivate: boolean; options?: Record<string, unknown> },
     ack: (res: Ack<RoomView>) => void,
   ) => void
   'room:join': (input: { code: string }, ack: (res: Ack<RoomView>) => void) => void

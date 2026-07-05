@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type {
   CheckersState,
+  CoopSnapshot,
   DominoAction,
   DominoView,
   GameEndView,
@@ -12,6 +13,7 @@ import type {
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
+import CoopGame from '../components/CoopGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
 import SeatPicker from '../components/SeatPicker'
@@ -241,6 +243,13 @@ export default function RoomPage() {
                   onAction={(action: OneAction) => void sendAction(action)}
                 />
               )}
+              {room.gameSlug === 'esquadrao-coop' && (
+                <CoopGame
+                  snapshot={game.state as CoopSnapshot}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
             </>
           )}
         </div>
@@ -253,9 +262,13 @@ export default function RoomPage() {
       {end && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/90 p-4">
           <div className="card w-full max-w-md p-8 text-center">
-            <p className="text-5xl" aria-hidden="true">{end.draw ? '🤝' : youWon ? '🏆' : '💜'}</p>
+            <p className="text-5xl" aria-hidden="true">
+              {room.gameSlug === 'esquadrao-coop' && end.draw ? '🫡' : end.draw ? '🤝' : youWon ? '🏆' : '💜'}
+            </p>
             <h2 className="mt-4 font-display text-3xl font-extrabold">
-              {end.draw
+              {room.gameSlug === 'esquadrao-coop' && end.draw
+                ? 'Fim de voo, esquadrão!'
+                : end.draw
                 ? 'Empate!'
                 : youWon
                   ? end.winnerUserIds.length > 1

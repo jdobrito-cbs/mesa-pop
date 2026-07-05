@@ -12,12 +12,22 @@ export interface GameModule<S = unknown, A = unknown> {
   allowSpectators?: boolean
   /** dupla perdedora sai para a fila; próxima entra; vencedores ficam */
   rotation?: boolean
-  /** estado inicial para N jogadores (seat 0..N-1) */
-  init(playerCount: number): S
+  /**
+   * jogo em TEMPO REAL: o manager roda tick() a cada tickMs e transmite o
+   * snapshot a cada `broadcastEvery` ticks. Ações não são retransmitidas
+   * individualmente.
+   */
+  realtime?: { tickMs: number; broadcastEvery: number }
+  /** estado inicial para N jogadores (opções vêm da criação da sala) */
+  init(playerCount: number, options?: Record<string, unknown>): S
   /** valida e aplica a ação do seat; retorna erro OU novo estado */
   play(state: S, seat: number, action: A): { error: string } | { state: S }
   /** visão do estado para um seat (jogos de mão escondida filtram aqui) */
   getStateFor(state: S, seat: number): unknown
+  /** avança a simulação (apenas jogos realtime) */
+  tick?(state: S, dt: number): void
+  /** pontuação final por assento (gravada em MatchPlayer.score) */
+  scoresFor?(state: S): number[]
   /** resultado atual da partida (winnerSeats > 1 em jogos de dupla) */
   result(state: S): { finished: boolean; winnerSeats: number[]; draw: boolean }
 }

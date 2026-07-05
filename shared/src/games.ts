@@ -39,6 +39,8 @@ export const GAME_CATALOG: GameDef[] = [
   // FASE 4
   { slug: 'esquadrao-1942', name: 'Esquadrão 42', description: 'Shoot\'em up aéreo com chuva de power-ups.', family: 'ACTION', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '✈️', phase: 4, enabled: true },
   { slug: 'nave-espacial', name: 'Desvio Estelar', description: 'Desvie de tudo. Sobreviva o máximo que puder.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🚀', phase: 4, enabled: true },
+  // FASE 5
+  { slug: 'esquadrao-coop', name: 'Esquadrão 42 Co-op', description: 'Dois aviões, um céu hostil. Reanime o parceiro e sobrevivam juntos.', family: 'ACTION', minPlayers: 2, maxPlayers: 2, color: 'pop-orange', icon: '🛩️', phase: 5, enabled: true },
   // FASE 6
   { slug: 'fazenda', name: 'Fazenda Pop', description: 'Plante, colha, venda e cresça — até offline.', family: 'ECONOMY', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🌾', phase: 6, enabled: false },
   { slug: 'cardume', name: 'Cardume', description: 'Comande um cardume vivo contra peixes gigantes.', family: 'FLOCKING', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '🐠', phase: 6, enabled: false },

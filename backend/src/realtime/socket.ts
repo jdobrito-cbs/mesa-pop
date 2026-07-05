@@ -8,6 +8,7 @@ import { registerGame } from '../games/module'
 import { checkersModule } from '../games/checkers'
 import { dominoModule } from '../games/domino'
 import { oneModule } from '../games/one'
+import { esquadraoCoopModule } from '../games/esquadraoCoop'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -19,6 +20,7 @@ declare module 'fastify' {
 registerGame(checkersModule)
 registerGame(dominoModule)
 registerGame(oneModule)
+registerGame(esquadraoCoopModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {
@@ -67,8 +69,16 @@ export default fp(async (app) => {
     }
 
     socket.on('room:create', (input, ack) => {
+      // opções: objeto raso com valores primitivos (ex.: {mode: 'juntos'})
+      let options: Record<string, unknown> | null = null
+      if (input?.options && typeof input.options === 'object' && !Array.isArray(input.options)) {
+        options = {}
+        for (const [k, v] of Object.entries(input.options as Record<string, unknown>).slice(0, 8)) {
+          if (['string', 'number', 'boolean'].includes(typeof v)) options[k] = v
+        }
+      }
       void withAck(() =>
-        rooms.create(user, socket.id, String(input?.gameSlug ?? ''), Boolean(input?.isPrivate)),
+        rooms.create(user, socket.id, String(input?.gameSlug ?? ''), Boolean(input?.isPrivate), options),
       )(ack)
     })
 

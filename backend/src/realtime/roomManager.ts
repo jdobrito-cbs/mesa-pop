@@ -52,6 +52,10 @@ export interface LiveRoom {
   disconnectTimers: Map<string, NodeJS.Timeout>
   chat: ChatMessageView[]
   lastChatAt: Map<string, number>
+  /** opções da criação (ex.: modo do co-op) */
+  options: Record<string, unknown> | null
+  /** loop de simulação de jogos realtime */
+  tickTimer: NodeJS.Timeout | null
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -96,6 +100,7 @@ export class RoomManager {
         spectators: room.module.allowSpectators ?? false,
         rotation: room.module.rotation ?? false,
       },
+      options: room.options,
     }
   }
 
@@ -110,6 +115,21 @@ export class RoomManager {
 
   private sendState(room: LiveRoom) {
     if (room.state === null) return
+    if (room.module.realtime) {
+      // realtime: um snapshot único (eventos são consumidos uma só vez)
+      const snapshot = room.module.getStateFor(room.state, -1)
+      for (const p of room.players.values()) {
+        if (p.socketId && p.seat !== null) {
+          this.io.to(p.socketId).emit('game:state', { state: snapshot, yourSeat: p.seat })
+        }
+      }
+      for (const s of room.spectators.values()) {
+        if (s.socketId) {
+          this.io.to(s.socketId).emit('game:state', { state: snapshot, yourSeat: -1 })
+        }
+      }
+      return
+    }
     for (const p of room.players.values()) {
       if (p.socketId && p.seat !== null) {
         this.io.to(p.socketId).emit('game:state', {
@@ -137,7 +157,13 @@ export class RoomManager {
     }
   }
 
-  async create(user: RoomUser, socketId: string, gameSlug: string, isPrivate: boolean) {
+  async create(
+    user: RoomUser,
+    socketId: string,
+    gameSlug: string,
+    isPrivate: boolean,
+    options: Record<string, unknown> | null = null,
+  ) {
     const existing = this.roomOf(user.id)
     if (existing) {
       if (existing.status === 'PLAYING' && existing.players.has(user.id)) {
@@ -186,6 +212,8 @@ export class RoomManager {
       disconnectTimers: new Map(),
       chat: [],
       lastChatAt: new Map(),
+      options,
+      tickTimer: null,
     }
     this.roomsByCode.set(code, room)
     this.roomCodeByUser.set(user.id, code)
@@ -361,7 +389,7 @@ export class RoomManager {
       }
     }
 
-    room.state = room.module.init(room.players.size)
+    room.state = room.module.init(room.players.size, room.options ?? undefined)
     room.status = 'PLAYING'
 
     const match = await this.prisma.match.create({
@@ -378,6 +406,38 @@ export class RoomManager {
 
     this.broadcast(room)
     this.sendState(room)
+
+    // jogos realtime: o servidor roda a simulação e transmite snapshots
+    if (room.module.realtime) this.startTicking(room)
+  }
+
+  private startTicking(room: LiveRoom) {
+    const { tickMs, broadcastEvery } = room.module.realtime!
+    let count = 0
+    let finishing = false
+    room.tickTimer = setInterval(() => {
+      if (room.status !== 'PLAYING' || room.state === null || finishing) return
+      room.module.tick?.(room.state, tickMs / 1000)
+      count++
+      if (count % broadcastEvery === 0) this.sendState(room)
+
+      const result = room.module.result(room.state)
+      if (result.finished) {
+        finishing = true
+        this.sendState(room) // snapshot final (com os últimos eventos)
+        const winnerIds = [...room.players.values()]
+          .filter((p) => p.seat !== null && result.winnerSeats.includes(p.seat))
+          .map((p) => p.userId)
+        void this.finish(room, winnerIds, result.draw, 'normal')
+      }
+    }, tickMs)
+  }
+
+  private stopTicking(room: LiveRoom) {
+    if (room.tickTimer) {
+      clearInterval(room.tickTimer)
+      room.tickTimer = null
+    }
   }
 
   async action(userId: string, action: unknown) {
@@ -391,6 +451,9 @@ export class RoomManager {
     const outcome = room.module.play(room.state, player.seat, action)
     if ('error' in outcome) throw new Error(outcome.error)
     room.state = outcome.state
+
+    // realtime: o loop de tick cuida de broadcast e fim de jogo
+    if (room.module.realtime) return
 
     const result = room.module.result(room.state)
     this.sendState(room)
@@ -518,6 +581,7 @@ export class RoomManager {
 
   private async closeRoom(room: LiveRoom) {
     room.status = 'CLOSED'
+    this.stopTicking(room)
     for (const t of room.disconnectTimers.values()) clearTimeout(t)
     this.roomsByCode.delete(room.code)
     await this.prisma.room.update({
@@ -532,8 +596,22 @@ export class RoomManager {
     draw: boolean,
     reason: GameEndView['reason'],
   ) {
+    this.stopTicking(room)
     for (const t of room.disconnectTimers.values()) clearTimeout(t)
     room.disconnectTimers.clear()
+
+    // pontuação por assento (jogos que reportam, ex.: co-op)
+    if (room.matchId && room.state !== null && room.module.scoresFor) {
+      const scores = room.module.scoresFor(room.state)
+      for (const p of room.players.values()) {
+        if (p.seat !== null && scores[p.seat] !== undefined) {
+          await this.prisma.matchPlayer.updateMany({
+            where: { matchId: room.matchId, userId: p.userId },
+            data: { score: scores[p.seat]! },
+          })
+        }
+      }
+    }
 
     if (room.matchId) {
       await this.prisma.match.update({
