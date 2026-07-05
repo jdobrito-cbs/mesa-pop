@@ -1,11 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { CheckersState, GameEndView, RoomView } from '@mesapop/shared'
+import type {
+  CheckersState,
+  DominoAction,
+  DominoView,
+  GameEndView,
+  OneAction,
+  OneView,
+  RoomView,
+} from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
+import DominoTable from '../components/DominoTable'
+import OneTable from '../components/OneTable'
+import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
 import { Chip } from '../components/Logo'
+
+interface GamePayload {
+  state: unknown
+  yourSeat: number
+}
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>()
@@ -13,7 +29,10 @@ export default function RoomPage() {
   const { user } = useAuth()
 
   const [room, setRoom] = useState<RoomView | null>(null)
-  const [game, setGame] = useState<{ state: CheckersState; yourSeat: number } | null>(null)
+  const [game, setGame] = useState<GamePayload | null>(null)
+  const [end, setEnd] = useState<GameEndView | null>(null)
+  const [error, setError] = useState('')
+  const [toast, setToast] = useState('')
 
   // hook de dev para testes automatizados de UI (não existe no build de produção)
   useEffect(() => {
@@ -21,16 +40,17 @@ export default function RoomPage() {
       ;(window as unknown as Record<string, unknown>).__game = game
     }
   }, [game])
-  const [end, setEnd] = useState<GameEndView | null>(null)
-  const [error, setError] = useState('')
-  const [toast, setToast] = useState('')
 
   useEffect(() => {
     if (!code || !user) return
     const socket = connectSocket()
 
-    const onRoom = (r: RoomView) => setRoom(r)
-    const onState = (payload: { state: CheckersState; yourSeat: number }) => setGame(payload)
+    const onRoom = (r: RoomView) => {
+      setRoom(r)
+      // rotação: a sala voltou para a espera → limpa a mesa anterior
+      if (r.status === 'WAITING') setGame(null)
+    }
+    const onState = (payload: GamePayload) => setGame(payload)
     const onEnd = (payload: GameEndView) => setEnd(payload)
     socket.on('room:update', onRoom)
     socket.on('game:state', onState)
@@ -63,18 +83,19 @@ export default function RoomPage() {
     navigate(room ? `/jogos/${room.gameSlug}` : '/mesa')
   }
 
-  async function move(from: number, to: number) {
-    const res = await emitAck('game:action', { action: { from, to } })
-    if (!res.ok && res.error) {
-      setToast(res.error)
-      setTimeout(() => setToast(''), 2500)
-    }
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(''), 2500)
+  }
+
+  async function sendAction(action: unknown) {
+    const res = await emitAck('game:action', { action })
+    if (!res.ok && res.error) showToast(res.error)
   }
 
   function copyCode() {
     void navigator.clipboard?.writeText(code ?? '')
-    setToast('Código copiado!')
-    setTimeout(() => setToast(''), 2000)
+    showToast('Código copiado!')
   }
 
   if (error) {
@@ -89,7 +110,7 @@ export default function RoomPage() {
     )
   }
 
-  if (!room) {
+  if (!room || !user) {
     return (
       <main className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-float"><Chip size={64} spin /></div>
@@ -97,15 +118,20 @@ export default function RoomPage() {
     )
   }
 
-  const isHost = room.hostId === user?.id
+  const isHost = room.hostId === user.id
+  const iAmPlayer = room.players.some((p) => p.userId === user.id)
   const playing = room.status === 'PLAYING' && game
-  const winner = end?.winnerUserId
-    ? room.players.find((p) => p.userId === end.winnerUserId)
-    : null
-  const youWon = end?.winnerUserId === user?.id
+  const winnerNames = (end?.winnerUserIds ?? [])
+    .map((id) => room.players.find((p) => p.userId === id)?.displayName)
+    .filter(Boolean)
+    .join(' e ')
+  const youWon = !!end?.winnerUserIds.includes(user.id)
+  const seatedPlayers = room.players
+    .filter((p) => p.seat !== null)
+    .map((p) => ({ name: p.displayName, seat: p.seat!, connected: p.isConnected }))
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           {room.gameName} <span className="text-text-muted">· sala</span>{' '}
@@ -116,6 +142,11 @@ export default function RoomPage() {
           >
             {room.code}
           </button>
+          {!iAmPlayer && (
+            <span className="ml-3 rounded-full bg-pop-yellow/15 px-3 py-1 align-middle text-xs font-bold text-pop-yellow">
+              👀 assistindo
+            </span>
+          )}
         </h1>
         <button onClick={() => void leave()} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
           Sair da sala
@@ -129,75 +160,93 @@ export default function RoomPage() {
       )}
 
       <div className="mt-6 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
-      <div>
-      {/* SALA DE ESPERA */}
-      {room.status === 'WAITING' && (
-        <div className="card p-8 text-center">
-          <p className="text-sm font-bold tracking-widest text-text-muted uppercase">
-            {room.isPrivate ? 'Sala privada — chame com o código' : 'Sala pública'}
-          </p>
-          <button
-            onClick={copyCode}
-            className="btn-pop mt-3 bg-ink-900 px-8 py-4 font-mono text-4xl font-extrabold tracking-[0.3em] text-pop-cyan ring-2 ring-ink-700 hover:ring-pop-cyan"
-            title="Copiar código"
-          >
-            {room.code}
-          </button>
+        <div>
+          {/* SALA DE ESPERA */}
+          {room.status === 'WAITING' && (
+            <div className="card p-6 text-center sm:p-8">
+              <p className="text-sm font-bold tracking-widest text-text-muted uppercase">
+                {room.isPrivate ? 'Sala privada — chame com o código' : 'Sala pública'}
+              </p>
+              <button
+                onClick={copyCode}
+                className="btn-pop mt-3 bg-ink-900 px-8 py-4 font-mono text-4xl font-extrabold tracking-[0.3em] text-pop-cyan ring-2 ring-ink-700 hover:ring-pop-cyan"
+                title="Copiar código"
+              >
+                {room.code}
+              </button>
 
-          <div className="mx-auto mt-8 flex max-w-sm flex-col gap-3">
-            {room.players.map((p) => (
-              <div key={p.userId} className="flex items-center gap-3 rounded-field bg-ink-900 px-4 py-3 ring-1 ring-ink-700">
-                <span className="text-xl" aria-hidden="true">🪑</span>
-                <span className="font-display font-bold">{p.displayName}</span>
-                {p.userId === room.hostId && (
-                  <span className="rounded-full bg-pop-purple/15 px-2 py-0.5 text-xs font-bold text-pop-purple">anfitrião</span>
-                )}
-                {!p.isConnected && (
-                  <span className="ml-auto text-xs text-pop-orange">reconectando…</span>
-                )}
-              </div>
-            ))}
-            {Array.from({ length: room.maxPlayers - room.players.length }).map((_, i) => (
-              <div key={i} className="rounded-field border-2 border-dashed border-ink-700 px-4 py-3 text-sm text-text-muted">
-                esperando jogador…
-              </div>
-            ))}
-          </div>
+              {room.features.seatPicking ? (
+                <SeatPicker room={room} myUserId={user.id} onError={showToast} />
+              ) : (
+                <div className="mx-auto mt-8 flex max-w-sm flex-col gap-3">
+                  {room.players.map((p) => (
+                    <div key={p.userId} className="flex items-center gap-3 rounded-field bg-ink-900 px-4 py-3 ring-1 ring-ink-700">
+                      <span className="text-xl" aria-hidden="true">🪑</span>
+                      <span className="font-display font-bold">{p.displayName}</span>
+                      {p.userId === room.hostId && (
+                        <span className="rounded-full bg-pop-purple/15 px-2 py-0.5 text-xs font-bold text-pop-purple">anfitrião</span>
+                      )}
+                      {!p.isConnected && (
+                        <span className="ml-auto text-xs text-pop-orange">reconectando…</span>
+                      )}
+                    </div>
+                  ))}
+                  {Array.from({ length: room.maxPlayers - room.players.length }).map((_, i) => (
+                    <div key={i} className="rounded-field border-2 border-dashed border-ink-700 px-4 py-3 text-sm text-text-muted">
+                      esperando jogador…
+                    </div>
+                  ))}
+                </div>
+              )}
 
-          {isHost ? (
-            <button
-              onClick={() => void start()}
-              disabled={room.players.length < 2}
-              className="btn-pop mt-8 bg-gradient-to-br from-pop-purple to-pop-magenta px-8 py-3.5 text-white shadow-lg shadow-pop-purple/25 disabled:opacity-50"
-            >
-              {room.players.length < 2 ? 'Esperando alguém sentar…' : 'Começar partida!'}
-            </button>
-          ) : (
-            <p className="mt-8 text-sm text-text-muted">
-              Esperando o anfitrião começar…
-            </p>
+              {isHost ? (
+                <button
+                  onClick={() => void start()}
+                  disabled={room.players.length < room.maxPlayers && room.players.length < 2}
+                  className="btn-pop mt-8 bg-gradient-to-br from-pop-purple to-pop-magenta px-8 py-3.5 text-white shadow-lg shadow-pop-purple/25 disabled:opacity-50"
+                >
+                  {room.players.length < 2 ? 'Esperando gente sentar…' : 'Começar partida!'}
+                </button>
+              ) : (
+                <p className="mt-8 text-sm text-text-muted">Esperando o anfitrião começar…</p>
+              )}
+            </div>
+          )}
+
+          {/* PARTIDA — componente por jogo */}
+          {playing && !end && (
+            <>
+              {room.gameSlug === 'damas' && (
+                <CheckersBoard
+                  state={game.state as CheckersState}
+                  yourSeat={game.yourSeat}
+                  yourTurn={(game.state as CheckersState).turn === game.yourSeat}
+                  onMove={(from, to) => void sendAction({ from, to })}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'domino' && (
+                <DominoTable
+                  view={game.state as DominoView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onAction={(action: DominoAction) => void sendAction(action)}
+                />
+              )}
+              {room.gameSlug === 'one' && (
+                <OneTable
+                  view={game.state as OneView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onAction={(action: OneAction) => void sendAction(action)}
+                />
+              )}
+            </>
           )}
         </div>
-      )}
 
-      {/* PARTIDA */}
-      {playing && !end && (
-        <div>
-          <CheckersBoard
-            state={game.state}
-            yourSeat={game.yourSeat}
-            yourTurn={game.state.turn === game.yourSeat}
-            onMove={(from, to) => void move(from, to)}
-            players={room.players
-              .filter((p) => p.seat !== null)
-              .map((p) => ({ name: p.displayName, seat: p.seat!, connected: p.isConnected }))}
-          />
-        </div>
-      )}
-      </div>
-
-      {/* chat geral da mesa — presente em todo jogo multijogador */}
-      <RoomChat className="h-80 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)] lg:max-h-[640px]" />
+        {/* chat geral da mesa — jogadores e espectadores */}
+        <RoomChat className="h-80 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)] lg:max-h-[640px]" />
       </div>
 
       {/* FIM DE JOGO */}
@@ -206,20 +255,48 @@ export default function RoomPage() {
           <div className="card w-full max-w-md p-8 text-center">
             <p className="text-5xl" aria-hidden="true">{end.draw ? '🤝' : youWon ? '🏆' : '💜'}</p>
             <h2 className="mt-4 font-display text-3xl font-extrabold">
-              {end.draw ? 'Empate!' : youWon ? 'Você venceu!' : `${winner?.displayName ?? 'Adversário'} venceu`}
+              {end.draw
+                ? 'Empate!'
+                : youWon
+                  ? end.winnerUserIds.length > 1
+                    ? 'Sua dupla venceu!'
+                    : 'Você venceu!'
+                  : `${winnerNames || 'Adversário'} venceu`}
             </h2>
             {end.reason === 'wo' && (
-              <p className="mt-2 text-sm text-text-muted">O adversário abandonou a partida (W.O.)</p>
+              <p className="mt-2 text-sm text-text-muted">Vitória por W.O. (abandono)</p>
             )}
-            <div className="mt-7 flex justify-center gap-3">
+            {room.features.rotation && !end.draw && (
+              <p className="mt-2 text-sm text-text-muted">
+                {youWon
+                  ? 'Vocês ficam na mesa — a próxima dupla já foi chamada!'
+                  : 'A dupla que perdeu vai para a fila. A mesa continua!'}
+              </p>
+            )}
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              {room.features.rotation ? (
+                <button
+                  onClick={() => setEnd(null)}
+                  className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-6 py-3 text-white"
+                >
+                  Ficar na mesa
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate(`/jogos/${room.gameSlug}`)}
+                  className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-6 py-3 text-white"
+                >
+                  Jogar de novo
+                </button>
+              )}
               <button
-                onClick={() => navigate(`/jogos/${room.gameSlug}`)}
-                className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-6 py-3 text-white"
+                onClick={() => {
+                  setEnd(null)
+                  void leave()
+                }}
+                className="btn-pop px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan"
               >
-                Jogar de novo
-              </button>
-              <button onClick={() => navigate('/mesa')} className="btn-pop px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan">
-                Minha mesa
+                Sair da mesa
               </button>
             </div>
           </div>

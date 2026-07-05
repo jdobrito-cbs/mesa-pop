@@ -46,7 +46,7 @@ export const checkersModule: GameModule<CheckersState, CheckersAction> = {
   result(state) {
     return {
       finished: state.winner !== null || state.draw,
-      winnerSeat: state.winner,
+      winnerSeats: state.winner === null ? [] : [state.winner],
       draw: state.draw,
     }
   },

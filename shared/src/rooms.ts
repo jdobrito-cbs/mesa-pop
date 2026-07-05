@@ -10,6 +10,21 @@ export interface RoomPlayerView {
 
 export type RoomStatusView = 'WAITING' | 'PLAYING' | 'FINISHED' | 'CLOSED'
 
+export interface SpectatorView {
+  userId: string
+  displayName: string
+  isConnected: boolean
+}
+
+export interface RoomFeatures {
+  /** jogadores escolhem assento/dupla na espera (ex.: Dominó) */
+  seatPicking: boolean
+  /** sala aceita espectadores (sem ver mãos) */
+  spectators: boolean
+  /** rotação: dupla que perde sai, próxima da fila entra */
+  rotation: boolean
+}
+
 export interface RoomView {
   id: string
   code: string
@@ -20,6 +35,9 @@ export interface RoomView {
   hostId: string
   maxPlayers: number
   players: RoomPlayerView[]
+  /** fila de espera / espectadores, em ordem de chegada */
+  spectators: SpectatorView[]
+  features: RoomFeatures
 }
 
 export interface ChatMessageView {
@@ -32,7 +50,8 @@ export interface ChatMessageView {
 }
 
 export interface GameEndView {
-  winnerUserId: string | null
+  /** vencedores (mais de um em jogos de dupla); vazio em empate */
+  winnerUserIds: string[]
   draw: boolean
   /** motivo: 'normal' | 'wo' (abandono) */
   reason: 'normal' | 'wo'
@@ -53,6 +72,8 @@ export interface ClientEvents {
   'room:join': (input: { code: string }, ack: (res: Ack<RoomView>) => void) => void
   'room:leave': (ack: (res: Ack) => void) => void
   'room:start': (ack: (res: Ack) => void) => void
+  /** escolher assento OU dupla (dupla cheia → vai para a outra) */
+  'room:seat': (input: { seat?: number; team?: 0 | 1 }, ack: (res: Ack) => void) => void
   'game:action': (input: { action: unknown }, ack: (res: Ack) => void) => void
   'chat:send': (input: { text: string }, ack: (res: Ack) => void) => void
 }

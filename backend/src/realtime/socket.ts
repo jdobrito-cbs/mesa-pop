@@ -6,6 +6,8 @@ import { config } from '../config'
 import { RoomManager, type RoomUser } from './roomManager'
 import { registerGame } from '../games/module'
 import { checkersModule } from '../games/checkers'
+import { dominoModule } from '../games/domino'
+import { oneModule } from '../games/one'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -15,6 +17,8 @@ declare module 'fastify' {
 }
 
 registerGame(checkersModule)
+registerGame(dominoModule)
+registerGame(oneModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {
@@ -81,6 +85,15 @@ export default fp(async (app) => {
 
     socket.on('room:start', (ack) => {
       void withAck(() => rooms.start(user.id))(ack)
+    })
+
+    socket.on('room:seat', (input, ack) => {
+      void withAck(() =>
+        rooms.pickSeat(user.id, {
+          seat: typeof input?.seat === 'number' ? input.seat : undefined,
+          team: input?.team === 0 || input?.team === 1 ? input.team : undefined,
+        }),
+      )(ack)
     })
 
     socket.on('game:action', (input, ack) => {

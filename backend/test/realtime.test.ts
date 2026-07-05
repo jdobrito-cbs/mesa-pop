@@ -169,15 +169,15 @@ describe('salas + damas em tempo real', () => {
 
   it('abandono no meio da partida dá W.O. ao adversário', async () => {
     const end = Promise.race([
-      once<{ winnerUserId: string | null; reason: string }>(sockA, 'game:end'),
-      once<{ winnerUserId: string | null; reason: string }>(sockB, 'game:end'),
+      once<{ winnerUserIds: string[]; reason: string }>(sockA, 'game:end'),
+      once<{ winnerUserIds: string[]; reason: string }>(sockB, 'game:end'),
     ])
     const left = await emitAck(sockB, 'room:leave')
     expect(left.ok).toBe(true)
 
     const result = await end
     expect(result.reason).toBe('wo')
-    expect(result.winnerUserId).toBeTruthy()
+    expect(result.winnerUserIds).toHaveLength(1)
 
     // a vitória por W.O. conta no banco (ranking usa MatchPlayer)
     const winners = await app.prisma.matchPlayer.count({

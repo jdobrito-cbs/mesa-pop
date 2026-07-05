@@ -48,7 +48,10 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis, em salas ranqueadas.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: false },
   { slug: 'truco', name: 'Truco', description: 'Blefe, grite truco e vire a mesa.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🂡', phase: 8, enabled: false },
   { slug: 'stop', name: 'Stop!', description: 'Adedanha com os amigos: pense rápido!', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-yellow', icon: '✏️', phase: 8, enabled: false },
-  { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Um desenha, todos chutam. Risadas garantidas.', family: 'PARTY', minPlayers: 3, maxPlayers: 8, color: 'pop-green', icon: '🎨', phase: 8, enabled: false },
+  { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Desenhe a palavra secreta em 3 min — quem acerta no chat, vence.', family: 'PARTY', minPlayers: 3, maxPlayers: 6, color: 'pop-green', icon: '🎨', phase: 8, enabled: false },
   { slug: 'campo-minado', name: 'Campo Minado', description: 'Lógica pura com desafio diário.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-cyan', icon: '💣', phase: 8, enabled: false },
   { slug: 'termo-diario', name: 'Palavra do Dia', description: 'Uma palavra por dia. Compare com os amigos.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🔤', phase: 8, enabled: false },
+  { slug: 'snake', name: 'Snake', description: 'Coma, cresça, não se morda. Clássico eterno.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '🐍', phase: 8, enabled: false },
+  { slug: 'paciencia', name: 'Paciência', description: 'O clássico solitário de cartas para relaxar.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-magenta', icon: '🃑', phase: 8, enabled: false },
+  { slug: 'puzzle', name: 'Puzzle', description: 'Monte o quebra-cabeça no menor tempo.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🧩', phase: 8, enabled: false },
 ]

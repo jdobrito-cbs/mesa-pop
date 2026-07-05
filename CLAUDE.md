@@ -159,6 +159,23 @@ casual alegre.
   escolher um jogo, tocar uma animação de ficha/moeda sendo inserida num
   arcade — ar de jogos antigos. Componente reutilizável (`CoinInsert`) usado
   como transição padrão de entrada em TODOS os jogos.
+- **Assentos e duplas no Dominó** (pedido do usuário em 2026-07-04): o
+  usuário ESCOLHE o assento na sala de espera; a dupla é sempre quem senta
+  em frente (assentos 0+2 vs 1+3). Se preferir, escolhe a DUPLA em vez do
+  assento (senta no primeiro lugar livre dela); se a dupla estiver cheia,
+  vai automaticamente para a outra. Quem não escolher nada recebe assento
+  livre sorteado no início. Implementado como capacidade genérica
+  (`seatPicking` no GameModule) — reutilizável por outros jogos.
+- **Espectadores + fila rotativa** (pedidos do usuário em 2026-07-04):
+  Dominó e Xadrez têm sala de espera/espectadores — quem entra com a mesa
+  cheia (ou em partida) assiste ao vivo SEM VER as pedras/cartas dos
+  jogadores (visão de assento -1, filtrada no servidor). Na sala de espera,
+  o usuário PODE escolher a dupla desde já (senta se houver vaga); senão,
+  fica aguardando ser chamado. **Rotação estilo bar**: quando uma dupla
+  perde, ela sai para o fim da fila e a próxima dupla da fila entra em
+  seguida para jogar — os vencedores FICAM na mesa. A sala não fecha entre
+  partidas (chat contínuo). Flags no GameModule: `allowSpectators`,
+  `seatPicking`, `rotation` (ligar também no Xadrez na Fase 8).
 - **Chat da sala** (pedido do usuário em 2026-07-04): TODO jogo multijogador
   tem uma janela de chat geral para conversar com os parceiros da sala.
   Implementado no esqueleto de salas (Fase 2) — vale automaticamente para
@@ -258,13 +275,21 @@ Cada jogo é um módulo implementando interface comum, ex.:
   Quiz/trivia, Forca multiplayer.
 
 ### Party
-- **Gartic-like** (Imagem & Ação): um desenha no canvas compartilhado, outros
-  adivinham. Dedução social ("impostor") como possível extensão.
+- **Desenha & Adivinha** (regras detalhadas pelo usuário em 2026-07-04,
+  até 6 jogadores): o desenhista da rodada digita uma PALAVRA (fica oculta
+  até o fim da rodada) e desenha no canvas para exemplificá-la; os outros
+  tentam adivinhar PELO CHAT da sala. Quem escrever a palavra exata ganha a
+  partida/rodada. Tempo de rodada: 3 minutos. Ao acertar OU estourar o tempo
+  sem acerto, a vez de desenhar RODA para outro participante (cada rodada um
+  novo integrante escolhido, mesmos critérios). A sala fica ativa em rodadas
+  contínuas até o anfitrião encerrar. Dedução social ("impostor") como
+  possível extensão futura.
 
 ### Single-player (com leaderboard)
-- **Puzzle**: Sudoku, Campo Minado, Nonograma, Sokoban — geráveis
-  proceduralmente → **modo "desafio diário" com seed do dia**.
-- **Arcade**: Snake, Tetris-like, Breakout, 2048.
+- **Puzzle**: Sudoku, Campo Minado, Nonograma, Sokoban, **Puzzle
+  (quebra-cabeça)** e **Paciência** (adicionados pelo usuário em 2026-07-04)
+  — geráveis proceduralmente → **modo "desafio diário" com seed do dia**.
+- **Arcade**: Snake (confirmado pelo usuário), Tetris-like, Breakout, 2048.
 - **Palavra**: Termo diário, caça-palavras.
 
 ### Ação 2D top-down (engine compartilhada)
