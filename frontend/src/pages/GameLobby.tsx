@@ -1,0 +1,154 @@
+import { useState, type FormEvent } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import type { GameView, RoomView } from '@mesapop/shared'
+import { useFetch } from '../lib/useFetch'
+import { emitAck } from '../lib/socket'
+
+interface RoomRow {
+  id: string
+  code: string
+  players: number
+  maxPlayers: number
+  game: { slug: string; name: string; icon: string }
+  host: { displayName: string }
+}
+
+/** Lobby de um jogo: criar sala, entrar por código ou pegar uma sala aberta. */
+export default function GameLobby() {
+  const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
+  const { data: gamesData } = useFetch<{ games: GameView[] }>('/api/games')
+  const { data: roomsData, reload } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
+  const [code, setCode] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const game = gamesData?.games.find((g) => g.slug === slug)
+  const rooms = (roomsData?.rooms ?? []).filter((r) => r.game.slug === slug)
+
+  async function createRoom(isPrivate: boolean) {
+    setBusy(true)
+    setError('')
+    const res = await emitAck<RoomView>('room:create', { gameSlug: slug, isPrivate })
+    setBusy(false)
+    if (!res.ok) return setError(res.error ?? 'Não deu para criar a sala')
+    navigate(`/sala/${res.data!.code}`)
+  }
+
+  async function joinByCode(e: FormEvent) {
+    e.preventDefault()
+    if (!code.trim()) return
+    setBusy(true)
+    setError('')
+    const res = await emitAck<RoomView>('room:join', { code: code.trim().toUpperCase() })
+    setBusy(false)
+    if (!res.ok) return setError(res.error ?? 'Não deu para entrar na sala')
+    navigate(`/sala/${res.data!.code}`)
+  }
+
+  if (gamesData && !game) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <p className="text-4xl" aria-hidden="true">🚧</p>
+        <h1 className="mt-4 text-3xl font-extrabold">Este jogo ainda não está na mesa</h1>
+        <button onClick={() => navigate('/mesa')} className="btn-pop mt-6 px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan">
+          Voltar à minha mesa
+        </button>
+      </main>
+    )
+  }
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-12">
+      <div className="flex items-center gap-4">
+        <span className="flex size-16 items-center justify-center rounded-3xl bg-ink-800 text-4xl ring-1 ring-ink-700" aria-hidden="true">
+          {game?.icon ?? '🎲'}
+        </span>
+        <div>
+          <h1 className="text-4xl font-extrabold">{game?.name ?? '…'}</h1>
+          <p className="text-text-muted">{game?.description}</p>
+        </div>
+      </div>
+
+      {error && (
+        <p role="alert" className="mt-6 rounded-field bg-pop-magenta/15 px-4 py-3 text-sm font-semibold text-pop-magenta">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <button
+          onClick={() => void createRoom(false)}
+          disabled={busy}
+          className="card group p-6 text-left transition hover:-translate-y-1 hover:ring-pop-cyan/60 disabled:opacity-60"
+        >
+          <p className="text-3xl" aria-hidden="true">🌎</p>
+          <h2 className="mt-2 font-display text-xl font-bold">Sala pública</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Aparece na lista — qualquer um pode sentar.
+          </p>
+        </button>
+        <button
+          onClick={() => void createRoom(true)}
+          disabled={busy}
+          className="card group p-6 text-left transition hover:-translate-y-1 hover:ring-pop-magenta/60 disabled:opacity-60"
+        >
+          <p className="text-3xl" aria-hidden="true">🔒</p>
+          <h2 className="mt-2 font-display text-xl font-bold">Sala privada</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Só entra quem tiver o código — manda no grupo!
+          </p>
+        </button>
+      </div>
+
+      <form onSubmit={joinByCode} className="card mt-4 flex items-center gap-3 p-4">
+        <span className="text-2xl" aria-hidden="true">🎟️</span>
+        <input
+          className="field flex-1 font-mono tracking-[0.2em] uppercase"
+          placeholder="CÓDIGO"
+          maxLength={6}
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          aria-label="Código da sala"
+        />
+        <button disabled={busy || code.length < 6} className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-5 py-2.5 text-sm text-white disabled:opacity-50">
+          Entrar
+        </button>
+      </form>
+
+      <div className="mt-8 flex items-center justify-between">
+        <h2 className="text-xl font-extrabold">Salas esperando jogadores</h2>
+        <button onClick={() => void reload()} className="btn-pop px-3 py-1.5 text-xs ring-1 ring-ink-700 hover:ring-pop-cyan">
+          Atualizar
+        </button>
+      </div>
+      {rooms.length === 0 ? (
+        <p className="mt-3 text-sm text-text-muted">
+          Nenhuma sala pública aberta — crie a primeira e chame alguém!
+        </p>
+      ) : (
+        <div className="mt-3 grid gap-3">
+          {rooms.map((r) => (
+            <div key={r.id} className="card flex items-center gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="font-display font-bold">Mesa de {r.host.displayName}</p>
+                <p className="text-sm text-text-muted">{r.players}/{r.maxPlayers} jogadores</p>
+              </div>
+              <button
+                onClick={() => {
+                  setCode(r.code)
+                  void emitAck<RoomView>('room:join', { code: r.code }).then((res) =>
+                    res.ok ? navigate(`/sala/${r.code}`) : setError(res.error ?? 'Erro'),
+                  )
+                }}
+                className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-5 py-2 text-sm text-white"
+              >
+                Sentar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
+  )
+}

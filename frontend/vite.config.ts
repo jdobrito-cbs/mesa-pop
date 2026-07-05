@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       // Em dev, a API roda em localhost:3001 — mesmo origin via proxy.
       '/api': 'http://localhost:3001',
+      '/socket.io': { target: 'http://localhost:3001', ws: true },
     },
   },
 })

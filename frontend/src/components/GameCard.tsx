@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { GameDef } from '@mesapop/shared'
 import CoinInsert from './CoinInsert'
 
@@ -14,7 +15,14 @@ const COLOR_STYLES: Record<string, { chip: string; glow: string }> = {
 
 export default function GameCard({ game }: { game: GameDef }) {
   const [inserting, setInserting] = useState(false)
+  const navigate = useNavigate()
   const style = COLOR_STYLES[game.color] ?? COLOR_STYLES['pop-purple']!
+
+  // ficha inserida: jogo liberado entra no lobby; "em breve" só fecha
+  function onCoinDone() {
+    setInserting(false)
+    if (game.enabled) navigate(`/jogos/${game.slug}`)
+  }
   const players =
     game.minPlayers === game.maxPlayers
       ? game.maxPlayers === 1
@@ -51,7 +59,7 @@ export default function GameCard({ game }: { game: GameDef }) {
       </button>
 
       {/* ficha no fliperama — transição padrão de entrada nos jogos */}
-      {inserting && <CoinInsert game={game} onDone={() => setInserting(false)} />}
+      {inserting && <CoinInsert game={game} onDone={onCoinDone} />}
     </>
   )
 }

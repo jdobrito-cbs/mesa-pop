@@ -6,6 +6,10 @@ export function setAccessToken(token: string | null) {
   accessToken = token
 }
 
+export function getAccessToken(): string | null {
+  return accessToken
+}
+
 export class ApiRequestError extends Error {
   constructor(
     message: string,

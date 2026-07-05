@@ -5,6 +5,8 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Mesa from './pages/Mesa'
+import GameLobby from './pages/GameLobby'
+import RoomPage from './pages/RoomPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
 import Users from './pages/admin/Users'
@@ -43,6 +45,8 @@ export default function App() {
               <Route path="/criar-conta" element={<Register />} />
               <Route element={<RequireAuth />}>
                 <Route path="/mesa" element={<Mesa />} />
+                <Route path="/jogos/:slug" element={<GameLobby />} />
+                <Route path="/sala/:code" element={<RoomPage />} />
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<Dashboard />} />
                   <Route path="usuarios" element={<Users />} />
