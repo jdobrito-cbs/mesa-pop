@@ -12,8 +12,38 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 4 — ✅ CONCLUÍDA (2026-07-05). FASES 0–3 ✅.
+- **Fase atual**: FASE 5 — ✅ CONCLUÍDA (2026-07-05). FASES 0–4 ✅.
 - **Última atualização**: 2026-07-05
+- **FASE 5 entregue** (tempo real tolerante — Esquadrão 42 Co-op):
+  - Arquitetura: o SERVIDOR simula o mundo (inimigos, boss, balas,
+    colisões, pontos) em `backend/src/games/esquadraoCoop.ts`; cada
+    cliente move o próprio avião LOCALMENTE (zero latência) e reporta a
+    posição (~15Hz, clampada no servidor) — a tolerância vem de estarem
+    do mesmo lado. Snapshots a ~10Hz com eventos consumíveis (explosões/
+    textos/shake tocados no cliente).
+  - GameModule ganhou `realtime {tickMs, broadcastEvery}` + `tick()` +
+    `scoresFor()`; RoomManager roda o loop de simulação por sala
+    (startTicking/stopTicking), snapshot ÚNICO por broadcast, ações não
+    retransmitem, scores por assento gravados no Match. `room:create`
+    aceita `options` (sanitizadas) → `init(count, options)`; RoomView
+    expõe `options`.
+  - Modos (opção na criação): **'juntos'** — hit DERRUBA o avião (fumaça,
+    "DERRUBADO!"); o parceiro voa até <46px e reanima em 2s (anel de
+    progresso; power-up de vida reanima à distância); os dois derrubados =
+    fim cooperativo (draw, "Fim de voo, esquadrão!"). **'lado-a-lado'** —
+    3 vidas e placar por avião; fim quando ambos caem; vence o maior placar.
+  - Cliente (`coopClient.ts` + `CoopGame.tsx`): interpolação de inimigos/
+    parceiro entre snapshots, balas por dead-reckoning, terreno/boss/arte
+    idênticos ao single-player (duplicação consciente — candidata a
+    extração p/ esqArt.ts), HUD da dupla, botões toque LOOP/BOMBA.
+    Meu avião roxo, parceiro ciano.
+  - Lobby do co-op com seleção de modo (cards 🤝/⚔️). Env COOP_BOSS_EARLY
+    p/ testes.
+  - 95 testes (6 novos: derruba/reanima por proximidade, fim cooperativo,
+    3 vidas e vencedor por placar, loop invulnerável, clamp de posição,
+    sala realtime transmitindo snapshots com posição refletida).
+  - Demo real: Maverick+Goose voando juntos; resgate capturado
+    (Iceman derrubado, Slider reanimando).
 - **FASE 4 entregue** (engine 2D + primeiros jogos de ação + leaderboard):
   - `frontend/src/engine/core.ts`: engine de canvas reutilizável — loop com
     dt limitado, Input unificado (setas/WASD + arrastar dedo/mouse),
@@ -162,9 +192,9 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 5 (Esquadrão 42 co-op
-  em tempo real tolerante — modos "sobrevive junto" e "lado a lado por
-  pontos") e aguardar OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 6 (jogos autorais:
+  Fazenda Pop com persistência econômica no servidor + Cardume com
+  flocking/boids) e aguardar OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
