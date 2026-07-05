@@ -8,6 +8,8 @@ import prismaPlugin from './plugins/prisma'
 import authPlugin from './plugins/auth'
 import authRoutes from './routes/auth'
 import healthRoutes from './routes/health'
+import gamesRoutes from './routes/games'
+import adminRoutes from './routes/admin/index'
 
 export interface BuildAppOptions {
   /** Desliga rate limiting (testes de integração). */
@@ -53,6 +55,8 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(authPlugin)
   await app.register(healthRoutes)
   await app.register(authRoutes)
+  await app.register(gamesRoutes)
+  await app.register(adminRoutes)
 
   return app
 }

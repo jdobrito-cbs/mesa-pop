@@ -166,6 +166,19 @@ model MatchPlayer {
   @@index([userId])
 }
 
+/// Aviso global exibido no lobby (criado pelo admin).
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  isActive  Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt])
+}
+
 /// Entrada de leaderboard — sempre gravada pelo servidor, nunca pelo cliente.
 model Score {
   id        String   @id @default(cuid())
