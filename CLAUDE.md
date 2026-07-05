@@ -12,8 +12,36 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 1 — ✅ CONCLUÍDA (2026-07-04). FASE 0 ✅.
+- **Fase atual**: FASE 2 — ✅ CONCLUÍDA (2026-07-04). FASES 0 e 1 ✅.
 - **Última atualização**: 2026-07-04
+- **FASE 2 entregue** (esqueleto de salas + Damas end-to-end):
+  - `/shared/checkers.ts`: regras brasileiras completas e puras (peão captura
+    p/ trás, dama voadora, captura obrigatória + lei da maioria via DFS, peça
+    não saltada 2x, promoção só ao parar na última fileira, empate aos 40
+    lances quietos). 14 testes de regra.
+  - `/shared/rooms.ts`: protocolo socket tipado (RoomView, Ack, chat).
+  - Backend `realtime/roomManager.ts`: GENÉRICO para todos os jogos —
+    criar sala pública/privada, código de convite (6 chars sem ambíguos),
+    entrar, sair, host, sorteio de assentos, reconexão (rejoin restaura
+    estado + chat), W.O. após 60s desconectado em partida (15s na espera),
+    Match/MatchPlayer no banco (rankings ganham dados reais).
+  - `games/module.ts`: interface GameModule {init, play, getStateFor, result}
+    + registry — jogos novos só implementam isso. `games/checkers.ts` pluga
+    as regras de /shared.
+  - Socket.IO autenticado por JWT no handshake (verifica user ativo).
+    Vite proxy e nginx com upgrade websocket configurados.
+  - **Chat da sala** (adendo do usuário): 'chat:send' com trim, máx 300,
+    anti-flood 500ms; histórico (100) reenviado no join/reconexão.
+    UI `RoomChat` ao lado do tabuleiro/sala de espera.
+  - Frontend: `/jogos/:slug` (criar sala, entrar por código, listar salas),
+    `/sala/:code` (espera com código copiável + partida + overlay de fim),
+    `CheckersBoard` (tabuleiro girado para o seat 1, lances legais calculados
+    localmente com a MESMA lógica compartilhada, servidor revalida).
+    Ficha do fliperama agora navega para o jogo habilitado.
+  - Hook de dev `window.__game` no RoomPage (só import.meta.env.DEV) para
+    testes automatizados de UI.
+  - 55 testes passando. Demo real: 2 usuárias jogaram 41 lances até vitória
+    natural, com chat, e o ranking do admin refletiu a partida.
 - **FASE 1 entregue**:
   - API admin completa em `backend/src/routes/admin/` (todas exigem role
     ADMIN via hook de escopo): stats (DAU/MAU/partidas/salas), CRUD de
@@ -64,8 +92,9 @@ Base sólida primeiro; os jogos plugam nela.
   - Refresh token opaco (não JWT) com rotação e revogação por hash.
   - Dev: Vite proxy `/api` → :3001 (mesmo origin). Produção: nginx proxy.
   - Fontes self-hosted via @fontsource (privacidade, sem CDN).
-- **Próximo passo**: apresentar plano curto da FASE 2 (esqueleto de salas
-  com WebSocket + reconexão e Damas end-to-end) e aguardar OK do usuário.
+- **Próximo passo**: apresentar plano curto da FASE 3 (jogos de mão
+  escondida: Dominó e One — getStateFor filtrando por jogador) e aguardar
+  OK do usuário.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
