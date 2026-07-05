@@ -268,7 +268,7 @@ export default function DominoTable({
           <span className="text-pop-cyan">{view.scores[1]}</span>
         </p>
         <p className="text-xs font-bold tracking-wide text-text-muted uppercase">
-          mão {view.handNumber} · pontas somam {view.endsSum}
+          pontas somam {view.endsSum}
         </p>
         {view.lastMoveScore && (
           <span className="animate-float rounded-full bg-pop-yellow/20 px-3 py-1 text-sm font-extrabold text-pop-yellow">
@@ -277,15 +277,19 @@ export default function DominoTable({
         )}
       </div>
 
-      {/* mão encerrada com placar empatado → desempate em nova mão */}
-      {view.lastHandResult && view.awaitingOpener && (
+      {/* como a partida terminou (empate em pontos → última pedra decide) */}
+      {view.lastHandResult && view.winnerSeats.length > 0 && (
         <div className="card border-l-4 border-l-pop-yellow p-3 text-sm">
           <span>
             {view.lastHandResult.kind === 'bate'
-              ? `${bySeat(view.lastHandResult.seat ?? -1)?.name ?? 'Alguém'} bateu`
-              : 'Mão trancada'}{' '}
-            com o placar empatado ({view.lastHandResult.scores[0]} ×{' '}
-            {view.lastHandResult.scores[1]}) — nova mão para desempatar! Quem tem o [6|6] abre.
+              ? `${bySeat(view.lastHandResult.seat ?? -1)?.name ?? 'Alguém'} bateu! `
+              : 'Jogo trancado! '}
+            <strong className={TEAM_STYLE[view.lastHandResult.team]!.text}>
+              {TEAM_STYLE[view.lastHandResult.team]!.name}
+            </strong>{' '}
+            venceu com o placar {view.lastHandResult.scores[0]} × {view.lastHandResult.scores[1]}
+            {view.lastHandResult.byLastTile && ' — empate em pontos, decidido pela última pedra na mesa'}
+            .
           </span>
         </div>
       )}

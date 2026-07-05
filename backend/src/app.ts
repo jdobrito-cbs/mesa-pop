@@ -9,6 +9,7 @@ import authPlugin from './plugins/auth'
 import authRoutes from './routes/auth'
 import healthRoutes from './routes/health'
 import gamesRoutes from './routes/games'
+import soloRoutes from './routes/solo'
 import adminRoutes from './routes/admin/index'
 import socketPlugin from './realtime/socket'
 
@@ -57,6 +58,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(healthRoutes)
   await app.register(authRoutes)
   await app.register(gamesRoutes)
+  await app.register(soloRoutes)
   await app.register(adminRoutes)
   await app.register(socketPlugin)
 

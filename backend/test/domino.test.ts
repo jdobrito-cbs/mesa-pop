@@ -25,7 +25,7 @@ function stateWith(
     awaitingOpener: false,
     consecutivePasses: 0,
     scores: [0, 0],
-    handNumber: 1,
+    lastPlaySeat: null,
     lastMoveScore: null,
     lastHandResult: null,
     lastAction: null,
@@ -140,6 +140,7 @@ describe('fim de mão: vence quem pontuou mais (sem somar mãos adversárias)', 
     expect(r.state.lastHandResult).toEqual({
       kind: 'bate',
       team: 0,
+      byLastTile: false,
       scores: [15, 5],
       seat: 0,
     })
@@ -155,30 +156,30 @@ describe('fim de mão: vence quem pontuou mais (sem somar mãos adversárias)', 
     expect(r.state.winnerSeats.sort()).toEqual([1, 3])
   })
 
-  it('bate com placar empatado → nova mão para desempatar (placar mantido)', () => {
+  it('bate com placar EMPATADO → vence a dupla que jogou a última pedra', () => {
     const s = stateWith(
       [[[2, 3]], [[1, 1]], [[0, 1]], [[4, 4]]],
       { arms: [[[6, 2]], [[6, 0]], [], []], scores: [10, 10] },
     )
+    // seat 0 (dupla 0) coloca a última pedra e bate: dupla 0 vence o empate
     const r = applyDominoAction(s, 0, { type: 'play', tile: [2, 3], side: 0 }, rng)
     if (!('state' in r)) throw new Error('bate')
-    expect(r.state.winnerSeats).toEqual([])
-    expect(r.state.handNumber).toBe(2)
-    expect(r.state.awaitingOpener).toBe(true)
-    expect(r.state.hands.flat()).toHaveLength(28)
+    expect(r.state.winnerSeats.sort()).toEqual([0, 2])
     expect(r.state.scores).toEqual([10, 10])
     expect(r.state.lastHandResult).toEqual({
       kind: 'bate',
-      team: null,
+      team: 0,
+      byLastTile: true,
       scores: [10, 10],
       seat: 0,
     })
   })
 
-  it('trancado: vence quem pontuou mais no placar', () => {
+  it('trancado empatado → vence a dupla da última pedra na mesa', () => {
     const s = stateWith(
       [[[5, 5]], [[1, 1]], [[4, 4]], [[1, 2]]],
-      { arms: [[[6, 0]], [[6, 0]], [], []], turn: 0, scores: [5, 20] },
+      // a última pedra foi do assento 3 (dupla 1)
+      { arms: [[[6, 0]], [[6, 0]], [], []], turn: 0, scores: [10, 10], lastPlaySeat: 3 },
     )
     let cur = s
     for (let seat = 0; seat < 4; seat++) {
@@ -188,13 +189,28 @@ describe('fim de mão: vence quem pontuou mais (sem somar mãos adversárias)', 
       cur = res.state
     }
     expect(cur.winnerSeats.sort()).toEqual([1, 3])
-    expect(cur.scores).toEqual([5, 20])
     expect(cur.lastHandResult).toEqual({
       kind: 'trancado',
       team: 1,
-      scores: [5, 20],
+      byLastTile: true,
+      scores: [10, 10],
       seat: null,
     })
+  })
+
+  it('trancado com placar diferente: vence quem pontuou mais', () => {
+    const s = stateWith(
+      [[[5, 5]], [[1, 1]], [[4, 4]], [[1, 2]]],
+      { arms: [[[6, 0]], [[6, 0]], [], []], turn: 0, scores: [5, 20], lastPlaySeat: 0 },
+    )
+    let cur = s
+    for (let seat = 0; seat < 4; seat++) {
+      const res = applyDominoAction(cur, seat, { type: 'pass' }, rng)
+      if (!('state' in res)) throw new Error('passa')
+      cur = res.state
+    }
+    expect(cur.winnerSeats.sort()).toEqual([1, 3])
+    expect(cur.lastHandResult?.byLastTile).toBe(false)
   })
 })
 

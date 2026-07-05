@@ -13,7 +13,7 @@
  *   até os dois lados laterais serem cobertos.
  * - Fim de mão (alguém bate, ou tranca com 4 passes): vence a partida a
  *   dupla que PONTUOU MAIS — sem somar as mãos adversárias. Empate em
- *   pontos → nova mão (placar mantido) até desempatar.
+ *   pontos → vence a dupla que colocou a ÚLTIMA PEDRA na mesa.
  *
  * A mão dos outros NUNCA é enviada ao cliente (`dominoViewFor`).
  */
@@ -26,8 +26,10 @@ export type ArmIndex = 0 | 1 | 2 | 3
 export interface HandResult {
   /** 'bate' | 'trancado' */
   kind: 'bate' | 'trancado'
-  /** dupla vencedora pelo placar (0|1) ou null (empate → nova mão) */
-  team: 0 | 1 | null
+  /** dupla vencedora (placar; empate → quem jogou a última pedra) */
+  team: 0 | 1
+  /** o empate em pontos foi decidido pela última pedra? */
+  byLastTile: boolean
   /** placar no momento do fim da mão */
   scores: [number, number]
   /** assento que bateu (se bate) */
@@ -45,7 +47,8 @@ export interface DominoState {
   consecutivePasses: number
   /** placar acumulado das duplas [dupla0, dupla1] */
   scores: [number, number]
-  handNumber: number
+  /** assento que colocou a última pedra na mesa (desempate) */
+  lastPlaySeat: number | null
   /** pontos marcados na última jogada (para a UI comemorar) */
   lastMoveScore: { seat: number; points: number } | null
   /** resultado da última mão encerrada (para a UI mostrar entre mãos) */
@@ -70,7 +73,6 @@ export interface DominoView {
   turn: number
   awaitingOpener: boolean
   scores: [number, number]
-  handNumber: number
   lastMoveScore: DominoState['lastMoveScore']
   lastHandResult: HandResult | null
   lastAction: DominoState['lastAction']
@@ -109,7 +111,7 @@ export function initialDominoState(rng: () => number = Math.random): DominoState
     awaitingOpener: true,
     consecutivePasses: 0,
     scores: [0, 0],
-    handNumber: 1,
+    lastPlaySeat: null,
     lastMoveScore: null,
     lastHandResult: null,
     lastAction: null,
@@ -183,42 +185,30 @@ export function handCanPlay(state: DominoState, seat: number): boolean {
 }
 
 /**
- * Fim de mão (bate ou trancado): vence a dupla com MAIS pontos no placar
- * — sem somar as mãos adversárias. Empate → nova mão, placar mantido.
+ * Fim de mão (bate ou trancado): vence a dupla com MAIS pontos no placar —
+ * sem somar as mãos adversárias. Empate em pontos → vence a dupla que
+ * colocou a ÚLTIMA PEDRA na mesa.
  */
 function settleHand(
   state: DominoState,
   kind: HandResult['kind'],
   seat: number | null,
-  rng: () => number,
 ): DominoState {
   const scores = state.scores
-  const team: 0 | 1 | null = scores[0] > scores[1] ? 0 : scores[1] > scores[0] ? 1 : null
-  const result: HandResult = { kind, team, scores: [...scores], seat }
-
-  if (team !== null) {
-    return {
-      ...state,
-      lastHandResult: result,
-      winnerSeats: [team, team + 2],
-      draw: false,
-    }
+  let team: 0 | 1
+  let byLastTile = false
+  if (scores[0] !== scores[1]) {
+    team = scores[0] > scores[1] ? 0 : 1
+  } else {
+    byLastTile = true
+    team = ((state.lastPlaySeat ?? 0) % 2) as 0 | 1
   }
-
-  // empate em pontos: nova mão para desempatar (quem tem o [6|6] abre)
-  const hands = dealHands(rng)
+  const result: HandResult = { kind, team, byLastTile, scores: [...scores], seat }
   return {
     ...state,
-    hands,
-    spinner: null,
-    arms: [[], [], [], []],
-    turn: openerOf(hands),
-    awaitingOpener: true,
-    consecutivePasses: 0,
-    handNumber: state.handNumber + 1,
-    lastMoveScore: null,
     lastHandResult: result,
-    lastAction: null,
+    winnerSeats: [team, team + 2],
+    draw: false,
   }
 }
 
@@ -241,8 +231,8 @@ export function applyDominoAction(
       lastAction: { seat, type: 'pass' },
     }
     if (next.consecutivePasses >= DOMINO_PLAYERS) {
-      // trancado: vence quem pontuou mais (empate → nova mão)
-      return { state: settleHand(next, 'trancado', null, rng) }
+      // trancado: vence quem pontuou mais (empate → última pedra)
+      return { state: settleHand(next, 'trancado', null) }
     }
     return { state: next }
   }
@@ -274,6 +264,7 @@ export function applyDominoAction(
       awaitingOpener: false,
       consecutivePasses: 0,
       turn: (seat + 1) % DOMINO_PLAYERS,
+      lastPlaySeat: seat,
       lastAction: { seat, type: 'play' },
       lastMoveScore: null,
     }
@@ -289,6 +280,7 @@ export function applyDominoAction(
       arms,
       consecutivePasses: 0,
       turn: (seat + 1) % DOMINO_PLAYERS,
+      lastPlaySeat: seat,
       lastAction: { seat, type: 'play' },
       lastMoveScore: null,
     }
@@ -305,7 +297,7 @@ export function applyDominoAction(
 
   // bateu: fim de mão — vence quem pontuou mais (sem somar mãos adversárias)
   if (hands[seat]!.length === 0) {
-    return { state: settleHand(next, 'bate', seat, rng) }
+    return { state: settleHand(next, 'bate', seat) }
   }
 
   return { state: next }
@@ -323,7 +315,6 @@ export function dominoViewFor(state: DominoState, seat: number): DominoView {
     turn: state.turn,
     awaitingOpener: state.awaitingOpener,
     scores: state.scores,
-    handNumber: state.handNumber,
     lastMoveScore: state.lastMoveScore,
     lastHandResult: state.lastHandResult,
     lastAction: state.lastAction,

@@ -201,7 +201,8 @@ casual alegre.
   lados serem cobertos). **CORREÇÃO do usuário (2026-07-04): bater NÃO soma
   as mãos adversárias — os pontos vêm SÓ das pontas abertas. Quando alguém
   bate (ou o jogo tranca), vence a dupla que PONTUOU MAIS; empate em pontos
-  → joga-se nova mão (placar mantido) até desempatar.**
+  → vence a dupla que colocou a ÚLTIMA PEDRA na mesa (ajuste do usuário em
+  2026-07-05; não há "nova mão" — toda partida se decide na hora).**
   Visual: mesa estilo feltro com pedras desenhadas (pontinhos/pips),
   carroças atravessadas, linha serpenteando para os cantos.
 - **Assentos e duplas no Dominó** (pedido do usuário em 2026-07-04): o
