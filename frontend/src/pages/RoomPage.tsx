@@ -261,7 +261,7 @@ export default function RoomPage() {
                   ? end.winnerUserIds.length > 1
                     ? 'Sua dupla venceu!'
                     : 'Você venceu!'
-                  : `${winnerNames || 'Adversário'} venceu`}
+                  : `${winnerNames || 'Adversário'} ${end.winnerUserIds.length > 1 ? 'venceram' : 'venceu'}`}
             </h2>
             {end.reason === 'wo' && (
               <p className="mt-2 text-sm text-text-muted">Vitória por W.O. (abandono)</p>
