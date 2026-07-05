@@ -122,19 +122,26 @@ export function circleHit(a: Vec & { r: number }, b: Vec & { r: number }): boole
 export const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v))
 export const rand = (min: number, max: number) => min + Math.random() * (max - min)
 
-/** Fundo de estrelas com N camadas de parallax rolando para baixo. */
+/** Fundo de estrelas em camadas de parallax, com cintilação. */
 export class Starfield {
-  private stars: Array<{ x: number; y: number; layer: number }> = []
+  private stars: Array<{ x: number; y: number; layer: number; phase: number }> = []
+  private t = 0
   constructor(
     private w: number,
     private h: number,
     count = 90,
   ) {
     for (let i = 0; i < count; i++) {
-      this.stars.push({ x: rand(0, w), y: rand(0, h), layer: 1 + Math.floor(rand(0, 3)) })
+      this.stars.push({
+        x: rand(0, w),
+        y: rand(0, h),
+        layer: 1 + Math.floor(rand(0, 3)),
+        phase: rand(0, Math.PI * 2),
+      })
     }
   }
   update(dt: number, speed = 60) {
+    this.t += dt
     for (const s of this.stars) {
       s.y += speed * s.layer * 0.5 * dt
       if (s.y > this.h) {
@@ -145,12 +152,147 @@ export class Starfield {
   }
   draw(ctx: CanvasRenderingContext2D) {
     for (const s of this.stars) {
-      ctx.globalAlpha = 0.25 + s.layer * 0.22
-      ctx.fillStyle = '#F4EFFF'
-      ctx.fillRect(s.x, s.y, s.layer * 0.9, s.layer * 0.9)
+      const twinkle = 0.75 + 0.25 * Math.sin(this.t * 2.4 + s.phase)
+      ctx.globalAlpha = (0.2 + s.layer * 0.22) * twinkle
+      ctx.fillStyle = s.layer === 3 ? '#FFFFFF' : '#D8CFF2'
+      const size = s.layer * 0.95
+      ctx.beginPath()
+      ctx.arc(s.x, s.y, size, 0, Math.PI * 2)
+      ctx.fill()
     }
     ctx.globalAlpha = 1
   }
+}
+
+/** Desenha com glow (shadowBlur) e restaura o contexto. */
+export function withGlow(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  blur: number,
+  fn: () => void,
+) {
+  ctx.save()
+  ctx.shadowColor = color
+  ctx.shadowBlur = blur
+  fn()
+  ctx.restore()
+}
+
+/** Tremor de tela com decaimento — aplicar offset no início do draw. */
+export class ScreenShake {
+  private power = 0
+  kick(amount: number) {
+    this.power = Math.min(this.power + amount, 18)
+  }
+  update(dt: number) {
+    this.power = Math.max(0, this.power - dt * 26)
+  }
+  offset(): Vec {
+    if (this.power <= 0) return { x: 0, y: 0 }
+    return { x: rand(-this.power, this.power), y: rand(-this.power, this.power) }
+  }
+}
+
+/** Textos flutuantes ("+100") subindo e sumindo. */
+export class FloatingTexts {
+  private list: Array<{ x: number; y: number; text: string; life: number; color: string; size: number }> = []
+  add(x: number, y: number, text: string, color = '#FFC53D', size = 15) {
+    this.list.push({ x, y, text, life: 0.9, color, size })
+  }
+  update(dt: number) {
+    for (const t of this.list) {
+      t.y -= 34 * dt
+      t.life -= dt
+    }
+    this.list = this.list.filter((t) => t.life > 0)
+  }
+  draw(ctx: CanvasRenderingContext2D) {
+    for (const t of this.list) {
+      ctx.save()
+      ctx.globalAlpha = Math.min(t.life / 0.35, 1)
+      ctx.font = `800 ${t.size}px "Baloo 2 Variable", "Baloo 2", sans-serif`
+      ctx.textAlign = 'center'
+      ctx.shadowColor = t.color
+      ctx.shadowBlur = 8
+      ctx.fillStyle = t.color
+      ctx.fillText(t.text, t.x, t.y)
+      ctx.restore()
+    }
+  }
+}
+
+/** Ondas de choque (anéis que expandem e somem) — explosões com peso. */
+export class Shockwaves {
+  private list: Array<{ x: number; y: number; r: number; maxR: number; life: number; color: string }> = []
+  add(x: number, y: number, maxR = 60, color = '#FFC53D') {
+    this.list.push({ x, y, r: 6, maxR, life: 1, color })
+  }
+  update(dt: number) {
+    for (const w of this.list) {
+      w.r += (w.maxR - w.r) * 10 * dt
+      w.life -= dt * 2.6
+    }
+    this.list = this.list.filter((w) => w.life > 0)
+  }
+  draw(ctx: CanvasRenderingContext2D) {
+    for (const w of this.list) {
+      ctx.save()
+      ctx.globalAlpha = w.life * 0.8
+      ctx.strokeStyle = w.color
+      ctx.lineWidth = 3 * w.life
+      ctx.shadowColor = w.color
+      ctx.shadowBlur = 12
+      ctx.beginPath()
+      ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+    }
+  }
+}
+
+/** Nebulosas suaves à deriva — profundidade para fundos espaciais. */
+export class Nebulas {
+  private blobs: Array<{ x: number; y: number; r: number; color: string; vy: number }>
+  constructor(
+    private w: number,
+    private h: number,
+    colors: string[] = ['157,92,255', '51,224,214', '242,82,193'],
+  ) {
+    this.blobs = colors.map((c, i) => ({
+      x: rand(0, w),
+      y: (h / colors.length) * i + rand(-40, 40),
+      r: rand(120, 210),
+      color: c,
+      vy: rand(6, 14),
+    }))
+  }
+  update(dt: number) {
+    for (const b of this.blobs) {
+      b.y += b.vy * dt
+      if (b.y - b.r > this.h) {
+        b.y = -b.r
+        b.x = rand(0, this.w)
+      }
+    }
+  }
+  draw(ctx: CanvasRenderingContext2D) {
+    for (const b of this.blobs) {
+      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r)
+      g.addColorStop(0, `rgba(${b.color},0.16)`)
+      g.addColorStop(1, `rgba(${b.color},0)`)
+      ctx.fillStyle = g
+      ctx.fillRect(b.x - b.r, b.y - b.r, b.r * 2, b.r * 2)
+    }
+  }
+}
+
+/** Vinheta sutil nas bordas — acabamento de jogo mobile. */
+export function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number, alpha = 0.5) {
+  const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.75)
+  g.addColorStop(0, 'rgba(0,0,0,0)')
+  g.addColorStop(1, `rgba(10,6,24,${alpha})`)
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, w, h)
 }
 
 /** Partículas simples para explosões e rastros. */

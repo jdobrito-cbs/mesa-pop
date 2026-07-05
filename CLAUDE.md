@@ -212,6 +212,13 @@ casual alegre.
 - **Cards de jogo** no lobby: peças coloridas e convidativas, cada jogo com sua
   cor/ícone, grade tipo "tabuleiro".
 - **Responsivo** desktop e mobile.
+- **Padrão de qualidade visual dos jogos de ação** (pedido do usuário em
+  2026-07-05): os jogos de canvas devem parecer JOGOS DE CELULAR modernos,
+  nunca "jogos de Atari". Exigências: gradientes e iluminação nos sprites,
+  glow (shadowBlur), rastros de motor/projéteis, explosões com onda de
+  choque + partículas, screen shake, textos de pontos flutuando, fundos
+  ricos (nebulosas/nuvens em camadas, vinheta), power-ups pulsando,
+  inclinação do avião ao manobrar. Tudo procedural (sem assets externos).
 - **Animação de "ficha no fliperama"** (pedido do usuário em 2026-07-04): ao
   escolher um jogo, tocar uma animação de ficha/moeda sendo inserida num
   arcade — ar de jogos antigos. Componente reutilizável (`CoinInsert`) usado
