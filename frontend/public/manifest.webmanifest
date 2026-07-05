@@ -1,0 +1,15 @@
+{
+  "name": "Mesa Pop",
+  "short_name": "Mesa Pop",
+  "description": "Jogos casuais para jogar com amigos ou desafiar o mundo.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1B1235",
+  "theme_color": "#1B1235",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

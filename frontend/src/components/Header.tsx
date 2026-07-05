@@ -1,0 +1,60 @@
+import { Link, useNavigate } from 'react-router-dom'
+import Logo from './Logo'
+import { useAuth } from '../lib/auth'
+
+export default function Header() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    await logout()
+    navigate('/')
+  }
+
+  return (
+    <header className="sticky top-0 z-40 border-b border-ink-700/60 bg-ink-900/85 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <Link to="/" aria-label="Mesa Pop — início" className="shrink-0">
+          <Logo className="text-2xl" />
+        </Link>
+
+        <nav className="flex items-center gap-2 sm:gap-3">
+          {user ? (
+            <>
+              <Link
+                to="/mesa"
+                className="btn-pop px-4 py-2 text-sm text-text hover:text-pop-cyan"
+              >
+                Minha mesa
+              </Link>
+              <span
+                className="hidden max-w-40 truncate text-sm text-text-muted sm:block"
+                title={user.displayName}
+              >
+                {user.displayName}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-magenta"
+              >
+                Sair
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/entrar" className="btn-pop px-4 py-2 text-sm text-text hover:text-pop-cyan">
+                Entrar
+              </Link>
+              <Link
+                to="/criar-conta"
+                className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-5 py-2.5 text-sm text-white shadow-lg shadow-pop-purple/25"
+              >
+                Criar conta
+              </Link>
+            </>
+          )}
+        </nav>
+      </div>
+    </header>
+  )
+}

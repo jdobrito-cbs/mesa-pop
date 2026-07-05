@@ -1,0 +1,150 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/baloo-2';
+@import '@fontsource-variable/nunito';
+
+/* ============================================================
+   Mesa Pop — design tokens (fonte de verdade: STYLE_GUIDE.md)
+   ============================================================ */
+@theme {
+  /* fundos (violeta-noite: escuro suave para as cores saltarem) */
+  --color-ink-950: #140e26;
+  --color-ink-900: #1b1235;
+  --color-ink-800: #251a47;
+  --color-ink-700: #32245f;
+
+  /* cores pop */
+  --color-pop-purple: #9d5cff;
+  --color-pop-magenta: #f252c1;
+  --color-pop-cyan: #33e0d6;
+  --color-pop-yellow: #ffc53d;
+  --color-pop-orange: #ff8244;
+  --color-pop-green: #55e07f;
+
+  /* neutros */
+  --color-cream: #fff9f0;
+  --color-text: #f4efff;
+  --color-text-muted: #b4a8d8;
+
+  /* tipografia */
+  --font-display: 'Baloo 2 Variable', 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+
+  /* raios — generosos, feel amigável */
+  --radius-card: 1.5rem;
+  --radius-field: 1rem;
+
+  /* animações */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-late: float 6s ease-in-out -3s infinite;
+  --animate-chip-spin: chip-spin 14s linear infinite;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes chip-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ficha caindo na fenda do fliperama */
+  --animate-coin-drop: coin-drop 0.9s cubic-bezier(0.55, 0, 0.85, 0.4) forwards;
+  @keyframes coin-drop {
+    0% {
+      transform: translateY(-190px) rotate(-24deg);
+      opacity: 1;
+    }
+    62% {
+      transform: translateY(-6px) rotate(6deg);
+      opacity: 1;
+    }
+    78% {
+      transform: translateY(-14px) rotate(2deg) scaleY(0.96);
+    }
+    100% {
+      transform: translateY(26px) rotate(0deg) scaleY(0.55);
+      opacity: 0;
+    }
+  }
+
+  /* letreiro retrô piscando */
+  --animate-blink: blink 1s steps(2, start) infinite;
+  @keyframes blink {
+    to {
+      visibility: hidden;
+    }
+  }
+
+  /* flash da máquina quando a ficha entra */
+  --animate-slot-flash: slot-flash 0.5s ease-out 1;
+  @keyframes slot-flash {
+    0% {
+      box-shadow: 0 0 0 0 rgb(255 197 61 / 0.9);
+    }
+    100% {
+      box-shadow: 0 0 60px 24px rgb(255 197 61 / 0);
+    }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-ink-900 font-body text-text antialiased;
+    background-image:
+      radial-gradient(1100px 500px at 85% -10%, rgb(157 92 255 / 0.14), transparent 60%),
+      radial-gradient(900px 480px at -10% 30%, rgb(51 224 214 / 0.1), transparent 55%);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  /* foco visível e coerente com a marca */
+  :focus-visible {
+    outline: 3px solid var(--color-pop-cyan);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* botão primário: pílula com "pop" de escala */
+  .btn-pop {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full font-display font-bold transition-transform duration-150 ease-out;
+  }
+  .btn-pop:hover {
+    transform: scale(1.05);
+  }
+  .btn-pop:active {
+    transform: scale(0.96);
+  }
+
+  .card {
+    @apply rounded-card bg-ink-800 ring-1 ring-ink-700;
+  }
+
+  .field {
+    @apply w-full rounded-field bg-ink-900 px-4 py-3 text-text ring-1 ring-ink-700 transition placeholder:text-text-muted/60;
+  }
+  .field:focus {
+    @apply ring-2 ring-pop-purple outline-none;
+  }
+}
