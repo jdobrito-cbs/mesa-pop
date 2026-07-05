@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" font-family="'Baloo 2', 'Baloo 2 Variable', 'Arial Rounded MT Bold', sans-serif">
+  <!-- Wordmark horizontal. Requer a fonte Baloo 2 instalada/carregada. -->
+  <text x="16" y="112" font-size="96" font-weight="700" fill="#F4EFFF" letter-spacing="-2">mesa</text>
+  <text x="284" y="112" font-size="96" font-weight="800" fill="#33E0D6" letter-spacing="-2">p</text>
+  <!-- o "o" de pop é a ficha de jogo -->
+  <g transform="translate(384 80)">
+    <circle r="42" fill="#FFF9F0"/>
+    <circle r="34" fill="none" stroke="#1B1235" stroke-width="9" stroke-dasharray="11 16" stroke-linecap="round" transform="rotate(18)"/>
+    <circle r="19" fill="none" stroke="#1B1235" stroke-width="5"/>
+    <circle r="8" fill="#F252C1"/>
+  </g>
+  <text x="436" y="112" font-size="96" font-weight="800" fill="#33E0D6" letter-spacing="-2">p</text>
+  <!-- faísca -->
+  <path d="M508 22 L516 44 L538 52 L516 60 L508 82 L500 60 L478 52 L500 44 Z" fill="#FFC53D"/>
+</svg>

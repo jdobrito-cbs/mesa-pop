@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" font-family="'Baloo 2', 'Baloo 2 Variable', 'Arial Rounded MT Bold', sans-serif">
+  <!-- Versão monocromática (um só tom — usar sobre qualquer fundo com contraste). -->
+  <text x="16" y="112" font-size="96" font-weight="700" fill="currentColor" letter-spacing="-2">mesa</text>
+  <text x="284" y="112" font-size="96" font-weight="800" fill="currentColor" letter-spacing="-2">p</text>
+  <g transform="translate(384 80)" fill="none" stroke="currentColor">
+    <circle r="42" stroke-width="7"/>
+    <circle r="19" stroke-width="5"/>
+    <circle r="8" fill="currentColor" stroke="none"/>
+  </g>
+  <text x="436" y="112" font-size="96" font-weight="800" fill="currentColor" letter-spacing="-2">p</text>
+  <path d="M508 22 L516 44 L538 52 L516 60 L508 82 L500 60 L478 52 L500 44 Z" fill="currentColor"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300" font-family="'Baloo 2', 'Baloo 2 Variable', 'Arial Rounded MT Bold', sans-serif">
+  <!-- Wordmark empilhado. Requer a fonte Baloo 2 instalada/carregada. -->
+  <text x="180" y="110" font-size="88" font-weight="700" fill="#F4EFFF" letter-spacing="-2" text-anchor="middle">mesa</text>
+  <text x="98" y="234" font-size="96" font-weight="800" fill="#33E0D6" letter-spacing="-2" text-anchor="middle">p</text>
+  <g transform="translate(180 202)">
+    <circle r="42" fill="#FFF9F0"/>
+    <circle r="34" fill="none" stroke="#1B1235" stroke-width="9" stroke-dasharray="11 16" stroke-linecap="round" transform="rotate(18)"/>
+    <circle r="19" fill="none" stroke="#1B1235" stroke-width="5"/>
+    <circle r="8" fill="#F252C1"/>
+  </g>
+  <text x="262" y="234" font-size="96" font-weight="800" fill="#33E0D6" letter-spacing="-2" text-anchor="middle">p</text>
+  <path d="M298 130 L306 152 L328 160 L306 168 L298 190 L290 168 L268 160 L290 152 Z" fill="#FFC53D"/>
+</svg>
