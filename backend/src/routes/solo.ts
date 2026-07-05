@@ -20,6 +20,8 @@ const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints
   'come-come': { maxPerSec: 120, minMs: 4000, maxPoints: 500_000 },
   'pega-ladrao': { maxPerSec: 100, minMs: 4000, maxPoints: 300_000 },
   'missao-elevador': { maxPerSec: 120, minMs: 5000, maxPoints: 500_000 },
+  paciencia: { maxPerSec: 30, minMs: 25000, maxPoints: 2_000 },
+  puzzle: { maxPerSec: 80, minMs: 15000, maxPoints: 10_000 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })

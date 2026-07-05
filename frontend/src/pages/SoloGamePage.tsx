@@ -14,6 +14,7 @@ import { InvasoresGame, INV_W, INV_H } from '../games/invasores'
 import { ComeComeGame, COME_W, COME_H } from '../games/comeCome'
 import { PegaLadraoGame, PEGA_W, PEGA_H } from '../games/pegaLadrao'
 import { MissaoElevadorGame, ELEV_W, ELEV_H } from '../games/missaoElevador'
+import { PuzzleGame, PUZZLE_W, PUZZLE_H } from '../games/puzzle'
 
 interface LeaderRow {
   rank: number
@@ -184,6 +185,17 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
       { id: 'tiro', icon: '✦', label: 'Tiro', invoke: (g) => (g as MissaoElevadorGame).triggerShoot() },
     ],
     create: (cb) => new MissaoElevadorGame(cb),
+  },
+  puzzle: {
+    slug: 'puzzle',
+    title: 'Puzzle',
+    icon: '🧩',
+    width: PUZZLE_W,
+    height: PUZZLE_H,
+    wide: true,
+    controls:
+      'Toque em DUAS peças para trocá-las de lugar até montar a imagem. Peça no lugar certo ganha um pontinho verde. Menos trocas e menos tempo = mais pontos — são 3 níveis!',
+    create: (cb) => new PuzzleGame(cb),
   },
 }
 

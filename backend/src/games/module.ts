@@ -6,6 +6,8 @@ export interface GameModule<S = unknown, A = unknown> {
   slug: string
   minPlayers: number
   maxPlayers: number
+  /** contagens EXATAS aceitas (ex.: truco = [2, 4]); ausente = min..max */
+  validPlayerCounts?: number[]
   /** jogadores escolhem assento/dupla na sala de espera */
   seatPicking?: boolean
   /** sala aceita espectadores (getStateFor recebe seat -1) */

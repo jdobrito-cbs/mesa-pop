@@ -381,6 +381,9 @@ export class RoomManager {
     if (room.players.size < room.module.minPlayers) {
       throw new Error(`Precisa de ${room.module.minPlayers} jogadores para começar`)
     }
+    if (room.module.validPlayerCounts && !room.module.validPlayerCounts.includes(room.players.size)) {
+      throw new Error(`Este jogo aceita ${room.module.validPlayerCounts.join(' ou ')} jogadores`)
+    }
 
     // assentos: respeita os escolhidos; sorteia os demais nas vagas livres
     const chosen = new Set(

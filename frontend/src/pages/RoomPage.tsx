@@ -15,6 +15,7 @@ import type {
   RacingSnapshot,
   RoomView,
   StopView,
+  TrucoView,
 } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
@@ -23,6 +24,7 @@ import ChessBoard from '../components/ChessBoard'
 import DesenhaGame from '../components/DesenhaGame'
 import DueloGame from '../components/DueloGame'
 import StopGame from '../components/StopGame'
+import TrucoTable from '../components/TrucoTable'
 import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
@@ -347,6 +349,13 @@ export default function RoomPage() {
               {room.gameSlug === 'stop' && (
                 <StopGame
                   view={game.state as StopView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'truco' && (
+                <TrucoTable
+                  view={game.state as TrucoView}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

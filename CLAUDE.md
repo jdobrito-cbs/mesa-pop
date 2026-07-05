@@ -12,11 +12,50 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 8 — EM ANDAMENTO. Lotes 1–4 ✅. Lote 5: Palavra
-  do Dia + Duelo de Palavras + Stop! ✅ (2026-07-05). FASES 0–7 ✅.
-  **20 jogos jogáveis; faltam 3 do catálogo** (Truco, Paciência, Puzzle).
-  Próximo lote: aguardando OK.
+- **Fase atual**: 🏁 **FASE 8 — ✅ CONCLUÍDA (2026-07-05). TODAS as
+  fases do roadmap (0–8) estão entregues.** Lote 6 (Truco + Paciência +
+  Puzzle) fechou o catálogo: **23 jogos jogáveis, 23/23 do catálogo**.
+  Próximo: sem fase definida — melhorias futuras anotadas abaixo
+  aguardam priorização do usuário.
 - **Última atualização**: 2026-07-05
+- **FASE 8 · lote 6 entregue — TRUCO, PACIÊNCIA E PUZZLE (fecha o
+  catálogo)** (2026-07-05):
+  - **Truco paulista** (`shared/truco.ts` + `backend/games/truco.ts` +
+    `TrucoTable.tsx`): baralho de 40 (sem 8/9/10, crypto Fisher-Yates),
+    vira → manilha = rank SEGUINTE (força por naipe ♣>♥>♠>♦), mão =
+    melhor de 3 vazas (empate entre times → vaza empachada; leva quem já
+    venceu qualquer vaza; tudo empatado anula), truco escala 1→3→6→9→12
+    com aumentar por cima (só a dupla que responde), correr entrega o
+    valor ANTERIOR, partida até 12 tentos. **MÃO ESCONDIDA por assento**
+    (trucoViewFor; teste de serialização). 2 jogadores (1×1) ou 4
+    (duplas 0+2×1+3) — **novo `GameModule.validPlayerCounts`** validado
+    no manager.start ("Este jogo aceita 2 ou 4 jogadores"); 3 nunca.
+    seatPicking + espectadores + rotação. Mesa de feltro com vira,
+    manilha destacada em amarelo na mão, vazas ✓/✗/=, tentos /12,
+    botões TRUCO!/SEIS!/NOVE!/DOZE!/Aceitar/Correr. Blefe = chat da mesa.
+    Melhorias futuras anotadas: mão de onze e mão de ferro.
+  - **Paciência** (`PacienciaPage.tsx`, Klondike DOM sem canvas):
+    clique-inteligente (carta tenta a FUNDAÇÃO, senão a melhor coluna;
+    corridas movem juntas; K em coluna vazia), compra 1 a 1 com
+    reciclagem do descarte. +10 fundação, +5 carta virada, bônus de
+    velocidade (600−2×seg, mín 100) ao fechar o baralho. Pontos via
+    /api/solo start/finish (PLAUSIBILITY 'paciencia'); convidado joga
+    sem pontuar.
+  - **Puzzle** (`games/puzzle.ts` no esqueleto solo, canvas 720×520):
+    3 níveis (3×2→4×3→5×4), imagens 100% procedurais (pôr-do-sol/fundo
+    do mar/espaço), toque em DUAS peças troca (detecção por
+    input.downAt — não perde cliques), pontinho verde na peça certa,
+    seleção com glow ciano, MONTADO! = base−15×trocas−4×seg (mín 120)
+    + confete. PLAUSIBILITY 'puzzle'.
+  - 153 testes (9 novos do truco: manilha/força por naipe, vaza com
+    empate entre times, vencedorMao com empates, aceitar sobe valor,
+    correr entrega anterior, aumentar por cima 3→6, mão escondida por
+    serialização, fim aos 12). Typecheck limpo nos 3 workspaces.
+  - Demo real (2 navegadores): Zeca pediu TRUCO!, Nina viu
+    Aceitar(3)/SEIS!/Correr e aceitou; vaza disputada valendo 3; Nina
+    levou 3 tentos (3/12) e a mão seguinte redistribuiu. Paciência com
+    fundações subindo (60 pts, 24 jogadas). Puzzle: bot resolveu o
+    nível 1 pelo hook __solo → "MONTADO! +536" com confete.
 - **FASE 8 · lote 5 entregue — JOGOS DE PALAVRA** (2026-07-05):
   - `backend/lib/palavras5.ts`: ~300 palavras-alvo de 5 letras pt-BR sem
     acento; `palavraDoDia(date)` determinística (hash da data);
@@ -476,7 +515,12 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: FASE 7 em andamento (Corrida Pop PvP).
+- **Próximo passo**: roadmap 0–8 completo. Backlog de melhorias
+  anotadas (aguardando priorização do usuário): mão de onze/ferro no
+  Truco; dicionário de palavras aceitas no termo/duelo; votação de
+  respostas no Stop; moderação de chat no admin; arte da fazenda
+  (pendência abaixo); extração do esqArt do co-op; modo "desafio
+  diário" com seed nos puzzles.
 
 > Ao final de cada sessão de trabalho, atualize esta seção: fase atual, o que
 > foi concluído, decisões tomadas e o próximo passo.
