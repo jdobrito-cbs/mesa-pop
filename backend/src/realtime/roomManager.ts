@@ -675,6 +675,10 @@ export class RoomManager {
             update: { isConnected: true, leftAt: null },
           })
         }
+        // se o anfitrião rodou para a fila, o comando passa a quem está sentado
+        if (!room.players.has(room.hostId)) {
+          room.hostId = [...room.players.keys()][0] ?? room.hostId
+        }
       }
 
       room.status = 'WAITING'

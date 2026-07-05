@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type {
   CheckersState,
+  ChessMove,
+  ChessState,
   CoopSnapshot,
   DominoAction,
   DominoView,
@@ -14,6 +16,7 @@ import type {
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
+import ChessBoard from '../components/ChessBoard'
 import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
@@ -229,6 +232,14 @@ export default function RoomPage() {
                   players={seatedPlayers}
                 />
               )}
+              {room.gameSlug === 'xadrez' && (
+                <ChessBoard
+                  state={game.state as ChessState}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onMove={(move: ChessMove) => void sendAction(move)}
+                />
+              )}
               {room.gameSlug === 'domino' && (
                 <DominoTable
                   view={game.state as DominoView}
@@ -291,10 +302,10 @@ export default function RoomPage() {
             {room.features.rotation && !end.draw && (
               <p className="mt-2 text-sm text-text-muted">
                 {room.isPrivate || room.spectators.length === 0
-                  ? 'A mesa continua com as mesmas duplas — revanche!'
+                  ? 'A mesa continua com os mesmos jogadores — revanche!'
                   : youWon
-                    ? 'Vocês ficam na mesa — a próxima dupla já foi chamada!'
-                    : 'A dupla que perdeu vai para a fila. A mesa continua!'}
+                    ? 'Quem vence fica na mesa — o próximo da fila já foi chamado!'
+                    : 'Quem perde vai para a fila. A mesa continua!'}
               </p>
             )}
             <div className="mt-7 flex flex-wrap justify-center gap-3">

@@ -47,7 +47,7 @@ export const GAME_CATALOG: GameDef[] = [
   // FASE 7
   { slug: 'corrida', name: 'Corrida Pop', description: 'Carro ou moto em 3ª pessoa, com drift e boost. Até 4.', family: 'ACTION', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🏎️', phase: 7, enabled: true },
   // FASE 8
-  { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis, em salas ranqueadas.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: false },
+  { slug: 'xadrez', name: 'Xadrez', description: 'O jogo dos reis — com espectadores e fila.', family: 'TURN', minPlayers: 2, maxPlayers: 2, color: 'pop-purple', icon: '♞', phase: 8, enabled: true },
   { slug: 'truco', name: 'Truco', description: 'Blefe, grite truco e vire a mesa.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-orange', icon: '🂡', phase: 8, enabled: false },
   { slug: 'stop', name: 'Stop!', description: 'Adedanha com os amigos: pense rápido!', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-yellow', icon: '✏️', phase: 8, enabled: false },
   { slug: 'desenha-adivinha', name: 'Desenha & Adivinha', description: 'Desenhe a palavra secreta em 3 min — quem acerta no chat, vence.', family: 'PARTY', minPlayers: 3, maxPlayers: 6, color: 'pop-green', icon: '🎨', phase: 8, enabled: false },

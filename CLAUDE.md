@@ -12,9 +12,41 @@ Base sólida primeiro; os jogos plugam nela.
 
 ## ⚠️ ESTADO ATUAL DO PROJETO (atualizar sempre ao concluir trabalho)
 
-- **Fase atual**: FASE 7 — ✅ CONCLUÍDA (2026-07-05). FASES 0–6 ✅.
-  Próximo passo: FASE 8 — restante do catálogo (aguardando OK do usuário).
+- **Fase atual**: FASE 8 — EM ANDAMENTO (lote 1: Xadrez ✅ 2026-07-05).
+  FASES 0–7 ✅. Próximo lote: aguardando OK do usuário (sugestão: turno
+  2p — Gamão/Reversi/Trilha — ou arcades solo — Snake/Campo Minado).
 - **Última atualização**: 2026-07-05
+- **FASE 8 · lote 1 entregue — XADREZ** (2026-07-05):
+  - `shared/src/chess.ts`: regras completas e puras — todos os movimentos,
+    roque (rei/torre intactos, caminho livre, sem xeque no percurso), en
+    passant (expira na jogada seguinte), promoção com escolha (dama por
+    padrão), peça cravada, xeque, xeque-mate, afogamento, regra dos 50
+    lances, TRIPLA REPETIÇÃO (positionKey com board+vez+roque+ep) e
+    material insuficiente (K×K, K+B/N×K, K+B×K+B mesma cor).
+    **LIÇÃO**: `export *` no index do shared COLIDE nomes — `legalMoves`
+    já existia no checkers e o import resolvia para a versão errada
+    (retornava [] silenciosamente). Renomeado p/ `legalChessMoves`/
+    `allLegalChessMoves`. Ao criar módulo novo no /shared, checar colisão
+    de nomes exportados. (Outra lição: NÃO usar PowerShell -replace em
+    arquivo UTF-8 com acentos — corrompe a codificação; usar Edit/Write.)
+  - Backend `games/chess.ts`: allowSpectators + rotation LIGADOS (pedido
+    do usuário da Fase 3: "ligar também no Xadrez na Fase 8"). Rotação do
+    manager é genérica por winnerUserIds — funcionou para 2p sem mudança.
+    **Ajuste no manager**: se o anfitrião RODA para a fila (perdeu), o
+    comando passa a quem está sentado (hostId reatribuído).
+  - `ChessBoard.tsx`: casas creme/roxo Mesa Pop, glifos ♟♞♝♜♛♚ (brancas
+    em creme com sombra), lances legais calculados LOCALMENTE com a mesma
+    lógica compartilhada, destaque do último lance, seletor de promoção
+    (dama/torre/bispo/cavalo), badge XEQUE! pulsando, contagem de
+    capturadas, tabuleiro girado p/ o seat 1, modo espectador.
+    Textos de rotação do RoomPage generalizados (era "dupla" fixo).
+  - 125 testes (12 novos de regras: abertura, bispo preso, cravada, en
+    passant com expiração, roque ok/através de xeque/direito perdido,
+    promoção, mate do louco, mate do pastor, afogamento, 50 lances +
+    material, tripla repetição, sinalização de xeque).
+  - Demo real (3 usuárias): Eva entrou de espectadora (👀 sem interagir),
+    mate do pastor na mesa, overlay de vitória com aviso de rotação e a
+    sala voltou à ESPERA com Eva SENTADA no lugar da perdedora.
 - **FASE 7 entregue** (Corrida Pop — PvP com client-side prediction, o
   "boss final técnico"). **REFEITA em TERCEIRA PESSOA estilo Top Gear no
   mesmo dia, a pedido do usuário** (a 1ª versão era top-down):
