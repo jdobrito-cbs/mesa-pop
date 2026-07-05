@@ -2,7 +2,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { io as ioc, type Socket } from 'socket.io-client'
 import type { FastifyInstance } from 'fastify'
 import { buildApp } from '../src/app'
-import { legalMoves, type Ack, type CheckersState, type RoomView } from '@mesapop/shared'
+import {
+  legalMoves,
+  type Ack,
+  type ChatMessageView,
+  type CheckersState,
+  type RoomView,
+} from '@mesapop/shared'
 
 /**
  * Integração do tempo real: dois clientes criam sala, jogam Damas e
@@ -139,6 +145,26 @@ describe('salas + damas em tempo real', () => {
     // lance ilegal é recusado
     const illegal = await emitAck(second, 'game:action', { action: { from: 0, to: 63 } })
     expect(illegal.ok).toBe(false)
+  })
+
+  it('chat da sala: mensagem chega ao parceiro, com anti-flood e limites', async () => {
+    const received = once<ChatMessageView>(sockB, 'chat:message')
+    const sent = await emitAck(sockA, 'chat:send', { text: '  boa sorte!  ' })
+    expect(sent.ok).toBe(true)
+
+    const msg = await received
+    expect(msg.text).toBe('boa sorte!') // sanitizada (trim + espaços)
+    expect(msg.displayName).toBe('Player a')
+
+    // flood imediato é barrado
+    const flood = await emitAck(sockA, 'chat:send', { text: 'spam' })
+    expect(flood.ok).toBe(false)
+
+    // mensagem vazia e gigante são barradas
+    const empty = await emitAck(sockB, 'chat:send', { text: '   ' })
+    expect(empty.ok).toBe(false)
+    const huge = await emitAck(sockB, 'chat:send', { text: 'x'.repeat(301) })
+    expect(huge.ok).toBe(false)
   })
 
   it('abandono no meio da partida dá W.O. ao adversário', async () => {

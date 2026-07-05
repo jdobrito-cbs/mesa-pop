@@ -130,6 +130,12 @@ casual alegre.
   escolher um jogo, tocar uma animação de ficha/moeda sendo inserida num
   arcade — ar de jogos antigos. Componente reutilizável (`CoinInsert`) usado
   como transição padrão de entrada em TODOS os jogos.
+- **Chat da sala** (pedido do usuário em 2026-07-04): TODO jogo multijogador
+  tem uma janela de chat geral para conversar com os parceiros da sala.
+  Implementado no esqueleto de salas (Fase 2) — vale automaticamente para
+  todos os jogos multiplayer futuros. Mensagens em memória por sala (últimas
+  100, reenviadas na reconexão), sanitizadas e limitadas no servidor.
+  Moderação de chat pelo admin: candidata a fase futura.
 - **Logo**: "Mesa Pop" em SVG. Wordmark com display font divertido; explorar
   "mesa" e/ou "pop" (ex.: "O" de Pop como ficha de jogo, bolha estourando).
   Variações: horizontal, empilhada, monocromática.

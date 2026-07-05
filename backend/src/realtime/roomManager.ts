@@ -1,11 +1,15 @@
 import crypto from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import type { Server } from 'socket.io'
-import type { GameEndView, RoomView } from '@mesapop/shared'
+import type { ChatMessageView, GameEndView, RoomView } from '@mesapop/shared'
 import { getGameModule, type GameModule } from '../games/module'
 
 /** Tempo que um jogador desconectado tem para voltar antes do W.O. */
 const RECONNECT_GRACE_MS = 60_000
+/** Chat: histórico por sala e limites anti-flood. */
+const CHAT_HISTORY_LIMIT = 100
+const CHAT_MAX_LENGTH = 300
+const CHAT_MIN_INTERVAL_MS = 500
 
 export interface RoomUser {
   id: string
@@ -34,6 +38,8 @@ export interface LiveRoom {
   state: unknown | null
   matchId: string | null
   disconnectTimers: Map<string, NodeJS.Timeout>
+  chat: ChatMessageView[]
+  lastChatAt: Map<string, number>
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -136,6 +142,8 @@ export class RoomManager {
       state: null,
       matchId: null,
       disconnectTimers: new Map(),
+      chat: [],
+      lastChatAt: new Map(),
     }
     this.roomsByCode.set(code, room)
     this.roomCodeByUser.set(user.id, code)
@@ -161,6 +169,7 @@ export class RoomManager {
       }
       this.roomCodeByUser.set(user.id, room.code)
       this.io.sockets.sockets.get(socketId)?.join(room.id)
+      this.io.to(socketId).emit('chat:history', room.chat)
       await this.prisma.roomPlayer.updateMany({
         where: { roomId: room.id, userId: user.id },
         data: { isConnected: true, leftAt: null },
@@ -187,6 +196,7 @@ export class RoomManager {
     })
     this.roomCodeByUser.set(user.id, room.code)
     this.io.sockets.sockets.get(socketId)?.join(room.id)
+    this.io.to(socketId).emit('chat:history', room.chat)
     await this.prisma.roomPlayer.upsert({
       where: { roomId_userId: { roomId: room.id, userId: user.id } },
       create: { roomId: room.id, userId: user.id },
@@ -248,6 +258,36 @@ export class RoomManager {
       const winner = [...room.players.values()].find((p) => p.seat === result.winnerSeat)
       await this.finish(room, winner?.userId ?? null, result.draw, 'normal')
     }
+  }
+
+  /** Chat geral da sala — sanitizado e com anti-flood. */
+  sendChat(userId: string, rawText: unknown): void {
+    const room = this.roomOf(userId)
+    const player = room?.players.get(userId)
+    if (!room || !player) throw new Error('Você não está numa sala')
+
+    const text = String(rawText ?? '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!text) throw new Error('Escreva alguma coisa primeiro')
+    if (text.length > CHAT_MAX_LENGTH) throw new Error('Mensagem longa demais (máx. 300)')
+
+    const now = Date.now()
+    if (now - (room.lastChatAt.get(userId) ?? 0) < CHAT_MIN_INTERVAL_MS) {
+      throw new Error('Calma! Espere um instante entre mensagens')
+    }
+    room.lastChatAt.set(userId, now)
+
+    const message: ChatMessageView = {
+      id: crypto.randomUUID(),
+      userId,
+      displayName: player.displayName,
+      text,
+      at: new Date(now).toISOString(),
+    }
+    room.chat.push(message)
+    if (room.chat.length > CHAT_HISTORY_LIMIT) room.chat.shift()
+    this.io.to(room.id).emit('chat:message', message)
   }
 
   async leave(userId: string) {

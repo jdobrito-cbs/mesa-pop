@@ -22,6 +22,15 @@ export interface RoomView {
   players: RoomPlayerView[]
 }
 
+export interface ChatMessageView {
+  id: string
+  userId: string
+  displayName: string
+  text: string
+  /** ISO timestamp */
+  at: string
+}
+
 export interface GameEndView {
   winnerUserId: string | null
   draw: boolean
@@ -45,6 +54,7 @@ export interface ClientEvents {
   'room:leave': (ack: (res: Ack) => void) => void
   'room:start': (ack: (res: Ack) => void) => void
   'game:action': (input: { action: unknown }, ack: (res: Ack) => void) => void
+  'chat:send': (input: { text: string }, ack: (res: Ack) => void) => void
 }
 
 /** servidor → cliente */
@@ -52,4 +62,6 @@ export interface ServerEvents {
   'room:update': (room: RoomView) => void
   'game:state': (payload: { state: unknown; yourSeat: number }) => void
   'game:end': (payload: GameEndView) => void
+  'chat:message': (message: ChatMessageView) => void
+  'chat:history': (messages: ChatMessageView[]) => void
 }

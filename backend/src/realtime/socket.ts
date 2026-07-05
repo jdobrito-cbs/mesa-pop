@@ -87,6 +87,10 @@ export default fp(async (app) => {
       void withAck(() => rooms.action(user.id, input?.action))(ack)
     })
 
+    socket.on('chat:send', (input, ack) => {
+      void withAck(async () => rooms.sendChat(user.id, input?.text))(ack)
+    })
+
     socket.on('disconnect', () => {
       void rooms.onDisconnect(user.id, socket.id)
     })

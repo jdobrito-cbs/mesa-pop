@@ -4,6 +4,7 @@ import type { CheckersState, GameEndView, RoomView } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
+import RoomChat from '../components/RoomChat'
 import { Chip } from '../components/Logo'
 
 export default function RoomPage() {
@@ -13,6 +14,13 @@ export default function RoomPage() {
 
   const [room, setRoom] = useState<RoomView | null>(null)
   const [game, setGame] = useState<{ state: CheckersState; yourSeat: number } | null>(null)
+
+  // hook de dev para testes automatizados de UI (não existe no build de produção)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      ;(window as unknown as Record<string, unknown>).__game = game
+    }
+  }, [game])
   const [end, setEnd] = useState<GameEndView | null>(null)
   const [error, setError] = useState('')
   const [toast, setToast] = useState('')
@@ -120,9 +128,11 @@ export default function RoomPage() {
         </p>
       )}
 
+      <div className="mt-6 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
+      <div>
       {/* SALA DE ESPERA */}
       {room.status === 'WAITING' && (
-        <div className="card mt-6 p-8 text-center">
+        <div className="card p-8 text-center">
           <p className="text-sm font-bold tracking-widest text-text-muted uppercase">
             {room.isPrivate ? 'Sala privada — chame com o código' : 'Sala pública'}
           </p>
@@ -172,7 +182,7 @@ export default function RoomPage() {
 
       {/* PARTIDA */}
       {playing && !end && (
-        <div className="mt-6">
+        <div>
           <CheckersBoard
             state={game.state}
             yourSeat={game.yourSeat}
@@ -184,6 +194,11 @@ export default function RoomPage() {
           />
         </div>
       )}
+      </div>
+
+      {/* chat geral da mesa — presente em todo jogo multijogador */}
+      <RoomChat className="h-80 lg:sticky lg:top-20 lg:h-[calc(100vh-8rem)] lg:max-h-[640px]" />
+      </div>
 
       {/* FIM DE JOGO */}
       {end && (
