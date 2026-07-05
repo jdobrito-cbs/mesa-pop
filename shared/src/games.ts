@@ -57,4 +57,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'missao-elevador', name: 'Missão Elevador', description: 'Desça o prédio de elevador, porta a porta, sem ser visto.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🛗', phase: 8, enabled: false },
   { slug: 'pega-ladrao', name: 'Pega-Ladrão', description: 'Persiga o ladrão pelos andares da loja antes que ele fuja.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '👮', phase: 8, enabled: false },
   { slug: 'come-come', name: 'Come-Come', description: 'Limpe o labirinto sem virar lanche dos fantasmas.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🟡', phase: 8, enabled: false },
+  { slug: 'invasores', name: 'Invasores', description: 'Segure as fileiras alienígenas antes que desçam até você.', family: 'ARCADE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '👾', phase: 8, enabled: false },
 ]

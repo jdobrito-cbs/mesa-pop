@@ -302,6 +302,10 @@ Cada jogo é um módulo implementando interface comum, ex.:
     em 2026-07-04): labirinto, pastilhas, 4 fantasmas com personalidades,
     power-pellet que inverte a caçada. Visão de cima (usa a engine 2D
     top-down da Fase 4 com grade de labirinto).
+  - **"Invasores"** — clone de *Space Invaders* como referência (pedido do
+    usuário em 2026-07-04): fileiras de alienígenas descendo em bloco,
+    barreiras destrutíveis, nave bônus, velocidade crescente. Compartilha a
+    base de tiro/colisão da engine 2D do 1942 (Fase 4).
 - **Palavra**: Termo diário, caça-palavras.
 
 ### Ação 2D top-down (engine compartilhada)
