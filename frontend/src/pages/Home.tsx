@@ -84,9 +84,7 @@ export default function Home() {
       {/* CATÁLOGO: fileira de cima = 3 mais jogados; de baixo = 3 sorteados por visita */}
       <section className="mx-auto max-w-6xl px-4 py-6">
         <h2 className="text-3xl font-extrabold md:text-4xl">O que vai rolar na mesa</h2>
-        <p className="mt-2 text-text-muted">
-          São 32 jogos na mesa — estes seis mudam conforme a casa joga.
-        </p>
+        <p className="mt-2 text-text-muted">São 32 jogos na mesa.</p>
         <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[...(destaque?.maisJogados ?? []), ...(destaque?.aleatorios ?? [])].map((game) => (
             <GameCard key={game.slug} game={game} />
