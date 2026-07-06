@@ -305,7 +305,10 @@ export class ComeComeGame implements GameHost {
       const centerY = (cy + 0.5) * CELL
       if (Math.abs(g.x - centerX) < gspeed * dt + 1 && Math.abs(g.y - centerY) < gspeed * dt + 1) {
         this.steerGhost(g)
-        if (g.dir !== before) {
+        // snap SÓ quando muda de direção de verdade (comparar por VALOR!
+        // por referência era sempre "diferente" e o fantasma ficava preso
+        // vibrando no centro do tile — o bug do fantasma parado)
+        if (g.dir.x !== before.x || g.dir.y !== before.y) {
           g.x = centerX
           g.y = centerY
         }

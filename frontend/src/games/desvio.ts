@@ -49,6 +49,8 @@ export class DesvioGame implements GameHost {
   private ship = { x: DESVIO_W / 2, y: DESVIO_H - 90, r: 10, vx: 0 }
   private trail: Array<{ x: number; y: number; life: number }> = []
   private obstacles: Obstacle[] = []
+  /** tiros das naves alienígenas — também é desvio de UM toque */
+  private shots: Array<{ x: number; y: number; vx: number; vy: number; r: number }> = []
   private time = 0
   private spawnTimer = 0
   private over = false
@@ -158,7 +160,18 @@ export class DesvioGame implements GameHost {
       o.x += o.vx * dt
       o.y += o.vy * dt
       o.angle += o.spin * dt
-      if (o.kind === 'alien') o.x += Math.sin(this.time * 3 + o.seed) * 60 * dt
+      if (o.kind === 'alien') {
+        o.x += Math.sin(this.time * 3 + o.seed) * 60 * dt
+        // a nave ATIRA de vez em quando, mirando (mais ou menos) em você
+        if (o.y > 20 && o.y < this.ship.y - 60 && Math.random() < dt * 0.55) {
+          const alvoX = this.ship.x + rand(-50, 50)
+          const dx0 = alvoX - o.x
+          const dy0 = this.ship.y - o.y
+          const d0 = Math.hypot(dx0, dy0) || 1
+          const v = 230 + Math.min(this.time, 90) * 1.2
+          this.shots.push({ x: o.x, y: o.y + 8, vx: (dx0 / d0) * v, vy: (dy0 / d0) * v, r: 4 })
+        }
+      }
       if (o.kind === 'comet' && Math.random() < 0.5) {
         this.particles.list.push({
           x: o.x - o.vx * 0.02,
@@ -175,6 +188,27 @@ export class DesvioGame implements GameHost {
     this.obstacles = this.obstacles.filter(
       (o) => o.y < DESVIO_H + 60 && o.x > -80 && o.x < DESVIO_W + 80,
     )
+
+    // tiros alienígenas voando
+    for (const s of this.shots) {
+      s.x += s.vx * dt
+      s.y += s.vy * dt
+    }
+    this.shots = this.shots.filter(
+      (s) => s.y < DESVIO_H + 20 && s.y > -20 && s.x > -20 && s.x < DESVIO_W + 20,
+    )
+    for (const s of this.shots) {
+      if (circleHit(this.ship, s)) {
+        this.over = true
+        this.shake.kick(14)
+        this.waves.add(this.ship.x, this.ship.y, 90, '#55E07F')
+        this.waves.add(this.ship.x, this.ship.y, 50, '#FFC53D')
+        this.particles.burst(this.ship.x, this.ship.y, '#55E07F', 30, 280)
+        this.particles.burst(this.ship.x, this.ship.y, '#FFC53D', 22, 200)
+        this.cb.onGameOver(this.points)
+        return
+      }
+    }
 
     // um toque e acabou
     for (const o of this.obstacles) {
@@ -313,6 +347,20 @@ export class DesvioGame implements GameHost {
         }
       }
       ctx.restore()
+    }
+
+    // tiros alienígenas: gotas verdes brilhando
+    for (const s of this.shots) {
+      withGlow(ctx, '#55E07F', 10, () => {
+        const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r + 2)
+        g.addColorStop(0, '#EAFFF2')
+        g.addColorStop(0.5, '#55E07F')
+        g.addColorStop(1, 'rgba(85,224,127,0)')
+        ctx.fillStyle = g
+        ctx.beginPath()
+        ctx.arc(s.x, s.y, s.r + 2, 0, Math.PI * 2)
+        ctx.fill()
+      })
     }
 
     // a nave do jogador

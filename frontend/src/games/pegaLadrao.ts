@@ -20,8 +20,8 @@ import {
 export const PEGA_W = 560
 export const PEGA_H = 560
 
-/** loja LARGA estilo Keystone Kapers: ~4,5 telas de rolagem lateral */
-const WORLD_W = 2500
+/** loja GIGANTE estilo Keystone Kapers: ~7,5 telas de rolagem lateral */
+const WORLD_W = 4200
 const FLOORS = 4
 const FLOOR_H = 104
 const RADAR_H = 52
@@ -76,7 +76,7 @@ export class PegaLadraoGame implements GameHost {
   private hazards: Hazard[] = []
   private spawnTimer = 1.4
 
-  private timeLeft = 60
+  private timeLeft = 105 // loja gigante: mesmo relógio do resetRound
   private points = 0
   private lives = 3
   private round = 1
@@ -128,12 +128,13 @@ export class PegaLadraoGame implements GameHost {
     this.elevFloor = 0
     this.elevDir = 1
     this.elevPause = 1.2
-    this.tx = 620 + rand(0, 200)
+    this.tx = 950 + rand(0, 400)
     this.tFloor = 1
     this.tOnEscalator = null
     this.escaped = false
     this.hazards = []
-    this.timeLeft = Math.max(75 - (this.round - 1) * 4, 50)
+    // loja maior pede mais relógio
+    this.timeLeft = Math.max(105 - (this.round - 1) * 5, 70)
     this.stunned = 0
     this.pushHud()
   }
@@ -268,19 +269,26 @@ export class PegaLadraoGame implements GameHost {
       return
     }
 
-    // ---- obstáculos ----
+    // ---- obstáculos (nascem logo FORA da tela, vindo na sua direção) ----
     this.spawnTimer -= dt
     if (this.spawnTimer <= 0) {
       const pool = hazardsForRound(this.round)
       const kind = pool[Math.floor(rand(0, pool.length))]!
-      const floor = Math.floor(rand(0, FLOORS))
+      // metade no seu andar (pressão!), metade nos vizinhos
+      const floor =
+        rand(0, 1) < 0.5 ? this.floor : clamp(this.floor + (rand(0, 1) < 0.5 ? 1 : -1), 0, FLOORS - 1)
       const fromLeft = rand(0, 1) < 0.5
       const base =
         kind === 'radinho' ? 290 : kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130
+      const nasceX = clamp(
+        this.x + (fromLeft ? -1 : 1) * (PEGA_W * 0.62 + rand(0, 120)),
+        -40,
+        WORLD_W + 40,
+      )
       this.hazards.push({
         kind,
         floor,
-        x: fromLeft ? -30 : WORLD_W + 30,
+        x: nasceX,
         vx: (fromLeft ? 1 : -1) * base * (1 + this.round * 0.06),
         phase: rand(0, Math.PI * 2),
       })
@@ -352,7 +360,19 @@ export class PegaLadraoGame implements GameHost {
         const accent = ['#F252C1', '#33E0D6', '#FFC53D', '#55E07F'][sec % 4]!
         ctx.fillStyle = hue
         ctx.fillRect(vx, y - 82, 120, 70)
-        ctx.fillStyle = 'rgba(157,92,255,0.16)'
+        // TOLDO listrado da vitrine (identidade da seção)
+        ctx.fillStyle = accent
+        for (let tld = 0; tld < 6; tld++) {
+          ctx.globalAlpha = tld % 2 === 0 ? 0.85 : 0.35
+          ctx.fillRect(vx - 2 + tld * 21, y - 88, 21, 8)
+        }
+        ctx.globalAlpha = 1
+        // vidro com brilho diagonal
+        const vidro = ctx.createLinearGradient(vx, y - 76, vx + 108, y - 32)
+        vidro.addColorStop(0, 'rgba(157,92,255,0.25)')
+        vidro.addColorStop(0.5, 'rgba(157,92,255,0.10)')
+        vidro.addColorStop(1, 'rgba(244,239,255,0.18)')
+        ctx.fillStyle = vidro
         ctx.fillRect(vx + 6, y - 76, 108, 44)
         // conteúdo da vitrine varia (manequim / TVs / araras / plantas)
         ctx.fillStyle = `${accent}55`
@@ -397,33 +417,71 @@ export class PegaLadraoGame implements GameHost {
         ctx.fillStyle = '#FFC53D'
         ctx.fillText(label, sx + 46, y - FLOOR_H + 30)
       }
-      // piso
+      // piso XADREZ de loja de departamento
       const g = ctx.createLinearGradient(0, y, 0, y + 14)
       g.addColorStop(0, '#5A3DA8')
       g.addColorStop(1, '#3A2472')
       ctx.fillStyle = g
       ctx.fillRect(0, y, WORLD_W, 14)
-      // escada rolante (listras diagonais subindo)
+      ctx.fillStyle = 'rgba(244,239,255,0.10)'
+      for (let tx2 = 0; tx2 < WORLD_W; tx2 += 56) ctx.fillRect(tx2, y, 28, 7)
+      ctx.fillStyle = 'rgba(20,14,38,0.25)'
+      for (let tx2 = 28; tx2 < WORLD_W; tx2 += 56) ctx.fillRect(tx2, y + 7, 28, 7)
+      // luminárias do teto do andar
+      for (let lx = 220; lx < WORLD_W; lx += 440) {
+        ctx.strokeStyle = 'rgba(255,249,240,0.22)'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(lx, y - FLOOR_H + 12)
+        ctx.lineTo(lx, y - FLOOR_H + 24)
+        ctx.stroke()
+        withGlow(ctx, '#FFC53D', 9, () => {
+          ctx.fillStyle = '#FFD873'
+          ctx.beginPath()
+          ctx.ellipse(lx, y - FLOOR_H + 27, 9, 4, 0, 0, Math.PI * 2)
+          ctx.fill()
+        })
+      }
+      // escada rolante com CORPO: base, degraus animados e corrimão neon
       if (f < FLOORS - 1) {
         const ex = this.escalatorX(f)
         const topY = FLOOR_Y(f + 1)
-        ctx.strokeStyle = '#33E0D6'
-        ctx.lineWidth = 5
         const dir = f % 2 === 0 ? -1 : 1
+        // base metálica
+        ctx.strokeStyle = '#1E4B47'
+        ctx.lineWidth = 12
         ctx.beginPath()
         ctx.moveTo(ex, y)
         ctx.lineTo(ex + dir * ESCALATOR_W, topY + 14)
         ctx.stroke()
-        ctx.strokeStyle = 'rgba(51,224,214,0.35)'
-        for (let s = 0; s < 5; s++) {
-          const t = s / 5 + ((this.time * 0.4) % 0.2)
+        // esteira
+        ctx.strokeStyle = '#33E0D6'
+        ctx.lineWidth = 5
+        ctx.beginPath()
+        ctx.moveTo(ex, y)
+        ctx.lineTo(ex + dir * ESCALATOR_W, topY + 14)
+        ctx.stroke()
+        // degraus subindo (animados)
+        ctx.strokeStyle = 'rgba(51,224,214,0.5)'
+        ctx.lineWidth = 3
+        for (let s = 0; s < 6; s++) {
+          const t = ((s / 6 + this.time * 0.25) % 1 + 1) % 1
           const sx = ex + dir * ESCALATOR_W * t
           const sy = y + (topY + 14 - y) * t
           ctx.beginPath()
           ctx.moveTo(sx, sy)
-          ctx.lineTo(sx + 14, sy)
+          ctx.lineTo(sx + dir * 14, sy)
           ctx.stroke()
         }
+        // corrimão com glow
+        withGlow(ctx, '#33E0D6', 6, () => {
+          ctx.strokeStyle = 'rgba(51,224,214,0.7)'
+          ctx.lineWidth = 2.5
+          ctx.beginPath()
+          ctx.moveTo(ex, y - 26)
+          ctx.lineTo(ex + dir * ESCALATOR_W, topY - 12)
+          ctx.stroke()
+        })
       }
     }
     // telhado (fuga do ladrão)

@@ -180,9 +180,10 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     width: ELEV_W,
     height: ELEV_H,
     controls:
-      '←/→ anda; suba no elevador e use ↑/↓ para trocar de andar. Espaço (ou botão) ATIRA. Recolha os documentos das portas VERMELHAS e desça até a garagem — cuidado com os agentes!',
+      '←/→ anda; o ELEVADOR sobe e desce sozinho — entre quando ele parar no seu andar. ↓ (ou botão) ABAIXA: esquiva dos tiros altos e atira rasteiro. Espaço (ou botão) ATIRA. Recolha os documentos das portas VERMELHAS e desça até a garagem!',
     actions: [
       { id: 'tiro', icon: '✦', label: 'Tiro', invoke: (g) => (g as MissaoElevadorGame).triggerShoot() },
+      { id: 'abaixar', icon: '⤵', label: 'Abaixar', invoke: (g) => (g as MissaoElevadorGame).triggerDuck() },
     ],
     create: (cb) => new MissaoElevadorGame(cb),
   },
@@ -255,6 +256,9 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
     game.input.attach(canvas, (px, py) => ({ x: px, y: py }))
     const stop = startLoop(canvas, game)
 
+    // centraliza o jogo na tela — o usuário não precisa (nem deve) rolar
+    canvas.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
     // abre a partida no servidor (mede a duração de lá)
     // convidados jogam sem registrar pontuação — ranking pede conta
     setResult(null)
@@ -304,7 +308,8 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
             ref={canvasRef}
             width={def.width}
             height={def.height}
-            className="block w-full touch-none rounded-card ring-2 ring-ink-700"
+            className="mx-auto block w-full touch-none rounded-card ring-2 ring-ink-700"
+            style={{ maxHeight: 'calc(100vh - 140px)', width: 'auto', maxWidth: '100%' }}
             aria-label={def.title}
           />
 

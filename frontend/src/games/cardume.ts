@@ -56,8 +56,13 @@ interface Predator {
 
 export interface CardumeCallbacks {
   onGameOver(points: number): void
-  onHud(hud: { points: number; fish: number; orbiting: boolean }): void
+  onHud(hud: { points: number; fish: number; orbiting: boolean; weapon: string }): void
 }
+
+/** a órbita é arma limitada: 5 giros de ATÉ 10s, depois 120s para recarregar */
+const MAX_GIROS = 5
+const RECARGA_S = 120
+const ORBITA_MAX_S = 10
 
 export class CardumeGame implements GameHost {
   input = new Input()
@@ -84,6 +89,10 @@ export class CardumeGame implements GameHost {
   private wasDown = false
   private over = false
   private lastHud = -1
+  private giros = MAX_GIROS
+  private recarga = 0
+  private orbitAtivo = false
+  private orbitTempo = 0
 
   constructor(private cb: CardumeCallbacks) {
     for (let i = 0; i < 30; i++) this.spawnFish(CARDUME_W / 2 + rand(-40, 40), CARDUME_H / 2 + rand(-40, 40))
@@ -143,11 +152,31 @@ export class CardumeGame implements GameHost {
     if (this.input.pressed(' ')) this.scatter()
     this.wasDown = this.input.isDown
 
-    const orbit = this.orbiting || this.input.pressed('shift')
+    // órbita LIMITADA: gasta 1 giro ao começar a segurar; 0 giros = recarga
+    this.recarga = Math.max(0, this.recarga - dt)
+    if (this.recarga === 0 && this.giros === 0) this.giros = MAX_GIROS
+    const querOrbita = this.orbiting || this.input.pressed('shift')
+    if (querOrbita && !this.orbitAtivo) {
+      if (this.giros > 0) {
+        this.giros--
+        this.orbitAtivo = true
+        this.orbitTempo = ORBITA_MAX_S // cada vórtice dura no máximo 10s
+        if (this.giros === 0) this.recarga = RECARGA_S
+      }
+    } else if (!querOrbita) {
+      this.orbitAtivo = false
+    }
+    // o vórtice EXPIRA sozinho mesmo com o botão seguro
+    if (this.orbitAtivo) {
+      this.orbitTempo -= dt
+      if (this.orbitTempo <= 0) this.orbitAtivo = false
+    }
+    const orbit = this.orbitAtivo && querOrbita
 
     /* ---------- boids ---------- */
-    const SEP = 13
-    const NEIGH = 34
+    // separação FORTE: cardume espalhado é mais difícil de defender
+    const SEP = 24
+    const NEIGH = 44
     for (const f of this.fish) {
       let sepX = 0
       let sepY = 0
@@ -175,11 +204,12 @@ export class CardumeGame implements GameHost {
         }
       }
       if (n > 0) {
-        f.vx += ((aliX / n - f.vx) * 1.4 + (cohX / n - f.x) * 1.6) * dt
-        f.vy += ((aliY / n - f.vy) * 1.4 + (cohY / n - f.y) * 1.6) * dt
+        // menos coesão + mais separação = peixes soltos, não uma bola compacta
+        f.vx += ((aliX / n - f.vx) * 1.4 + (cohX / n - f.x) * 0.9) * dt
+        f.vy += ((aliY / n - f.vy) * 1.4 + (cohY / n - f.y) * 0.9) * dt
       }
-      f.vx += sepX * 9 * dt
-      f.vy += sepY * 9 * dt
+      f.vx += sepX * 14 * dt
+      f.vy += sepY * 14 * dt
 
       const tx = this.target.x - f.x
       const ty = this.target.y - f.y
@@ -338,7 +368,15 @@ export class CardumeGame implements GameHost {
     const secs = Math.floor(this.time)
     if (secs !== this.lastHud) {
       this.lastHud = secs
-      this.cb.onHud({ points: this.points, fish: this.fish.length, orbiting: orbit })
+      this.cb.onHud({
+        points: this.points,
+        fish: this.fish.length,
+        orbiting: orbit,
+        weapon:
+          this.recarga > 0
+            ? `🌀 recarrega em ${Math.ceil(this.recarga)}s`
+            : `🌀 giros ${this.giros}/${MAX_GIROS}`,
+      })
     }
   }
 
@@ -496,9 +534,9 @@ export class CardumeGame implements GameHost {
       ctx.fillRect(pr.x - s, pr.y - s - 8, s * 2 * Math.max(pr.hp / pr.maxHp, 0), 4)
     }
 
-    // indicador do alvo/órbita
+    // indicador do alvo/órbita (só brilha se AINDA houver giro disponível)
     if (!this.over) {
-      const orbit = this.orbiting || this.input.pressed('shift')
+      const orbit = this.orbitAtivo
       ctx.strokeStyle = orbit ? 'rgba(255,197,61,0.8)' : 'rgba(51,224,214,0.5)'
       ctx.lineWidth = orbit ? 2.5 : 1.5
       ctx.beginPath()
@@ -509,6 +547,30 @@ export class CardumeGame implements GameHost {
         ctx.beginPath()
         ctx.arc(this.target.x, this.target.y, 52 + Math.sin(this.time * 8) * 4, 0, Math.PI * 2)
         ctx.stroke()
+        // anel de TEMPO do vórtice (esvazia em 10s)
+        ctx.strokeStyle = '#FFC53D'
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        ctx.arc(
+          this.target.x,
+          this.target.y,
+          60,
+          -Math.PI / 2,
+          -Math.PI / 2 + (this.orbitTempo / ORBITA_MAX_S) * Math.PI * 2,
+        )
+        ctx.stroke()
+      }
+      // medidor de giros no canto: bolinhas cheias/vazias + recarga
+      for (let i = 0; i < MAX_GIROS; i++) {
+        ctx.beginPath()
+        ctx.arc(18 + i * 18, CARDUME_H - 18, 6, 0, Math.PI * 2)
+        ctx.fillStyle = i < this.giros ? '#FFC53D' : 'rgba(255,249,240,0.15)'
+        ctx.fill()
+      }
+      if (this.recarga > 0) {
+        ctx.fillStyle = 'rgba(255,249,240,0.75)'
+        ctx.font = 'bold 12px "Baloo 2 Variable", sans-serif'
+        ctx.fillText(`${Math.ceil(this.recarga)}s`, 18 + MAX_GIROS * 18, CARDUME_H - 14)
       }
     }
 

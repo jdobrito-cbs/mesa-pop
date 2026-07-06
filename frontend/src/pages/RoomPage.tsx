@@ -70,6 +70,21 @@ export default function RoomPage() {
     }
   }, [game])
 
+  // partida começou → centraliza o jogo na tela (sem rolagem acidental)
+  const partidaRef = useRef<HTMLDivElement>(null)
+  const jaCentralizou = useRef(false)
+  const emPartida = room?.status === 'PLAYING' && !!game
+  useEffect(() => {
+    if (!emPartida) {
+      jaCentralizou.current = false
+      return
+    }
+    if (jaCentralizou.current) return
+    jaCentralizou.current = true
+    // espera o componente do jogo montar
+    setTimeout(() => partidaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+  }, [emPartida])
+
   useEffect(() => {
     if (!code || !user) return
     const socket = connectSocket()
@@ -294,7 +309,7 @@ export default function RoomPage() {
 
           {/* PARTIDA — componente por jogo */}
           {playing && !end && (
-            <>
+            <div ref={partidaRef}>
               {room.gameSlug === 'damas' && (
                 <CheckersBoard
                   state={game.state as CheckersState}
@@ -405,7 +420,7 @@ export default function RoomPage() {
                   players={seatedPlayers}
                 />
               )}
-            </>
+            </div>
           )}
         </div>
 

@@ -55,15 +55,47 @@ export default function Login() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col px-4 py-14">
-      <h1 className="text-center text-4xl font-extrabold">Bem-vindo de volta</h1>
-      <p className="mt-2 text-center text-text-muted">Sua cadeira continua aqui.</p>
+      <h1 className="text-center text-4xl font-extrabold">Bem-vindo à mesa</h1>
+      <p className="mt-2 text-center text-text-muted">Escolha um nome e já comece a jogar.</p>
 
-      <form onSubmit={handleSubmit} className="card mt-8 flex flex-col gap-4 p-6" noValidate>
-        {error && (
-          <p role="alert" className="rounded-field bg-pop-magenta/15 px-4 py-3 text-sm font-semibold text-pop-magenta">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p role="alert" className="mt-6 rounded-field bg-pop-magenta/15 px-4 py-3 text-sm font-semibold text-pop-magenta">
+          {error}
+        </p>
+      )}
+
+      {/* jogar sem conta PRIMEIRO: só precisa de um nome */}
+      <form onSubmit={handleGuest} className="card mt-6 flex flex-col gap-3 p-5" noValidate>
+        <p className="text-center font-display text-lg font-bold">
+          🎟️ Jogue sem conta
+        </p>
+        <div className="flex gap-2">
+          <input
+            className="field flex-1"
+            type="text"
+            value={guestName}
+            placeholder="Como quer ser chamado?"
+            maxLength={30}
+            onChange={(e) => setGuestName(e.target.value)}
+            aria-label="Nome de convidado"
+          />
+          <button
+            type="submit"
+            disabled={sending}
+            className="btn-pop bg-gradient-to-br from-pop-cyan to-pop-green px-5 py-2.5 text-sm font-extrabold text-ink-950 disabled:opacity-60"
+          >
+            Jogar!
+          </button>
+        </div>
+        <p className="text-center text-xs text-text-muted">
+          Convidados jogam à vontade — mas chat, fazenda e ranking pedem conta.
+        </p>
+      </form>
+
+      <form onSubmit={handleSubmit} className="card mt-6 flex flex-col gap-4 p-6" noValidate>
+        <p className="text-center font-display text-lg font-bold">
+          💾 Salve seu progresso com um login grátis
+        </p>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold">E-mail</span>
           <input
@@ -101,34 +133,6 @@ export default function Login() {
           Criar conta
         </Link>
       </p>
-
-      {/* jogar sem conta: só precisa de um nome */}
-      <form onSubmit={handleGuest} className="card mt-6 flex flex-col gap-3 p-5" noValidate>
-        <p className="text-center font-display font-bold">
-          🎟️ Ou jogue sem conta
-        </p>
-        <div className="flex gap-2">
-          <input
-            className="field flex-1"
-            type="text"
-            value={guestName}
-            placeholder="Como quer ser chamado?"
-            maxLength={30}
-            onChange={(e) => setGuestName(e.target.value)}
-            aria-label="Nome de convidado"
-          />
-          <button
-            type="submit"
-            disabled={sending}
-            className="btn-pop bg-ink-900 px-5 py-2.5 text-sm ring-2 ring-pop-cyan/50 hover:ring-pop-cyan disabled:opacity-60"
-          >
-            Jogar!
-          </button>
-        </div>
-        <p className="text-center text-xs text-text-muted">
-          Convidados jogam à vontade — mas chat, fazenda e ranking pedem conta.
-        </p>
-      </form>
     </main>
   )
 }

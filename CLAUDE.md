@@ -21,6 +21,48 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **RODADA DE CORREÇÕES pós-teste do usuário (2026-07-05, TODAS
+  implementadas)** — feedback com screenshots:
+  1. **Jogos centralizam na tela ao abrir** (sem rolagem acidental):
+     scrollIntoView block:center no canvas do SoloGamePage e no
+     container da partida do RoomPage; canvas com
+     maxHeight calc(100vh−140px) mantendo proporção (o Come-Come não
+     estoura mais a viewport).
+  2. **Cardume**: órbita/vórtice virou ARMA LIMITADA — 5 giros, cada um
+     com TIMER de 10s (anel dourado esvaziando ao redor do alvo), e
+     recarga de 120s ao gastar os 5 (medidor de bolinhas no canto +
+     HUD "🌀 giros x/5 / recarrega em Ns"). Cardume mais ESPALHADO
+     (SEP 13→24, coesão 1.6→0.9, separação ×14) — bola compacta era
+     fácil demais.
+  3. **Come-Come — BUG dos fantasmas parados no centro CORRIGIDO**: o
+     snap ao centro do tile comparava direção por REFERÊNCIA
+     (`g.dir !== before` sempre true) → re-centralizava todo frame e o
+     fantasma ficava vibrando preso. Comparar por VALOR resolveu
+     (verificado: fantasmas percorrendo o labirinto na demo).
+  4. **Missão Elevador**: elevador agora é AUTÔNOMO (sobe/desce sozinho
+     parando 1,3s em cada andar — acabou o softlock de cabine parada
+     entre andares; seta ▼/▲/▶◀ no poço); ABAIXAR (↓/botão novo)
+     esquiva dos tiros altos e ATIRA RASTEIRO (agentes de elite atiram
+     baixo 35% das vezes — abaixar não é imunidade); gráficos: lua +
+     skyline, papel de parede alternado por andar, números de andar,
+     luminárias penduradas com halo, portas com moldura/plaquinha,
+     cabine com cabos/janela, garagem listrada, sombra + braço + pose
+     agachada nos personagens.
+  5. **Pega-Ladrão**: mundo 2500→4200px (~7,5 telas, relógio 105s);
+     obstáculos nascem logo FORA da tela vindo na direção do guarda
+     (metade no seu andar); gráficos: toldos listrados por seção, vidro
+     com brilho diagonal, piso XADREZ, luminárias de teto, escada
+     rolante com corpo/degraus animados/corrimão neon.
+  6. **Desvio Estelar**: naves alienígenas ATIRAM (gotas verdes com
+     glow, semi-miradas, mais rápidas com o tempo) — também é morte de
+     1 toque.
+  7. **CoinInsert**: a ficha agora nasce ancorada NA FENDA e entra de
+     verdade (achata scaleY 0.75→0.08 na abertura e some dentro).
+  8. **Login reordenado (pedido com print)**: "🎟️ Jogue sem conta" no
+     TOPO; abaixo o box "💾 Salve seu progresso com um login grátis".
+  - Typecheck limpo; 199 testes seguem verdes; demo visual das 8
+    correções com capturas verificadas (fantasmas conferidos por
+    posição via hook __solo).
 - **FASE 9 · lote 5 entregue — CRUZADINHA (fecha os 9 jogos da fase)**
   (2026-07-05):
   - **Gerador** (`shared/cruzadinha.ts`): banco de 80 verbetes

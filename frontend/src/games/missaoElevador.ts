@@ -1,8 +1,9 @@
 /**
- * Missão Elevador — o espião desce o prédio de elevador: recolha os
- * DOCUMENTOS das portas vermelhas, elimine os agentes e chegue à garagem.
- * Prédio limpo → próximo, mais alto e mais vigiado.
- * Controles: ←/→ anda; no elevador, ↑/↓ sobe/desce; espaço/botão = TIRO.
+ * Missão Elevador — o espião desce o prédio recolhendo os DOCUMENTOS das
+ * portas vermelhas até a garagem. O ELEVADOR anda SOZINHO (sobe e desce
+ * parando em cada andar — entre alinhado e salte alinhado; sem softlock).
+ * ←/→ anda · ↓ (ou botão) ABAIXA (esquiva dos tiros altos e atira baixo)
+ * · espaço/botão = TIRO. Prédio limpo → próximo, mais alto e mais vigiado.
  */
 import {
   clamp,
@@ -24,6 +25,9 @@ const SHAFT_X = ELEV_W / 2
 const SHAFT_HALF = 40
 const WALL = 26
 const DOOR_XS = [86, 182, 378, 474]
+/** altura dos tiros: em pé e abaixado */
+const ALTO = 26
+const BAIXO = 11
 
 interface Agent {
   x: number
@@ -31,7 +35,7 @@ interface Agent {
   dir: number
   shootTimer: number
   alive: boolean
-  /** elite (prédio 3+): terno vermelho, 2 de vida, mais rápido */
+  /** elite (prédio 3+): terno vermelho, 2 de vida, atira BAIXO às vezes */
   elite: boolean
   hp: number
 }
@@ -41,6 +45,8 @@ interface Shot {
   y: number
   vx: number
   mine: boolean
+  /** tiro rasteiro (só acerta quem NÃO abaixou/quem abaixou, respectivamente) */
+  low: boolean
 }
 
 interface Door {
@@ -59,11 +65,18 @@ export class MissaoElevadorGame implements GameHost {
   private px = ELEV_W / 2
   private pt = 0 // andar contínuo (0 = topo)
   private facing = 1
+  private crouch = false
+  private duckHold = 0
   private invuln = 0
   private fireTimer = 0
   touchShoot = false
 
+  /** elevador AUTÔNOMO: alvo, direção e parada em cada andar */
   private elevT = 0
+  private elevAlvo = 1
+  private elevDir = 1
+  private elevPausa = 1.4
+
   private doors: Door[] = []
   private agents: Agent[] = []
   private shots: Shot[] = []
@@ -92,6 +105,11 @@ export class MissaoElevadorGame implements GameHost {
     this.touchShoot = true
   }
 
+  /** botão de toque: abaixa por um instante */
+  triggerDuck() {
+    this.duckHold = 0.9
+  }
+
   private pushHud() {
     this.cb.onHud({
       points: this.points,
@@ -111,6 +129,9 @@ export class MissaoElevadorGame implements GameHost {
     this.px = ELEV_W / 2
     this.pt = 0
     this.elevT = 0
+    this.elevAlvo = 1
+    this.elevDir = 1
+    this.elevPausa = 1.6
     this.agents = []
     this.shots = []
     this.doors = []
@@ -134,8 +155,13 @@ export class MissaoElevadorGame implements GameHost {
     this.spawnTimer = 2
   }
 
+  /** cabine alinhada num andar (parada de embarque) */
+  private cabineAlinhada(): boolean {
+    return this.elevPausa > 0
+  }
+
   private aboard(): boolean {
-    return Math.abs(this.px - SHAFT_X) < SHAFT_HALF - 6 && Math.abs(this.pt - this.elevT) < 0.08
+    return Math.abs(this.px - SHAFT_X) < SHAFT_HALF - 6 && Math.abs(this.pt - this.elevT) < 0.3
   }
 
   update(dt: number) {
@@ -145,6 +171,7 @@ export class MissaoElevadorGame implements GameHost {
     this.shake.update(dt)
     if (this.invuln > 0) this.invuln -= dt
     if (this.fireTimer > 0) this.fireTimer -= dt
+    if (this.duckHold > 0) this.duckHold -= dt
 
     if (this.over) {
       this.overDelay -= dt
@@ -155,24 +182,47 @@ export class MissaoElevadorGame implements GameHost {
       return
     }
 
+    /* ---------- elevador autônomo: anda sozinho, para em cada andar ---------- */
+    if (this.elevPausa > 0) {
+      this.elevPausa -= dt
+    } else {
+      const delta = this.elevAlvo - this.elevT
+      const passo = 1.15 * dt
+      if (Math.abs(delta) <= passo) {
+        this.elevT = this.elevAlvo
+        this.elevPausa = 1.3 // porta aberta: dá para entrar/sair
+        if (this.elevAlvo >= this.floors - 1) this.elevDir = -1
+        if (this.elevAlvo <= 0) this.elevDir = 1
+        this.elevAlvo = clamp(this.elevAlvo + this.elevDir, 0, this.floors - 1)
+      } else {
+        this.elevT += Math.sign(delta) * passo
+      }
+    }
+
     const a = this.input.axis()
     let move = a.x
     if (this.input.pointer) move = clamp((this.input.pointer.x - this.px) / 60, -1, 1)
     if (Math.abs(move) > 0.15) this.facing = Math.sign(move)
 
     const onElev = this.aboard()
-    if (onElev && Math.abs(a.y) > 0) {
-      // dirige o elevador
-      this.elevT = clamp(this.elevT + a.y * 1.4 * dt, 0, this.floors - 1)
+    this.crouch = !onElev && (a.y > 0.3 || this.duckHold > 0)
+
+    if (onElev) {
+      // a bordo: acompanha a cabine; só desce dela quando ela PARA num andar
       this.pt = this.elevT
-      this.px = SHAFT_X
+      if (this.cabineAlinhada() && Math.abs(move) > 0.15) {
+        this.px = clamp(this.px + move * 190 * dt, WALL + 12, ELEV_W - WALL - 12)
+      } else {
+        this.px = SHAFT_X
+      }
     } else {
-      // anda pelo andar (o poço bloqueia se o elevador não estiver aqui)
+      // anda pelo andar (o poço bloqueia se a cabine não estiver parada aqui)
       this.pt = Math.round(this.pt)
-      const nx = clamp(this.px + move * 190 * dt, WALL + 12, ELEV_W - WALL - 12)
-      const elevHere = Math.abs(this.elevT - this.pt) < 0.08
+      const vel = this.crouch ? 90 : 190
+      const nx = clamp(this.px + move * vel * dt, WALL + 12, ELEV_W - WALL - 12)
+      const cabineAqui = this.cabineAlinhada() && Math.abs(this.elevT - this.pt) < 0.08
       const crossesShaft = Math.abs(nx - SHAFT_X) < SHAFT_HALF - 8
-      if (!crossesShaft || elevHere) this.px = nx
+      if (!crossesShaft || cabineAqui) this.px = nx
       else this.px = this.px < SHAFT_X ? SHAFT_X - SHAFT_HALF + 8 : SHAFT_X + SHAFT_HALF - 8
     }
 
@@ -201,11 +251,12 @@ export class MissaoElevadorGame implements GameHost {
       return
     }
 
-    // tiro do espião
+    // tiro do espião — em pé ou ABAIXADO (rasteiro)
     const wantShoot = this.input.pressed(' ') || this.input.pressed('x') || this.touchShoot
     this.touchShoot = false
     if (wantShoot && this.fireTimer <= 0 && !onElev) {
-      this.shots.push({ x: this.px + this.facing * 14, y: this.groundY(this.pt) - 26, vx: this.facing * 430, mine: true })
+      const y = this.groundY(this.pt) - (this.crouch ? BAIXO : ALTO)
+      this.shots.push({ x: this.px + this.facing * 14, y, vx: this.facing * 430, mine: true, low: this.crouch })
       this.fireTimer = 0.35
     }
 
@@ -244,7 +295,15 @@ export class MissaoElevadorGame implements GameHost {
       g.shootTimer -= dt
       if (sameFloor && g.shootTimer <= 0 && Math.abs(g.x - this.px) < 280) {
         const bulletSpeed = (g.elite ? 320 : 250) + this.building * 12
-        this.shots.push({ x: g.x + g.dir * 12, y: this.groundY(g.t) - 26, vx: g.dir * bulletSpeed, mine: false })
+        // elite atira RASTEIRO às vezes — abaixar não é colete à prova de tudo
+        const low = g.elite && rand(0, 1) < 0.35
+        this.shots.push({
+          x: g.x + g.dir * 12,
+          y: this.groundY(g.t) - (low ? BAIXO : ALTO),
+          vx: g.dir * bulletSpeed,
+          mine: false,
+          low,
+        })
         g.shootTimer = Math.max(rand(1.2, 2.2) - this.building * 0.1 - (g.elite ? 0.4 : 0), 0.45)
       }
       // contato direto
@@ -257,7 +316,7 @@ export class MissaoElevadorGame implements GameHost {
     for (const s of this.shots) {
       if (s.mine) {
         for (const g of this.agents) {
-          if (!g.alive || Math.abs(this.groundY(g.t) - 26 - s.y) > 30) continue
+          if (!g.alive || Math.abs(this.groundY(g.t) - ALTO - s.y) > 30) continue
           if (Math.abs(g.x - s.x) < 14) {
             g.hp--
             s.x = -999
@@ -280,10 +339,15 @@ export class MissaoElevadorGame implements GameHost {
           }
         }
       } else if (this.invuln <= 0) {
-        const py = this.groundY(this.pt) - 26
-        if (Math.abs(s.y - py) < 30 && Math.abs(s.x - this.px) < 12) {
+        // ABAIXADO esquiva do tiro alto; tiro rasteiro pega quem abaixou E quem está de pé
+        const esquivou = this.crouch && !s.low
+        const py = this.groundY(this.pt) - (s.low ? BAIXO : ALTO)
+        if (!esquivou && Math.abs(s.y - py) < 16 && Math.abs(s.x - this.px) < 12) {
           s.x = -999
           this.hit()
+        } else if (esquivou && Math.abs(s.x - this.px) < 12 && Math.abs(s.y - (this.groundY(this.pt) - ALTO)) < 16) {
+          // a bala passou zunindo por cima da cabeça
+          this.texts.add(this.px, this.groundY(this.pt) - 44, 'fiu!', '#FFC53D', 11)
         }
       }
     }
@@ -305,12 +369,28 @@ export class MissaoElevadorGame implements GameHost {
   /* ---------------- desenho ---------------- */
 
   draw(ctx: CanvasRenderingContext2D) {
-    // céu noturno atrás do prédio
+    // céu noturno com lua e skyline ao fundo
     const sky = ctx.createLinearGradient(0, 0, 0, ELEV_H)
-    sky.addColorStop(0, '#0E0A1F')
-    sky.addColorStop(1, '#1B1235')
+    sky.addColorStop(0, '#0B0720')
+    sky.addColorStop(0.5, '#140E26')
+    sky.addColorStop(1, '#1E1440')
     ctx.fillStyle = sky
     ctx.fillRect(0, 0, ELEV_W, ELEV_H)
+    withGlow(ctx, '#FFF9F0', 18, () => {
+      ctx.fillStyle = '#FFF3D6'
+      ctx.beginPath()
+      ctx.arc(ELEV_W - 70, 64, 22, 0, Math.PI * 2)
+      ctx.fill()
+    })
+    ctx.fillStyle = 'rgba(20,14,38,0.9)'
+    for (const [bx, bw, bh] of [[0, 40, 210], [30, 34, 150], [ELEV_W - 44, 44, 240], [ELEV_W - 90, 30, 130]] as const) {
+      ctx.fillRect(bx, ELEV_H - bh, bw, bh)
+    }
+    ctx.fillStyle = 'rgba(255,197,61,0.35)'
+    for (let i = 0; i < 10; i++) {
+      ctx.fillRect(8 + (i % 2) * 16, ELEV_H - 190 + i * 17, 6, 6)
+      ctx.fillRect(ELEV_W - 34 + (i % 2) * 12, ELEV_H - 220 + i * 19, 6, 6)
+    }
 
     const camY = clamp(this.groundY(this.pt) - ELEV_H * 0.55, 0, this.groundY(this.floors - 1) + 60 - ELEV_H)
     const off = this.shake.offset()
@@ -319,22 +399,44 @@ export class MissaoElevadorGame implements GameHost {
 
     const bottom = this.groundY(this.floors - 1)
 
-    // corpo do prédio
-    ctx.fillStyle = '#231A3E'
+    // corpo do prédio + telhado
+    ctx.fillStyle = '#241A42'
     ctx.fillRect(WALL - 14, 40, ELEV_W - (WALL - 14) * 2, bottom - 20)
     ctx.fillStyle = '#171029'
-    ctx.fillRect(WALL - 14, 28, ELEV_W - (WALL - 14) * 2, 16)
+    ctx.fillRect(WALL - 20, 26, ELEV_W - (WALL - 20) * 2, 18)
+    ctx.fillStyle = '#3A2A6B'
+    ctx.fillRect(WALL + 30, 12, 26, 16)
 
     for (let t = 0; t < this.floors; t++) {
       const y = this.groundY(t)
       const garage = t === this.floors - 1
-      // laje
+      // parede do andar com faixa (papel de parede alternado)
+      ctx.fillStyle = t % 2 === 0 ? 'rgba(157,92,255,0.05)' : 'rgba(51,224,214,0.04)'
+      ctx.fillRect(WALL - 14, y - FLOOR_H + 10, ELEV_W - (WALL - 14) * 2, FLOOR_H - 10)
+      ctx.fillStyle = 'rgba(255,249,240,0.05)'
+      ctx.fillRect(WALL - 14, y - 34, ELEV_W - (WALL - 14) * 2, 2) // rodapé
+      // laje com borda iluminada
       ctx.fillStyle = '#3A2A6B'
       ctx.fillRect(WALL - 14, y, ELEV_W - (WALL - 14) * 2, 10)
+      ctx.fillStyle = 'rgba(255,249,240,0.10)'
+      ctx.fillRect(WALL - 14, y, ELEV_W - (WALL - 14) * 2, 2)
+      // número do andar
+      ctx.font = '800 10px "Baloo 2 Variable", sans-serif'
+      ctx.fillStyle = 'rgba(244,239,255,0.35)'
+      ctx.textAlign = 'left'
+      ctx.fillText(garage ? 'G' : `${this.floors - 1 - t}`, WALL - 6, y - FLOOR_H + 26)
       if (garage) {
-        // garagem: carro da fuga
-        ctx.fillStyle = 'rgba(51,224,214,0.12)'
+        // garagem: piso listrado + carro da fuga
+        ctx.fillStyle = 'rgba(51,224,214,0.10)'
         ctx.fillRect(WALL - 14, y - FLOOR_H + 10, ELEV_W - (WALL - 14) * 2, FLOOR_H - 10)
+        ctx.strokeStyle = 'rgba(255,197,61,0.35)'
+        ctx.lineWidth = 3
+        ctx.setLineDash([12, 10])
+        ctx.beginPath()
+        ctx.moveTo(WALL, y - 4)
+        ctx.lineTo(ELEV_W - WALL, y - 4)
+        ctx.stroke()
+        ctx.setLineDash([])
         withGlow(ctx, '#33E0D6', 8, () => {
           ctx.fillStyle = '#33E0D6'
           ctx.beginPath()
@@ -354,30 +456,41 @@ export class MissaoElevadorGame implements GameHost {
         ctx.textAlign = 'center'
         ctx.fillText('GARAGEM', 107, y - 56)
       }
-      // portas
+      // portas com moldura e plaquinha
       for (const d of this.doors.filter((dd) => dd.t === t)) {
         const dy = y - 52
         const color = d.kind === 'doc' ? '#E8455A' : d.kind === 'coletada' ? '#4A4160' : '#4A5BD4'
         if (d.kind === 'doc') {
-          withGlow(ctx, '#E8455A', 8, () => this.door(ctx, d.x, dy, color))
+          withGlow(ctx, '#E8455A', 10, () => this.door(ctx, d.x, dy, color))
         } else {
           this.door(ctx, d.x, dy, color)
         }
       }
-      // luminárias
-      ctx.fillStyle = 'rgba(255,197,61,0.5)'
-      ctx.fillRect(120, y - FLOOR_H + 16, 24, 4)
-      ctx.fillRect(ELEV_W - 144, y - FLOOR_H + 16, 24, 4)
+      // luminárias penduradas com halo
+      for (const lx of [132, ELEV_W - 132]) {
+        ctx.strokeStyle = 'rgba(255,249,240,0.25)'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(lx, y - FLOOR_H + 10)
+        ctx.lineTo(lx, y - FLOOR_H + 20)
+        ctx.stroke()
+        withGlow(ctx, '#FFC53D', 10, () => {
+          ctx.fillStyle = '#FFC53D'
+          ctx.beginPath()
+          ctx.arc(lx, y - FLOOR_H + 23, 4, 0, Math.PI * 2)
+          ctx.fill()
+        })
+      }
     }
 
-    // poço do elevador
-    ctx.fillStyle = '#120C24'
+    // poço do elevador com trilhos e cabos
+    ctx.fillStyle = '#100B20'
     ctx.fillRect(SHAFT_X - SHAFT_HALF, 44, SHAFT_HALF * 2, bottom - 34)
     ctx.strokeStyle = '#5A3DA8'
     ctx.lineWidth = 3
     ctx.strokeRect(SHAFT_X - SHAFT_HALF, 44, SHAFT_HALF * 2, bottom - 34)
     ctx.setLineDash([6, 10])
-    ctx.strokeStyle = 'rgba(157,92,255,0.4)'
+    ctx.strokeStyle = 'rgba(157,92,255,0.35)'
     ctx.beginPath()
     ctx.moveTo(SHAFT_X - SHAFT_HALF + 8, 44)
     ctx.lineTo(SHAFT_X - SHAFT_HALF + 8, bottom)
@@ -386,36 +499,59 @@ export class MissaoElevadorGame implements GameHost {
     ctx.stroke()
     ctx.setLineDash([])
 
-    // cabine
+    // cabine com cabo, janelinha e seta de direção
     const ey = this.groundY(this.elevT)
-    withGlow(ctx, '#FFC53D', 8, () => {
-      ctx.fillStyle = '#3A2A6B'
+    ctx.strokeStyle = 'rgba(244,239,255,0.4)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(SHAFT_X - 12, 44)
+    ctx.lineTo(SHAFT_X - 12, ey - 62)
+    ctx.moveTo(SHAFT_X + 12, 44)
+    ctx.lineTo(SHAFT_X + 12, ey - 62)
+    ctx.stroke()
+    const aberta = this.cabineAlinhada()
+    withGlow(ctx, aberta ? '#FFC53D' : '#7A6EA8', aberta ? 10 : 4, () => {
+      const cab = ctx.createLinearGradient(0, ey - 62, 0, ey)
+      cab.addColorStop(0, '#4A3684')
+      cab.addColorStop(1, '#2C2052')
+      ctx.fillStyle = cab
       ctx.fillRect(SHAFT_X - SHAFT_HALF + 6, ey - 62, SHAFT_HALF * 2 - 12, 62)
-      ctx.fillStyle = '#FFC53D'
+      ctx.fillStyle = aberta ? '#FFC53D' : '#7A6EA8'
       ctx.fillRect(SHAFT_X - SHAFT_HALF + 6, ey - 6, SHAFT_HALF * 2 - 12, 6)
-      ctx.strokeStyle = '#FFC53D'
+      ctx.strokeStyle = aberta ? '#FFC53D' : '#7A6EA8'
       ctx.lineWidth = 2
       ctx.strokeRect(SHAFT_X - SHAFT_HALF + 6, ey - 62, SHAFT_HALF * 2 - 12, 62)
     })
+    // janelinha + indicador de direção
+    ctx.fillStyle = 'rgba(255,249,240,0.14)'
+    ctx.fillRect(SHAFT_X - 14, ey - 54, 28, 12)
+    ctx.fillStyle = aberta ? '#55E07F' : '#FFC53D'
+    ctx.font = '800 12px "Baloo 2 Variable", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(aberta ? '▶ ◀' : this.elevDir > 0 ? '▼' : '▲', SHAFT_X, ey - 30)
 
     // agentes (elite = terno vermelho)
     for (const g of this.agents) {
       if (g.alive) {
-        this.person(ctx, g.x, this.groundY(g.t), g.elite ? '#C2334B' : '#4A4160', g.elite ? '#8A1F33' : '#2A2140', g.dir)
+        this.person(ctx, g.x, this.groundY(g.t), g.elite ? '#C2334B' : '#4A4160', g.elite ? '#8A1F33' : '#2A2140', g.dir, false, false)
       }
     }
 
-    // balas
+    // balas (rasteiras voam mais baixo, com risquinho no chão)
     for (const s of this.shots) {
       withGlow(ctx, s.mine ? '#33E0D6' : '#F252C1', 8, () => {
         ctx.fillStyle = s.mine ? '#7CF5EC' : '#F252C1'
         ctx.fillRect(s.x - 5, s.y - 2, 10, 4)
       })
+      if (s.low) {
+        ctx.fillStyle = 'rgba(255,249,240,0.15)'
+        ctx.fillRect(s.x - 8, s.y + 6, 16, 1.5)
+      }
     }
 
-    // espião (pisca quando invulnerável)
+    // espião (pisca quando invulnerável; agachado quando abaixa)
     if (this.invuln <= 0 || Math.floor(this.time * 10) % 2 === 0) {
-      this.person(ctx, this.px, this.groundY(this.pt), '#9D5CFF', '#5A3DA8', this.facing, true)
+      this.person(ctx, this.px, this.groundY(this.pt), '#9D5CFF', '#5A3DA8', this.facing, true, this.crouch)
     }
 
     this.particles.draw(ctx)
@@ -425,14 +561,22 @@ export class MissaoElevadorGame implements GameHost {
   }
 
   private door(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
+    // moldura
+    ctx.fillStyle = 'rgba(255,249,240,0.10)'
+    ctx.beginPath()
+    ctx.roundRect(x - 17, y - 3, 34, 57, 5)
+    ctx.fill()
     ctx.fillStyle = color
     ctx.beginPath()
     ctx.roundRect(x - 14, y, 28, 52, 4)
     ctx.fill()
+    // vidrinho e plaquinha
     ctx.fillStyle = 'rgba(20,14,38,0.4)'
     ctx.beginPath()
     ctx.roundRect(x - 9, y + 6, 18, 18, 3)
     ctx.fill()
+    ctx.fillStyle = 'rgba(255,249,240,0.25)'
+    ctx.fillRect(x - 6, y - 1, 12, 2)
     ctx.fillStyle = '#FFC53D'
     ctx.beginPath()
     ctx.arc(x + 8, y + 30, 2, 0, Math.PI * 2)
@@ -446,43 +590,69 @@ export class MissaoElevadorGame implements GameHost {
     suit: string,
     dark: string,
     dir: number,
-    spy = false,
+    spy: boolean,
+    crouch: boolean,
   ) {
     const run = Math.sin(this.time * 11 + x * 0.1) * 4
     ctx.save()
     ctx.translate(x, groundY)
+    // sombra no chão
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'
+    ctx.beginPath()
+    ctx.ellipse(0, 1, 11, 3, 0, 0, Math.PI * 2)
+    ctx.fill()
+    if (crouch) ctx.translate(0, 12)
+    // pernas
     ctx.strokeStyle = dark
     ctx.lineWidth = 4.5
     ctx.beginPath()
-    ctx.moveTo(0, -12)
-    ctx.lineTo(-4 + run * 0.4, 0)
-    ctx.moveTo(0, -12)
-    ctx.lineTo(4 - run * 0.4, 0)
+    if (crouch) {
+      ctx.moveTo(0, -12)
+      ctx.lineTo(-7, -4)
+      ctx.lineTo(-5, 0 - 12 + 12)
+      ctx.moveTo(0, -12)
+      ctx.lineTo(7, -4)
+      ctx.lineTo(5, 0)
+    } else {
+      ctx.moveTo(0, -12)
+      ctx.lineTo(-4 + run * 0.4, 0)
+      ctx.moveTo(0, -12)
+      ctx.lineTo(4 - run * 0.4, 0)
+    }
     ctx.stroke()
+    // tronco
     const g = ctx.createLinearGradient(0, -40, 0, -8)
     g.addColorStop(0, suit)
     g.addColorStop(1, dark)
     ctx.fillStyle = g
     ctx.beginPath()
-    ctx.roundRect(-8, -40, 16, 30, 5)
+    ctx.roundRect(-8, crouch ? -32 : -40, 16, crouch ? 22 : 30, 5)
     ctx.fill()
-    // arma apontada
+    // braço + arma apontada (na altura certa)
+    const armY = crouch ? -22 : -30
+    ctx.strokeStyle = dark
+    ctx.lineWidth = 3.5
+    ctx.beginPath()
+    ctx.moveTo(0, armY + 4)
+    ctx.lineTo(dir * 10, armY + 2)
+    ctx.stroke()
     ctx.fillStyle = '#171029'
-    ctx.fillRect(dir > 0 ? 6 : -16, -30, 10, 3.5)
+    ctx.fillRect(dir > 0 ? 6 : -16, armY, 10, 3.5)
     // cabeça + chapéu
+    const headY = crouch ? -38 : -46
     ctx.fillStyle = '#FFD9B8'
     ctx.beginPath()
-    ctx.arc(0, -46, 7, 0, Math.PI * 2)
+    ctx.arc(0, headY, 7, 0, Math.PI * 2)
     ctx.fill()
     ctx.fillStyle = spy ? dark : '#171029'
     ctx.beginPath()
-    ctx.ellipse(0, -50, 9.5, 3, 0, Math.PI, 0)
+    ctx.ellipse(0, headY - 4, 9.5, 3, 0, Math.PI, 0)
     ctx.fill()
-    ctx.fillRect(-6, -55, 12, 5)
+    ctx.fillRect(-6, headY - 9, 12, 5)
     if (spy) {
       // óculos escuros de espião
       ctx.fillStyle = '#140E26'
-      ctx.fillRect(dir > 0 ? -2 : -6, -48, 8, 3)
+      ctx.fillRect(dir > 0 ? -2 : -6, headY - 2, 8, 3)
     }
     ctx.restore()
   }

@@ -48,18 +48,17 @@ export default function CoinInsert({
 
         {/* máquina: painel com a fenda */}
         <div className="relative flex flex-col items-center">
-          {/* a ficha caindo (some ao entrar na fenda) */}
-          {!inserted && (
-            <div className="absolute -top-6 z-10 animate-coin-drop">
-              <Chip size={72} />
-            </div>
-          )}
-
           <div
             className={`relative mt-16 w-64 rounded-card bg-ink-800 p-6 ring-2 ring-ink-700 sm:w-72 ${inserted ? 'animate-slot-flash' : ''}`}
           >
-            {/* fenda da ficha */}
-            <div className="mx-auto h-3 w-24 rounded-full bg-ink-950 ring-2 ring-pop-purple/60" />
+            {/* fenda da ficha — a ficha nasce ANCORADA nela e entra de verdade */}
+            <div className="relative mx-auto h-3 w-24 rounded-full bg-ink-950 ring-2 ring-pop-purple/60">
+              {!inserted && (
+                <div className="absolute top-1/2 left-1/2 z-10 -mt-9 -ml-9 animate-coin-drop">
+                  <Chip size={72} />
+                </div>
+              )}
+            </div>
             <div className="mt-5 flex items-center justify-center gap-3">
               <span className="text-4xl" aria-hidden="true">
                 {game.icon}

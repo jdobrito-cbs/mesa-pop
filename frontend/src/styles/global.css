@@ -53,22 +53,26 @@
     }
   }
 
-  /* ficha caindo na fenda do fliperama */
+  /* a ficha cai até a fenda e ENTRA nela (achata de lado e some dentro) */
   --animate-coin-drop: coin-drop 0.9s cubic-bezier(0.55, 0, 0.85, 0.4) forwards;
   @keyframes coin-drop {
     0% {
       transform: translateY(-190px) rotate(-24deg);
       opacity: 1;
     }
-    62% {
-      transform: translateY(-6px) rotate(6deg);
+    58% {
+      transform: translateY(-30px) rotate(6deg);
       opacity: 1;
     }
     78% {
-      transform: translateY(-14px) rotate(2deg) scaleY(0.96);
+      transform: translateY(-12px) rotate(0deg) scaleY(0.75);
+    }
+    94% {
+      transform: translateY(0px) scaleY(0.18);
+      opacity: 1;
     }
     100% {
-      transform: translateY(26px) rotate(0deg) scaleY(0.55);
+      transform: translateY(3px) scaleY(0.08);
       opacity: 0;
     }
   }
