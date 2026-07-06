@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -19,6 +20,15 @@ import Announcements from './pages/admin/Announcements'
 import { AuthProvider, useAuth } from './lib/auth'
 import { Chip } from './components/Logo'
 
+/** toda troca de página abre NO TOPO (o router mantém a rolagem anterior) */
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 function RequireAuth() {
   const { user, restoring } = useAuth()
   const location = useLocation()
@@ -39,6 +49,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <div className="flex min-h-dvh flex-col">
           <Header />
           <div className="flex-1">
