@@ -16,6 +16,7 @@ import type {
   OneAction,
   OneView,
   PifeView,
+  QuizView,
   RacingSnapshot,
   RoomView,
   StopView,
@@ -37,6 +38,7 @@ import PifeTable from '../components/PifeTable'
 import MemoriaBoard from '../components/MemoriaBoard'
 import ForcaGame from '../components/ForcaGame'
 import BingoGame from '../components/BingoGame'
+import QuizGame from '../components/QuizGame'
 import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
 import AdSlot from '../components/AdSlot'
@@ -392,6 +394,13 @@ export default function RoomPage() {
               {room.gameSlug === 'bingo' && (
                 <BingoGame
                   view={game.state as BingoView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {(room.gameSlug === 'quiz-pop' || room.gameSlug === 'quiz-nostalgia') && (
+                <QuizGame
+                  view={game.state as QuizView}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

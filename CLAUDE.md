@@ -15,11 +15,39 @@ Base sólida primeiro; os jogos plugam nela.
 - **Fase atual**: **FASE 9 — "A mesa da família" (9 jogos novos,
   aprovada pelo usuário em 2026-07-05) — EM ANDAMENTO.** Plano em 5
   lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras ✅; 3) Forca+Bingo
-  ✅; 4) Quiz Pop+Quiz Nostalgia (uma engine, dois jogos); 5) Cruzadinha.
-  Lote 6 opcional sugerido: Modo Conforto 60+ (fontes grandes, alto
-  contraste, timers relaxados). Roadmap original 0–8 ✅ completo
-  (23 jogos); FASE 9 leva a 32. **29 jogos jogáveis.**
+  ✅; 4) Quiz Pop+Quiz Nostalgia ✅; 5) Cruzadinha. Lote 6 opcional
+  sugerido: Modo Conforto 60+ (fontes grandes, alto contraste, timers
+  relaxados). Roadmap original 0–8 ✅ completo (23 jogos); FASE 9 leva
+  a 32. **31 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FASE 9 · lote 4 entregue — QUIZ POP + QUIZ NOSTALGIA (uma engine,
+  dois jogos)** (2026-07-05):
+  - **Engine de trivia** (`shared/quiz.ts` + `backend/games/quiz.ts`
+    com `makeQuizModule(slug, banco)` — registrada 2×): realtime
+    perSeatView (tick 250ms), 10 perguntas sorteadas por partida
+    (crypto), alternativas EMBARALHADAS por partida com a correta
+    rastreada no servidor. Fases pergunta(15s)→revelação(4s); todos
+    responderam → revela NA HORA. Pontos 100 + bônus de rapidez até 50
+    (proporcional ao tempo restante ao travar). A CORRETA e as
+    respostas alheias SÓ trafegam na revelação (durante a pergunta o
+    rival vê apenas "✅ respondeu"); teste garante. 2–8 jogadores +
+    espectadores; scoresFor grava o placar no Match.
+  - **Bancos NO SERVIDOR** (`backend/lib/quizPerguntas.ts`, alts[0] =
+    correta): **Quiz Pop** ~48 perguntas (Geografia/Ciência/Esportes/
+    Cultura/História/Comida/Bichos) e **Quiz Nostalgia** ~41 (Música/
+    Novelas/TV/Cinema/Anos Dourados/Brincadeiras — Roberto Carlos,
+    Odete Roitman, Chacrinha, orelhão, fusca…). Teste de sanidade dos
+    bancos (4 alternativas únicas, sem vazio). Expansão = melhoria
+    contínua anotada.
+  - `QuizGame.tsx`: barra de tempo, categoria + pergunta gigante, 4
+    alternativas A/B/C/D coloridas, resposta travada em roxo,
+    revelação verde/vermelho com "+148", placar com ✅ de quem já
+    respondeu e ganho da última. UI única para os dois quizzes.
+  - 191 testes (7 novos). Typecheck limpo. Seed: 31 jogos no banco.
+  - Demo real (2 navegadores): partidas COMPLETAS dos dois quizzes —
+    "O frevo é de qual estado?" revelado com Pernambuco verde e
+    "Acertou! +148 🎉"; nostalgia com "o orelhão era o nome popular
+    do…" (ANOS DOURADOS) e overlay de vencedor no fim.
 - **FASE 9 · lote 3 entregue — FORCA + BINGO (o social do 60+)**
   (2026-07-05):
   - **Forca multiplayer** (`shared/forca.ts` + `backend/games/forca.ts`
@@ -615,9 +643,10 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: FASE 9 · lote 4 (Quiz Pop + Quiz Nostalgia — uma
-  engine de trivia, dois jogos) — mediante OK do usuário. Depois: lote
-  5 Cruzadinha, lote 6 opcional Modo Conforto 60+.
+- **Próximo passo**: FASE 9 · lote 5 (Cruzadinha estilo Coquetel —
+  banco palavra+dica pt-BR e gerador de grade com cruzamentos por
+  seed) — mediante OK do usuário. Depois: lote 6 opcional Modo
+  Conforto 60+ (fecharia a FASE 9).
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);
