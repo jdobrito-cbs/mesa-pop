@@ -23,6 +23,8 @@ const PLAUSIBILITY: Record<string, { maxPerSec: number; minMs: number; maxPoints
   paciencia: { maxPerSec: 30, minMs: 25000, maxPoints: 2_000 },
   puzzle: { maxPerSec: 80, minMs: 15000, maxPoints: 10_000 },
   memoria: { maxPerSec: 60, minMs: 15000, maxPoints: 2_000 },
+  sudoku: { maxPerSec: 60, minMs: 25000, maxPoints: 2_500 },
+  'caca-palavras': { maxPerSec: 50, minMs: 20000, maxPoints: 1_500 },
 }
 
 const startBody = z.object({ gameSlug: z.string().trim().min(1) })

@@ -14,12 +14,47 @@ Base sólida primeiro; os jogos plugam nela.
 
 - **Fase atual**: **FASE 9 — "A mesa da família" (9 jogos novos,
   aprovada pelo usuário em 2026-07-05) — EM ANDAMENTO.** Plano em 5
-  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras; 3) Forca+Bingo;
+  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras ✅; 3) Forca+Bingo;
   4) Quiz Pop+Quiz Nostalgia (uma engine, dois jogos); 5) Cruzadinha.
   Lote 6 opcional sugerido: Modo Conforto 60+ (fontes grandes, alto
   contraste, timers relaxados). Roadmap original 0–8 ✅ completo
-  (23 jogos); FASE 9 leva a 32. **25 jogos jogáveis.**
+  (23 jogos); FASE 9 leva a 32. **27 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FASE 9 · lote 2 entregue — SUDOKU + CAÇA-PALAVRAS (geradores por
+  seed)** (2026-07-05):
+  - **`shared/seed.ts`**: mulberry32 + hashSeed (FNV-1a) + embaralha/
+    intAte — PRNG DETERMINÍSTICO compartilhado. Mesma seed = mesmo
+    puzzle → alicerce do futuro "desafio diário" (seed = data).
+  - **Sudoku** (`shared/sudoku.ts` + `SudokuPage.tsx`): gerador com
+    SOLUÇÃO ÚNICA garantida (preenche por backtracking com dígitos
+    embaralhados pela seed; remove células só se `contaSolucoes(…,2)
+    === 1`, com heurística de menor-candidato — 3 dificuldades geram em
+    ~20ms). Alvos de pistas 40/32/26 (fácil/médio/difícil), base de
+    pontos 600/1000/1500 − 2×seg − 30×erros (mín 100). UI: seletor de
+    nível, feedback IMEDIATO (número errado NÃO entra, treme e custa
+    30), modo LÁPIS (anotações 3×3 na célula), apagar notas, dígito
+    esgotado some do teclado, highlight de linha/coluna/bloco e do
+    mesmo dígito. Hook dev `window.__sudoku`.
+  - **Caça-palavras** (`shared/cacaPalavras.ts` + `CacaPalavrasPage`):
+    4 temas pt-BR (Frutas/Bichos/Cozinha/Brasil, 20 palavras cada, sem
+    acento), 10 por sopa em grade 12×12, 8 direções com cruzamentos,
+    completada com letras das PRÓPRIAS palavras (camuflagem). Arrasto
+    pointer com `releasePointerCapture` no pointerdown (faz
+    pointerenter disparar nas células vizinhas — funciona em toque E
+    mouse), seleção só em linha reta, vale de trás pra frente, cor
+    própria por palavra achada + lista com riscado. +30/palavra +
+    bônus 600−2×seg. Hook dev `window.__caca`.
+  - PLAUSIBILITY sudoku {60/s, 25s, 2500} e caca-palavras {50/s, 20s,
+    1500} — as demos automatizadas precisam ESPERAR o minMs antes do
+    último movimento, senão o finish é rejeitado (422).
+  - 174 testes (8 novos: determinismo por seed, solução única nas 3
+    dificuldades, grade válida, pistas no alvo, palavras presentes
+    letra a letra em linha reta, tema respeitado). Typecheck limpo.
+    Seed do banco: 27 jogos.
+  - Demo real: Sudoku médio (32 pistas) fechado com lápis demonstrado
+    → "946 pts, 1º no ranking"; sopa "Brasil" limpa (10/10, FEIJOADA a
+    FORRO riscadas em cores) → "854 pts, 1º" — ambos validados no
+    servidor respeitando o anti-cheat.
 - **FASE 9 · lote 1 entregue — JOGO DA MEMÓRIA + PIFE** (2026-07-05):
   - **Jogo da Memória** (`shared/memoria.ts` tipos + `backend/games/
     memoria.ts` + `MemoriaBoard.tsx`): 6×6 = 18 pares de emojis; os
@@ -549,9 +584,9 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: FASE 9 · lote 2 (Sudoku + Caça-palavras, solo com
-  seed) — mediante OK do usuário. Depois: lote 3 Forca+Bingo, lote 4
-  Quiz Pop+Nostalgia, lote 5 Cruzadinha, lote 6 opcional Modo Conforto.
+- **Próximo passo**: FASE 9 · lote 3 (Forca multiplayer + Bingo) —
+  mediante OK do usuário. Depois: lote 4 Quiz Pop+Nostalgia, lote 5
+  Cruzadinha, lote 6 opcional Modo Conforto 60+.
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);

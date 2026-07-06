@@ -64,4 +64,6 @@ export const GAME_CATALOG: GameDef[] = [
   // FASE 9
   { slug: 'memoria', name: 'Jogo da Memória', description: 'Ache os pares — com amigos ou solo contra o relógio.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-cyan', icon: '🧠', phase: 9, enabled: true },
   { slug: 'pife', name: 'Pife', description: 'Nove cartas, três jogos de três. Bata primeiro!', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-green', icon: '🂠', phase: 9, enabled: true },
+  { slug: 'sudoku', name: 'Sudoku', description: 'Lógica pura em 3 níveis — todo puzzle tem solução única.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🔢', phase: 9, enabled: true },
+  { slug: 'caca-palavras', name: 'Caça-palavras', description: 'Ache as 10 palavras escondidas na sopa de letras.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🔍', phase: 9, enabled: true },
 ]
