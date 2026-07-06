@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
-import { GAME_CATALOG } from '@mesapop/shared'
+import type { GameDef } from '@mesapop/shared'
 import GameCard from '../components/GameCard'
 import { Chip, Spark } from '../components/Logo'
 import { useAuth } from '../lib/auth'
+import { useFetch } from '../lib/useFetch'
 
 /** Fichas flutuantes do hero — a "mesa" vista de cima. */
 const HERO_TOKENS = [
@@ -15,6 +16,10 @@ const HERO_TOKENS = [
 
 export default function Home() {
   const { user } = useAuth()
+  // 3 mais jogados + 3 aleatórios (o sorteio muda a cada visita)
+  const { data: destaque } = useFetch<{ maisJogados: GameDef[]; aleatorios: GameDef[] }>(
+    '/api/games/destaque',
+  )
 
   return (
     <main>
@@ -90,16 +95,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CATÁLOGO */}
+      {/* DESTAQUES: 3 mais jogados + 3 sorteados a cada visita */}
       <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="text-3xl font-extrabold md:text-4xl">O que vai rolar na mesa</h2>
+        <h2 className="text-3xl font-extrabold md:text-4xl">O que rola na mesa</h2>
         <p className="mt-2 text-text-muted">
-          A plataforma está nascendo — os jogos entram na mesa um a um.
+          São 32 jogos — estes são os queridinhos e três surpresas de hoje.
         </p>
-        <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {GAME_CATALOG.slice(0, 9).map((game) => (
+
+        <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-pop-orange/10 px-4 py-1.5 text-sm font-extrabold tracking-wide text-pop-orange uppercase">
+          🔥 Os mais jogados
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {(destaque?.maisJogados ?? []).map((game) => (
             <GameCard key={game.slug} game={game} />
           ))}
+          {!destaque &&
+            [0, 1, 2].map((i) => (
+              <div key={i} className="card h-52 animate-pulse bg-ink-800/60" aria-hidden="true" />
+            ))}
+        </div>
+
+        <p className="mt-10 inline-flex items-center gap-2 rounded-full bg-pop-cyan/10 px-4 py-1.5 text-sm font-extrabold tracking-wide text-pop-cyan uppercase">
+          🎲 Sorteados para você agora
+        </p>
+        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {(destaque?.aleatorios ?? []).map((game) => (
+            <GameCard key={game.slug} game={game} />
+          ))}
+          {!destaque &&
+            [0, 1, 2].map((i) => (
+              <div key={i} className="card h-52 animate-pulse bg-ink-800/60" aria-hidden="true" />
+            ))}
         </div>
       </section>
 

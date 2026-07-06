@@ -23,6 +23,44 @@ export default async function gamesRoutes(app: FastifyInstance) {
     return { games }
   })
 
+  /**
+   * Destaques da landing (público): os 3 jogos MAIS JOGADOS (por partidas
+   * registradas) + 3 ALEATÓRIOS entre os demais — o sorteio muda a cada
+   * visita ao site.
+   */
+  app.get('/api/games/destaque', async () => {
+    const games = await app.prisma.game.findMany({
+      where: { isEnabled: true },
+      orderBy: { sortOrder: 'asc' },
+    })
+    const contagens = await app.prisma.match.groupBy({
+      by: ['gameId'],
+      _count: { _all: true },
+    })
+    const partidasPor = new Map(contagens.map((c) => [c.gameId, c._count._all]))
+    const maisJogados = [...games]
+      .sort((a, b) => (partidasPor.get(b.id) ?? 0) - (partidasPor.get(a.id) ?? 0))
+      .slice(0, 3)
+    const resto = games.filter((g) => !maisJogados.some((m) => m.id === g.id))
+    for (let i = resto.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[resto[i], resto[j]] = [resto[j]!, resto[i]!]
+    }
+    const view = (g: (typeof games)[number]) => ({
+      slug: g.slug,
+      name: g.name,
+      description: g.description,
+      family: g.family,
+      minPlayers: g.minPlayers,
+      maxPlayers: g.maxPlayers,
+      color: g.color,
+      icon: g.icon,
+      phase: g.phase,
+      enabled: g.isEnabled,
+    })
+    return { maisJogados: maisJogados.map(view), aleatorios: resto.slice(0, 3).map(view) }
+  })
+
   app.get('/api/rooms', async (req) => {
     const userId = optionalUserId(req)
     const rooms = await app.prisma.room.findMany({
