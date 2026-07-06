@@ -31,13 +31,17 @@ const BAIXO = 11
 
 interface Agent {
   x: number
-  t: number // andar (0 = topo)
+  t: number // andar (0 = topo; fracionário quando está NO elevador)
   dir: number
   shootTimer: number
   alive: boolean
   /** elite (prédio 3+): terno vermelho, 2 de vida, atira BAIXO às vezes */
   elite: boolean
   hp: number
+  /** patrulhando: segundos ignorando o jogador (depois de bater em algo) */
+  vagar: number
+  /** está DENTRO da cabine do elevador */
+  noElevador: boolean
 }
 
 interface Shot {
@@ -311,19 +315,71 @@ export class MissaoElevadorGame implements GameHost {
           alive: true,
           elite,
           hp: elite ? 2 : 1,
+          vagar: 0,
+          noElevador: false,
         })
       }
       this.spawnTimer = Math.max(2.4 - this.building * 0.25, 0.8)
     }
+    const elevParado = this.cabineAlinhada()
+    const elevAndar = Math.round(this.elevT)
     for (const g of this.agents) {
       if (!g.alive) continue
+      if (g.vagar > 0) g.vagar -= dt
+
+      // ---- DENTRO do elevador: viaja junto e desce quando a cabine para
+      if (g.noElevador) {
+        g.t = this.elevT
+        g.x = SHAFT_X
+        // pegou o jogador dentro da cabine? sem escapatória!
+        if (onElev && this.invuln <= 0 && Math.abs(this.pt - g.t) < 0.2) this.hit()
+        // desce quando a cabine PARA (nunca no mesmo instante em que
+        // entrou — o "vagar" segura a viagem; chance proporcional ao tempo)
+        if (elevParado && g.vagar <= 0) {
+          const andarDoJogador = elevAndar === Math.round(this.pt) && !onElev
+          if (andarDoJogador || rand(0, 1) < dt * 0.6) {
+            g.t = elevAndar
+            g.noElevador = false
+            g.dir = andarDoJogador ? Math.sign(this.px - g.x) || 1 : rand(0, 1) < 0.5 ? 1 : -1
+            g.x = SHAFT_X + g.dir * (SHAFT_HALF + 4)
+            g.vagar = andarDoJogador ? 0 : rand(0.6, 1.2)
+          }
+        }
+        continue
+      }
+
       const sameFloor = g.t === Math.round(this.pt)
-      if (sameFloor) g.dir = Math.sign(this.px - g.x) || g.dir
-      g.x = clamp(g.x + g.dir * (g.elite ? 115 : 80) * dt, WALL + 12, ELEV_W - WALL - 12)
-      // não entra no poço
-      if (Math.abs(g.x - SHAFT_X) < SHAFT_HALF - 4) {
-        g.x = g.x < SHAFT_X ? SHAFT_X - SHAFT_HALF + 4 : SHAFT_X + SHAFT_HALF - 4
+      // cabine parada ou CHEGANDO no meu andar e o alvo está em outro?
+      // CORRE para o poço e pega o elevador!
+      const querElevador =
+        !sameFloor &&
+        g.vagar <= 0 &&
+        ((elevParado && elevAndar === g.t) || this.elevAlvo === g.t) &&
+        Math.abs(g.x - SHAFT_X) < 260
+      // persegue o jogador — mas respeita o "vagar" (depois de bater em algo)
+      if (sameFloor && g.vagar <= 0) g.dir = Math.sign(this.px - g.x) || g.dir
+      else if (querElevador) g.dir = Math.sign(SHAFT_X - g.x) || 1
+      g.x += g.dir * (g.elite ? 115 : 80) * (querElevador ? 1.7 : 1) * dt
+      // PAREDE: dá meia-volta e segue patrulhando (nada de ficar preso!)
+      if (g.x <= WALL + 12 || g.x >= ELEV_W - WALL - 12) {
+        g.x = clamp(g.x, WALL + 12, ELEV_W - WALL - 12)
         g.dir *= -1
+        g.vagar = rand(0.8, 1.6)
+      }
+      // POÇO: cabine PARADA aqui → EMBARCA; cabine a caminho → ESPERA na
+      // porta; senão dá meia-volta e patrulha
+      if (Math.abs(g.x - SHAFT_X) < SHAFT_HALF - 4) {
+        if (elevParado && elevAndar === g.t) {
+          g.noElevador = true
+          g.x = SHAFT_X
+          g.vagar = 1.5 // fica a bordo pelo menos até a PRÓXIMA parada
+          continue
+        }
+        g.x = g.x < SHAFT_X ? SHAFT_X - SHAFT_HALF + 4 : SHAFT_X + SHAFT_HALF - 4
+        if (this.elevAlvo !== g.t) {
+          g.dir *= -1
+          g.vagar = rand(0.8, 1.6)
+        }
       }
       g.shootTimer -= dt
       if (sameFloor && g.shootTimer <= 0 && Math.abs(g.x - this.px) < 280) {

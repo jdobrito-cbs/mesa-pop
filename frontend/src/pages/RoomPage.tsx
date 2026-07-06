@@ -70,20 +70,8 @@ export default function RoomPage() {
     }
   }, [game])
 
-  // partida começou → centraliza o jogo na tela (sem rolagem acidental)
+  // a tela do jogo abre no topo, sem rolagem automática (título junto ao header)
   const partidaRef = useRef<HTMLDivElement>(null)
-  const jaCentralizou = useRef(false)
-  const emPartida = room?.status === 'PLAYING' && !!game
-  useEffect(() => {
-    if (!emPartida) {
-      jaCentralizou.current = false
-      return
-    }
-    if (jaCentralizou.current) return
-    jaCentralizou.current = true
-    // espera o componente do jogo montar
-    setTimeout(() => partidaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
-  }, [emPartida])
 
   useEffect(() => {
     if (!code || !user) return

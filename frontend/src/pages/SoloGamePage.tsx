@@ -257,9 +257,6 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
     game.input.attach(canvas, (px, py) => ({ x: px, y: py }))
     const stop = startLoop(canvas, game)
 
-    // centraliza o jogo na tela — o usuário não precisa (nem deve) rolar
-    canvas.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
     // abre a partida no servidor (mede a duração de lá)
     // convidados jogam sem registrar pontuação — ranking pede conta
     setResult(null)

@@ -21,6 +21,21 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **AJUSTES 2026-07-06 (2ª rodada de feedback do usuário)**:
+  - **Missão Elevador — agentes DESTRAVADOS e pegando elevador**: bug
+    (screenshot do usuário: agentes presos na parede) — o clamp na
+    parede não invertia a direção. Agora: PAREDE/poço → meia-volta com
+    "vagar" (0.8–1.6s ignorando o jogador, senão a perseguição
+    re-mirava todo frame); cabine parada/chegando no andar → agente
+    CORRE (1.7×) para o poço, EMBARCA, viaja com a cabine (pega o
+    jogador se estiverem juntos dentro!) e desce nas paradas (chance
+    proporcional a dt — POR FRAME fazia embarcar/desembarcar em 16ms,
+    lição!). Verificado determinístico: embarcou ✔ viajou de andar ✔
+    e 25s orgânicos sem nenhum agente travado ✔.
+  - **Telas de jogo SEM centralizar** (reversão a pedido): scroll
+    automático removido do SoloGamePage e RoomPage — a página abre no
+    topo, com o nome do jogo junto à barra superior.
+  - **Cardume**: vórtices 5 → 3 (MAX_GIROS).
 - **FIDELIDADE AOS CLÁSSICOS — Missão Elevador e Pega-Ladrão (pedidos
   do usuário 2026-07-06)**:
   - **Missão Elevador**: agora ATIRA e ABAIXA também DENTRO do

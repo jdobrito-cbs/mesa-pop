@@ -59,8 +59,8 @@ export interface CardumeCallbacks {
   onHud(hud: { points: number; fish: number; orbiting: boolean; weapon: string }): void
 }
 
-/** a órbita é arma limitada: 5 giros de ATÉ 10s, depois 120s para recarregar */
-const MAX_GIROS = 5
+/** a órbita é arma limitada: 3 giros de ATÉ 10s, depois 120s para recarregar */
+const MAX_GIROS = 3
 const RECARGA_S = 120
 const ORBITA_MAX_S = 10
 
