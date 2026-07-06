@@ -37,6 +37,9 @@ Base sólida primeiro; os jogos plugam nela.
     (x desliza junto do progresso na diagonal, velocidade 0.95/s —
     sem teleporte de andar), como no Keystone Kapers. Verificado:
     hazards do andar 0 com vx<0 e progress 0.70 com x deslizando.
+    **Ajustes (2026-07-06)**: relógio de 300s fixo e NO MÁXIMO UM
+    obstáculo por andar (um objeto por vez para cima do herói) —
+    invariante verificado em 20s de jogo real.
 - **INSTALADOR EMPACOTADO (pedido do usuário 2026-07-06, processo
   PERMANENTE — ver regra 10)**: `npm run installer` →
   `scripts/build-installer.mjs` monta `dist/installer/` com SÓ o
