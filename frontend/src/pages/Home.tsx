@@ -49,26 +49,12 @@ export default function Home() {
                 Ir para minha mesa
               </Link>
             ) : (
-              <>
-                <Link
-                  to="/criar-conta"
-                  className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3.5 text-white shadow-xl shadow-pop-purple/30"
-                >
-                  Criar conta grátis
-                </Link>
-                <Link
-                  to="/entrar"
-                  className="btn-pop px-7 py-3.5 ring-2 ring-ink-700 hover:ring-pop-cyan"
-                >
-                  Já tenho conta
-                </Link>
-                <Link
-                  to="/entrar"
-                  className="btn-pop px-7 py-3.5 ring-2 ring-pop-cyan/50 hover:ring-pop-cyan"
-                >
-                  🎟️ Jogar sem conta
-                </Link>
-              </>
+              <Link
+                to="/entrar"
+                className="btn-pop px-7 py-3.5 ring-2 ring-pop-cyan/50 hover:ring-pop-cyan"
+              >
+                🎟️ Jogar sem conta
+              </Link>
             )}
           </div>
           {!user && (
