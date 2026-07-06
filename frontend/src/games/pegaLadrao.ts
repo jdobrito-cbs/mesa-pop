@@ -76,7 +76,7 @@ export class PegaLadraoGame implements GameHost {
   private hazards: Hazard[] = []
   private spawnTimer = 1.4
 
-  private timeLeft = 105 // loja gigante: mesmo relógio do resetRound
+  private timeLeft = 300 // mesmo relógio do resetRound
   private points = 0
   private lives = 3
   private round = 1
@@ -143,8 +143,7 @@ export class PegaLadraoGame implements GameHost {
     this.tOnEscalator = null
     this.escaped = false
     this.hazards = []
-    // loja maior pede mais relógio
-    this.timeLeft = Math.max(105 - (this.round - 1) * 5, 70)
+    this.timeLeft = 300 // relógio folgado (pedido do usuário)
     this.stunned = 0
     this.pushHud()
   }
@@ -290,20 +289,24 @@ export class PegaLadraoGame implements GameHost {
     if (this.spawnTimer <= 0) {
       const pool = hazardsForRound(this.round)
       const kind = pool[Math.floor(rand(0, pool.length))]!
-      // metade no seu andar (pressão!), metade nos vizinhos
-      const floor =
+      // metade no seu andar (pressão!), metade nos vizinhos — mas NUNCA
+      // mais de UM objeto por andar (um de cada vez para cima do herói)
+      const candidato =
         rand(0, 1) < 0.5 ? this.floor : clamp(this.floor + (rand(0, 1) < 0.5 ? 1 : -1), 0, FLOORS - 1)
-      const sentido = this.dirCaminho(floor) // para onde se corre nesse andar
-      const base =
-        kind === 'radinho' ? 290 : kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130
-      const nasceX = clamp(this.x + sentido * (PEGA_W * 0.62 + rand(0, 120)), 40, WORLD_W - 40)
-      this.hazards.push({
-        kind,
-        floor,
-        x: nasceX,
-        vx: -sentido * base * (1 + this.round * 0.06),
-        phase: rand(0, Math.PI * 2),
-      })
+      const livre = this.hazards.every((h) => h.floor !== candidato)
+      if (livre) {
+        const sentido = this.dirCaminho(candidato) // para onde se corre nesse andar
+        const base =
+          kind === 'radinho' ? 290 : kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130
+        const nasceX = clamp(this.x + sentido * (PEGA_W * 0.62 + rand(0, 120)), 40, WORLD_W - 40)
+        this.hazards.push({
+          kind,
+          floor: candidato,
+          x: nasceX,
+          vx: -sentido * base * (1 + this.round * 0.06),
+          phase: rand(0, Math.PI * 2),
+        })
+      }
       this.spawnTimer = Math.max(1.6 - this.round * 0.12, 0.55)
     }
     for (const h of this.hazards) {
