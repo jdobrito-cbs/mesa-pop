@@ -21,14 +21,16 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
-- **LANDING DINÂMICA (pedido do usuário 2026-07-06, com print)**: a
-  grade de 6 jogos da home mantém o layout, mas virou VIVA — fileira
-  "🔥 Os mais jogados" (3 jogos com mais partidas registradas) e
-  fileira "🎲 Sorteados para você agora" (3 aleatórios entre os demais,
-  novo sorteio A CADA visita). Endpoint PÚBLICO GET /api/games/destaque
-  (groupBy de Match por gameId + shuffle no restante habilitado);
-  Home.tsx com useFetch + esqueletos pulsando no carregamento.
-  Verificado: 2 visitas = sorteios diferentes, mais jogados estáveis.
+- **LANDING DINÂMICA (pedidos do usuário 2026-07-06, com prints)**: a
+  grade de 6 jogos da home é VIVA — fileira de cima = 3 MAIS JOGADOS
+  (partidas registradas), de baixo = 3 ALEATÓRIOS (novo sorteio a cada
+  visita) — mas SEM rótulos entre as fileiras (ajuste do usuário:
+  "retire os textos 🔥/🎲, não precisa disso"): uma grade única 2×3,
+  layout idêntico ao original. Endpoint PÚBLICO GET /api/games/destaque
+  (groupBy de Match + shuffle nos demais habilitados). **Espaçamento
+  vertical COMPRIMIDO** (hero py-16/24→8/10, h1 menor, arte h-96→72,
+  seção py-14→6) para a 1ª fileira de jogos aparecer JÁ NA ABERTURA
+  sem rolar (verificado na dobra 1360×900).
 - **RODADA DE CORREÇÕES pós-teste do usuário (2026-07-05, TODAS
   implementadas)** — feedback com screenshots:
   1. **Jogos centralizam na tela ao abrir** (sem rolagem acidental):

@@ -24,23 +24,23 @@ export default function Home() {
   return (
     <main>
       {/* HERO */}
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-24">
+      <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-8 md:grid-cols-2 md:py-10">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-ink-800 px-4 py-1.5 text-sm font-semibold text-pop-cyan ring-1 ring-ink-700">
             <Spark size={14} /> sua mesa está pronta
           </p>
-          <h1 className="mt-5 text-5xl leading-[1.05] font-extrabold tracking-tight md:text-6xl">
+          <h1 className="mt-4 text-4xl leading-[1.05] font-extrabold tracking-tight md:text-5xl">
             A mesa tá posta.
             <br />
             <span className="bg-gradient-to-r from-pop-purple via-pop-magenta to-pop-orange bg-clip-text text-transparent">
               Bora jogar?
             </span>
           </h1>
-          <p className="mt-5 max-w-md text-lg text-text-muted">
+          <p className="mt-3 max-w-md text-lg text-text-muted">
             Cartas, corrida, naves e muito mais — com os amigos em salas
             privadas ou contra o mundo no ranking.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             {user ? (
               <Link
                 to="/mesa"
@@ -79,7 +79,7 @@ export default function Home() {
         </div>
 
         {/* a mesa: ficha central + fichas de jogos flutuando */}
-        <div className="relative mx-auto hidden h-96 w-full max-w-md md:block" aria-hidden="true">
+        <div className="relative mx-auto hidden h-72 w-full max-w-md md:block" aria-hidden="true">
           <div className="absolute inset-8 rounded-[3rem] bg-ink-800/70 ring-1 ring-ink-700" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-float">
             <Chip size={132} spin />
@@ -95,35 +95,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* DESTAQUES: 3 mais jogados + 3 sorteados a cada visita */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="text-3xl font-extrabold md:text-4xl">O que rola na mesa</h2>
+      {/* CATÁLOGO: fileira de cima = 3 mais jogados; de baixo = 3 sorteados por visita */}
+      <section className="mx-auto max-w-6xl px-4 py-6">
+        <h2 className="text-3xl font-extrabold md:text-4xl">O que vai rolar na mesa</h2>
         <p className="mt-2 text-text-muted">
-          São 32 jogos — estes são os queridinhos e três surpresas de hoje.
+          São 32 jogos na mesa — estes seis mudam conforme a casa joga.
         </p>
-
-        <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-pop-orange/10 px-4 py-1.5 text-sm font-extrabold tracking-wide text-pop-orange uppercase">
-          🔥 Os mais jogados
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(destaque?.maisJogados ?? []).map((game) => (
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[...(destaque?.maisJogados ?? []), ...(destaque?.aleatorios ?? [])].map((game) => (
             <GameCard key={game.slug} game={game} />
           ))}
           {!destaque &&
-            [0, 1, 2].map((i) => (
-              <div key={i} className="card h-52 animate-pulse bg-ink-800/60" aria-hidden="true" />
-            ))}
-        </div>
-
-        <p className="mt-10 inline-flex items-center gap-2 rounded-full bg-pop-cyan/10 px-4 py-1.5 text-sm font-extrabold tracking-wide text-pop-cyan uppercase">
-          🎲 Sorteados para você agora
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {(destaque?.aleatorios ?? []).map((game) => (
-            <GameCard key={game.slug} game={game} />
-          ))}
-          {!destaque &&
-            [0, 1, 2].map((i) => (
+            [0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="card h-52 animate-pulse bg-ink-800/60" aria-hidden="true" />
             ))}
         </div>
