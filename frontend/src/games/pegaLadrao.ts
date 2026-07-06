@@ -117,6 +117,16 @@ export class PegaLadraoGame implements GameHost {
     return f % 2 === 0 ? WORLD_W - ESCALATOR_W - 30 : 30 + ESCALATOR_W
   }
 
+  /** sentido da CORRIDA no andar (para onde fica a escada rolante) */
+  private dirCaminho(f: number): number {
+    return f % 2 === 0 ? 1 : -1
+  }
+
+  /** inclinação da rampa da escada (para onde ela sobe na horizontal) */
+  private dirRampa(f: number): number {
+    return f % 2 === 0 ? -1 : 1
+  }
+
   private resetRound(nextRound: boolean) {
     if (nextRound) this.round++
     this.x = 120
@@ -197,8 +207,10 @@ export class PegaLadraoGame implements GameHost {
         this.x = ELEV_X + Math.sign(move) * 34
       }
     } else if (this.onEscalator) {
-      // sobe a escada automaticamente
-      this.onEscalator.progress += dt * 1.6
+      // ACOMPANHA a escada rolante: sobe degrau a degrau pela RAMPA
+      // (x desliza junto — nada de teleporte de andar)
+      this.onEscalator.progress = Math.min(this.onEscalator.progress + dt * 0.95, 1)
+      this.x = this.escalatorX(this.floor) + this.dirRampa(this.floor) * ESCALATOR_W * this.onEscalator.progress
       if (this.onEscalator.progress >= 1) {
         this.floor++
         this.onEscalator = null
@@ -236,7 +248,9 @@ export class PegaLadraoGame implements GameHost {
     // ---- ladrão: corre para a escada do andar dele ----
     if (!this.escaped) {
       if (this.tOnEscalator) {
-        this.tOnEscalator.progress += dt * 1.6
+        // o ladrão também ACOMPANHA a rampa
+        this.tOnEscalator.progress = Math.min(this.tOnEscalator.progress + dt * 0.95, 1)
+        this.tx = this.escalatorX(this.tFloor) + this.dirRampa(this.tFloor) * ESCALATOR_W * this.tOnEscalator.progress
         if (this.tOnEscalator.progress >= 1) {
           this.tFloor++
           this.tOnEscalator = null
@@ -269,7 +283,9 @@ export class PegaLadraoGame implements GameHost {
       return
     }
 
-    // ---- obstáculos (nascem logo FORA da tela, vindo na sua direção) ----
+    // ---- obstáculos: SEMPRE vêm de frente, contra o sentido da corrida
+    // (o herói corre para a escada rolante do andar; os objetos descem
+    // da direção da escada para cima dele — estilo Keystone Kapers) ----
     this.spawnTimer -= dt
     if (this.spawnTimer <= 0) {
       const pool = hazardsForRound(this.round)
@@ -277,19 +293,15 @@ export class PegaLadraoGame implements GameHost {
       // metade no seu andar (pressão!), metade nos vizinhos
       const floor =
         rand(0, 1) < 0.5 ? this.floor : clamp(this.floor + (rand(0, 1) < 0.5 ? 1 : -1), 0, FLOORS - 1)
-      const fromLeft = rand(0, 1) < 0.5
+      const sentido = this.dirCaminho(floor) // para onde se corre nesse andar
       const base =
         kind === 'radinho' ? 290 : kind === 'aviao' ? 240 : kind === 'carrinho' ? 170 : 130
-      const nasceX = clamp(
-        this.x + (fromLeft ? -1 : 1) * (PEGA_W * 0.62 + rand(0, 120)),
-        -40,
-        WORLD_W + 40,
-      )
+      const nasceX = clamp(this.x + sentido * (PEGA_W * 0.62 + rand(0, 120)), 40, WORLD_W - 40)
       this.hazards.push({
         kind,
         floor,
         x: nasceX,
-        vx: (fromLeft ? 1 : -1) * base * (1 + this.round * 0.06),
+        vx: -sentido * base * (1 + this.round * 0.06),
         phase: rand(0, Math.PI * 2),
       })
       this.spawnTimer = Math.max(1.6 - this.round * 0.12, 0.55)

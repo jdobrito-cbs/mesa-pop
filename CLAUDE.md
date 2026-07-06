@@ -21,6 +21,22 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FIDELIDADE AOS CLÁSSICOS — Missão Elevador e Pega-Ladrão (pedidos
+  do usuário 2026-07-06)**:
+  - **Missão Elevador**: agora ATIRA e ABAIXA também DENTRO do
+    elevador; ganhou PULO (↑/botão ⤴, também esquiva de tiros) e
+    **LÂMPADAS DESTRUTÍVEIS como no Elevator Action**: atirar PULANDO
+    (a bala sai na altura do pulo) apaga a luminária (+50) e a área
+    fica ESCURA (gradiente radial por cima de portas/agentes/espião).
+    Verificado por demo: bot pulou, atirou segurando espaço e apagou
+    a lâmpada (área escurecida na captura).
+  - **Pega-Ladrão**: obstáculos SEMPRE vêm de frente — contra o
+    sentido da corrida do herói no andar (dirCaminho: par corre p/
+    direita, ímpar p/ esquerda; hazards nascem à frente com vx
+    contrário). Na ESCADA ROLANTE, herói e ladrão ACOMPANHAM A RAMPA
+    (x desliza junto do progresso na diagonal, velocidade 0.95/s —
+    sem teleporte de andar), como no Keystone Kapers. Verificado:
+    hazards do andar 0 com vx<0 e progress 0.70 com x deslizando.
 - **INSTALADOR EMPACOTADO (pedido do usuário 2026-07-06, processo
   PERMANENTE — ver regra 10)**: `npm run installer` →
   `scripts/build-installer.mjs` monta `dist/installer/` com SÓ o

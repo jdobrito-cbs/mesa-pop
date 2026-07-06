@@ -180,9 +180,10 @@ export const SOLO_GAMES: Record<string, SoloGameDef> = {
     width: ELEV_W,
     height: ELEV_H,
     controls:
-      '←/→ anda; o ELEVADOR sobe e desce sozinho — entre quando ele parar no seu andar. ↓ (ou botão) ABAIXA: esquiva dos tiros altos e atira rasteiro. Espaço (ou botão) ATIRA. Recolha os documentos das portas VERMELHAS e desça até a garagem!',
+      '←/→ anda; o ELEVADOR sobe e desce sozinho — entre quando ele parar no seu andar (dá para atirar e abaixar lá de dentro). ↓ ABAIXA: esquiva dos tiros altos e atira rasteiro. ↑ PULA — atire pulando para APAGAR as lâmpadas e escurecer a área! Espaço atira. Recolha os documentos das portas VERMELHAS e desça até a garagem!',
     actions: [
       { id: 'tiro', icon: '✦', label: 'Tiro', invoke: (g) => (g as MissaoElevadorGame).triggerShoot() },
+      { id: 'pular', icon: '⤴', label: 'Pular', invoke: (g) => (g as MissaoElevadorGame).triggerJump() },
       { id: 'abaixar', icon: '⤵', label: 'Abaixar', invoke: (g) => (g as MissaoElevadorGame).triggerDuck() },
     ],
     create: (cb) => new MissaoElevadorGame(cb),

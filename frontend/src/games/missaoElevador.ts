@@ -67,9 +67,15 @@ export class MissaoElevadorGame implements GameHost {
   private facing = 1
   private crouch = false
   private duckHold = 0
+  private jumpY = 0
+  private vy = 0
   private invuln = 0
   private fireTimer = 0
   touchShoot = false
+  touchJump = false
+
+  /** luminárias por andar — TIRO PULANDO apaga e escurece a área */
+  private lampadas: Array<{ x: number; t: number; quebrada: boolean }> = []
 
   /** elevador AUTÔNOMO: alvo, direção e parada em cada andar */
   private elevT = 0
@@ -110,6 +116,11 @@ export class MissaoElevadorGame implements GameHost {
     this.duckHold = 0.9
   }
 
+  /** botão de toque: PULA (para acertar as lâmpadas!) */
+  triggerJump() {
+    this.touchJump = true
+  }
+
   private pushHud() {
     this.cb.onHud({
       points: this.points,
@@ -135,6 +146,13 @@ export class MissaoElevadorGame implements GameHost {
     this.agents = []
     this.shots = []
     this.doors = []
+    this.jumpY = 0
+    this.vy = 0
+    // luminárias acesas em todo andar (menos a garagem)
+    this.lampadas = []
+    for (let t = 0; t < this.floors - 1; t++) {
+      for (const x of [132, ELEV_W - 132]) this.lampadas.push({ x, t, quebrada: false })
+    }
     // portas em todos os andares (menos a garagem); sorteia as vermelhas
     const spots: Array<{ x: number; t: number }> = []
     for (let t = 0; t < this.floors - 1; t++) {
@@ -205,7 +223,21 @@ export class MissaoElevadorGame implements GameHost {
     if (Math.abs(move) > 0.15) this.facing = Math.sign(move)
 
     const onElev = this.aboard()
-    this.crouch = !onElev && (a.y > 0.3 || this.duckHold > 0)
+    // abaixar funciona em QUALQUER lugar — inclusive dentro do elevador
+    this.crouch = this.jumpY === 0 && (a.y > 0.3 || this.duckHold > 0)
+
+    // PULO (↑ ou botão): fora do elevador, para alcançar as lâmpadas
+    const querPular = a.y < -0.3 || this.touchJump
+    this.touchJump = false
+    if (querPular && !onElev && this.jumpY === 0 && !this.crouch) this.vy = 330
+    if (this.vy !== 0 || this.jumpY > 0) {
+      this.jumpY += this.vy * dt
+      this.vy -= 980 * dt
+      if (this.jumpY <= 0) {
+        this.jumpY = 0
+        this.vy = 0
+      }
+    }
 
     if (onElev) {
       // a bordo: acompanha a cabine; só desce dela quando ela PARA num andar
@@ -251,11 +283,12 @@ export class MissaoElevadorGame implements GameHost {
       return
     }
 
-    // tiro do espião — em pé ou ABAIXADO (rasteiro)
+    // tiro do espião — em pé, ABAIXADO (rasteiro), PULANDO (alcança as
+    // lâmpadas!) e até DE DENTRO do elevador
     const wantShoot = this.input.pressed(' ') || this.input.pressed('x') || this.touchShoot
     this.touchShoot = false
-    if (wantShoot && this.fireTimer <= 0 && !onElev) {
-      const y = this.groundY(this.pt) - (this.crouch ? BAIXO : ALTO)
+    if (wantShoot && this.fireTimer <= 0) {
+      const y = this.groundY(this.pt) - (this.crouch ? BAIXO : ALTO) - this.jumpY
       this.shots.push({ x: this.px + this.facing * 14, y, vx: this.facing * 430, mine: true, low: this.crouch })
       this.fireTimer = 0.35
     }
@@ -315,6 +348,27 @@ export class MissaoElevadorGame implements GameHost {
     this.shots = this.shots.filter((s) => s.x > WALL && s.x < ELEV_W - WALL)
     for (const s of this.shots) {
       if (s.mine) {
+        // acertou uma LÂMPADA? (tiro dado no alto, durante o pulo)
+        for (const l of this.lampadas) {
+          if (l.quebrada) continue
+          const lampY = this.groundY(l.t) - FLOOR_H + 23
+          if (Math.abs(s.y - lampY) < 11 && Math.abs(s.x - l.x) < 12) {
+            l.quebrada = true
+            s.x = -999
+            this.points += 50
+            this.texts.add(l.x, lampY - 10, '💡 +50', '#FFC53D', 13)
+            this.shake.kick(3)
+            for (let k = 0; k < 8; k++) {
+              this.particles.list.push({
+                x: l.x, y: lampY, vx: rand(-90, 90), vy: rand(20, 140),
+                life: rand(0.3, 0.6), maxLife: 0.6, color: '#FFD873', size: rand(1.5, 3),
+              })
+            }
+            this.pushHud()
+            break
+          }
+        }
+        if (s.x === -999) continue
         for (const g of this.agents) {
           if (!g.alive || Math.abs(this.groundY(g.t) - ALTO - s.y) > 30) continue
           if (Math.abs(g.x - s.x) < 14) {
@@ -339,8 +393,9 @@ export class MissaoElevadorGame implements GameHost {
           }
         }
       } else if (this.invuln <= 0) {
-        // ABAIXADO esquiva do tiro alto; tiro rasteiro pega quem abaixou E quem está de pé
-        const esquivou = this.crouch && !s.low
+        // ABAIXADO esquiva do tiro alto; PULANDO passa por cima dos dois;
+        // tiro rasteiro pega quem abaixou E quem está de pé
+        const esquivou = (this.crouch && !s.low) || this.jumpY > 24
         const py = this.groundY(this.pt) - (s.low ? BAIXO : ALTO)
         if (!esquivou && Math.abs(s.y - py) < 16 && Math.abs(s.x - this.px) < 12) {
           s.x = -999
@@ -466,20 +521,27 @@ export class MissaoElevadorGame implements GameHost {
           this.door(ctx, d.x, dy, color)
         }
       }
-      // luminárias penduradas com halo
-      for (const lx of [132, ELEV_W - 132]) {
+      // luminárias penduradas (as quebradas ficam apagadas)
+      for (const l of this.lampadas.filter((ll) => ll.t === t)) {
         ctx.strokeStyle = 'rgba(255,249,240,0.25)'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(lx, y - FLOOR_H + 10)
-        ctx.lineTo(lx, y - FLOOR_H + 20)
+        ctx.moveTo(l.x, y - FLOOR_H + 10)
+        ctx.lineTo(l.x, y - FLOOR_H + 20)
         ctx.stroke()
-        withGlow(ctx, '#FFC53D', 10, () => {
-          ctx.fillStyle = '#FFC53D'
+        if (l.quebrada) {
+          ctx.fillStyle = '#3A3352'
           ctx.beginPath()
-          ctx.arc(lx, y - FLOOR_H + 23, 4, 0, Math.PI * 2)
+          ctx.arc(l.x, y - FLOOR_H + 23, 4, 0, Math.PI * 2)
           ctx.fill()
-        })
+        } else {
+          withGlow(ctx, '#FFC53D', 10, () => {
+            ctx.fillStyle = '#FFC53D'
+            ctx.beginPath()
+            ctx.arc(l.x, y - FLOOR_H + 23, 4, 0, Math.PI * 2)
+            ctx.fill()
+          })
+        }
       }
     }
 
@@ -549,9 +611,21 @@ export class MissaoElevadorGame implements GameHost {
       }
     }
 
-    // espião (pisca quando invulnerável; agachado quando abaixa)
+    // espião (pisca quando invulnerável; agachado quando abaixa; PULA!)
     if (this.invuln <= 0 || Math.floor(this.time * 10) % 2 === 0) {
-      this.person(ctx, this.px, this.groundY(this.pt), '#9D5CFF', '#5A3DA8', this.facing, true, this.crouch)
+      this.person(ctx, this.px, this.groundY(this.pt) - this.jumpY, '#9D5CFF', '#5A3DA8', this.facing, true, this.crouch)
+    }
+
+    // ÁREAS ESCURAS: lâmpada quebrada apaga aquele trecho do andar
+    // (escurece tudo — portas, agentes e o próprio espião, como no clássico)
+    for (const l of this.lampadas) {
+      if (!l.quebrada) continue
+      const y = this.groundY(l.t)
+      const escuro = ctx.createRadialGradient(l.x, y - FLOOR_H / 2, 30, l.x, y - FLOOR_H / 2, 150)
+      escuro.addColorStop(0, 'rgba(4,2,12,0.72)')
+      escuro.addColorStop(1, 'rgba(4,2,12,0)')
+      ctx.fillStyle = escuro
+      ctx.fillRect(l.x - 150, y - FLOOR_H + 10, 300, FLOOR_H - 10)
     }
 
     this.particles.draw(ctx)
