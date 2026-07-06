@@ -21,6 +21,20 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **INSTALADOR EMPACOTADO (pedido do usuário 2026-07-06, processo
+  PERMANENTE — ver regra 10)**: `npm run installer` →
+  `scripts/build-installer.mjs` monta `dist/installer/` com SÓ o
+  necessário (fontes dos 3 workspaces, prisma+migrações+seed,
+  Dockerfiles, compose, nginx.conf, public/, install.sh, INSTALAR.txt)
+  — sem testes/docs/demos —, remove TODOS os comentários da CÓPIA
+  (printer do compilador TS com re-parse de conferência; css/html/
+  prisma por limpeza dirigida; original intacto) e gera
+  `dist/mesapop-installer.zip` (~368KB). VALIDADO: a cópia limpa passa
+  no typecheck dos 3 workspaces (junction node_modules temporária).
+  `install.sh`: confere Docker/Compose, gera .env com segredos
+  (openssl), `docker compose --profile full up -d --build`, espera a
+  API (migra+semeia no boot do container) e imprime URL/credenciais;
+  aceita host/IP como argumento (CORS e VITE_API_URL corretos).
 - **LANDING DINÂMICA (pedidos do usuário 2026-07-06, com prints)**: a
   grade de 6 jogos da home é VIVA — fileira de cima = 3 MAIS JOGADOS
   (partidas registradas), de baixo = 3 ALEATÓRIOS (novo sorteio a cada
@@ -757,6 +771,14 @@ Base sólida primeiro; os jogos plugam nela.
 8. Se algo na stack definida for má escolha para um requisito específico,
    **sinalizar e propor alternativa ANTES de implementar**.
 9. Idioma do usuário: **português (pt-BR)**. Comunicar em pt-BR.
+10. **A CADA REVISÃO DO SISTEMA, regenerar o instalador** (pedido do
+    usuário em 2026-07-06): rodar `npm run installer` ao fechar
+    qualquer entrega — ele copia só o necessário para
+    `dist/installer/`, REMOVE TODOS OS COMENTÁRIOS da cópia (printer
+    do TypeScript; o original fica intacto) e empacota
+    `dist/mesapop-installer.zip` com `install.sh` (Docker: gera .env
+    com segredos, sobe o stack completo, migra/semeia no boot). O
+    usuário usa esse zip para instalar e testar sempre.
 
 ---
 
