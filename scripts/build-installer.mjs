@@ -125,7 +125,12 @@ for (const rel of [...ARQUIVOS_RAIZ, ...ARQUIVOS_WORKSPACE]) {
   if (/\.(ts|tsx|css|html|prisma)$/.test(rel)) processa(abs, path.join(staging, rel))
   else {
     mkdirSync(path.dirname(path.join(staging, rel)), { recursive: true })
-    cpSync(abs, path.join(staging, rel))
+    if (rel.endsWith('.sh')) {
+      // bash exige LF — o git no Windows pode ter convertido para CRLF
+      writeFileSync(path.join(staging, rel), readFileSync(abs, 'utf8').replace(/\r\n/g, '\n'))
+    } else {
+      cpSync(abs, path.join(staging, rel))
+    }
   }
   total++
 }
