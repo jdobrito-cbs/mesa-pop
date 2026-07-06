@@ -9,6 +9,8 @@ import type {
   DueloView,
   DominoAction,
   DominoView,
+  BingoView,
+  ForcaView,
   GameEndView,
   MemoriaView,
   OneAction,
@@ -33,6 +35,8 @@ import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
 import PifeTable from '../components/PifeTable'
 import MemoriaBoard from '../components/MemoriaBoard'
+import ForcaGame from '../components/ForcaGame'
+import BingoGame from '../components/BingoGame'
 import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
 import AdSlot from '../components/AdSlot'
@@ -374,6 +378,20 @@ export default function RoomPage() {
               {room.gameSlug === 'memoria' && (
                 <MemoriaBoard
                   view={game.state as MemoriaView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'forca' && (
+                <ForcaGame
+                  view={game.state as ForcaView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'bingo' && (
+                <BingoGame
+                  view={game.state as BingoView}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                 />

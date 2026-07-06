@@ -66,4 +66,6 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'pife', name: 'Pife', description: 'Nove cartas, três jogos de três. Bata primeiro!', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-green', icon: '🂠', phase: 9, enabled: true },
   { slug: 'sudoku', name: 'Sudoku', description: 'Lógica pura em 3 níveis — todo puzzle tem solução única.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-purple', icon: '🔢', phase: 9, enabled: true },
   { slug: 'caca-palavras', name: 'Caça-palavras', description: 'Ache as 10 palavras escondidas na sopa de letras.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-yellow', icon: '🔍', phase: 9, enabled: true },
+  { slug: 'forca', name: 'Forca', description: 'Escolha a palavra secreta — ou escape dela, letra a letra.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-magenta', icon: '😵', phase: 9, enabled: true },
+  { slug: 'bingo', name: 'Bingo', description: 'Bolas cantadas ao vivo — marque a cartela e grite BINGO!', family: 'PARTY', minPlayers: 2, maxPlayers: 16, color: 'pop-orange', icon: '🎱', phase: 9, enabled: true },
 ]

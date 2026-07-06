@@ -14,12 +14,43 @@ Base sólida primeiro; os jogos plugam nela.
 
 - **Fase atual**: **FASE 9 — "A mesa da família" (9 jogos novos,
   aprovada pelo usuário em 2026-07-05) — EM ANDAMENTO.** Plano em 5
-  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras ✅; 3) Forca+Bingo;
-  4) Quiz Pop+Quiz Nostalgia (uma engine, dois jogos); 5) Cruzadinha.
+  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras ✅; 3) Forca+Bingo
+  ✅; 4) Quiz Pop+Quiz Nostalgia (uma engine, dois jogos); 5) Cruzadinha.
   Lote 6 opcional sugerido: Modo Conforto 60+ (fontes grandes, alto
   contraste, timers relaxados). Roadmap original 0–8 ✅ completo
-  (23 jogos); FASE 9 leva a 32. **27 jogos jogáveis.**
+  (23 jogos); FASE 9 leva a 32. **29 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FASE 9 · lote 3 entregue — FORCA + BINGO (o social do 60+)**
+  (2026-07-05):
+  - **Forca multiplayer** (`shared/forca.ts` + `backend/games/forca.ts`
+    + `ForcaGame.tsx`): 2–6 jogadores, rodadas = jogadores (cada um
+    ESCOLHE a palavra uma vez, 3–16 letras normalizadas A–Z). A PALAVRA
+    NUNCA TRAFEGA para quem adivinha (palavraVista com null nas ocultas;
+    escolhedor e fim de rodada veem tudo; teste de serialização).
+    Adivinhadores se revezam PULANDO o escolhedor; letra certa revela
+    ocorrências (+10 cada) e MANTÉM a vez; errada cresce a forca (+8 ao
+    escolhedor) e passa. Completar = +40; CHUTE da palavra inteira = +60
+    +2/oculta (errado conta na forca); 6 erros = enforcou (+50
+    escolhedor). Fim = maior pontuação (scoresFor grava no Match). UI:
+    boneco SVG que cresce parte a parte, tracinhos, teclado A–Z pintado
+    (verde/riscado), narração ("B apareceu 2×!"), botão de arriscar.
+  - **Bingo 75** (`shared/bingo.ts` + `backend/games/bingo.ts` +
+    `BingoGame.tsx`): REALTIME perSeatView (tick 500ms) — o SERVIDOR
+    canta uma bola a cada 3,5s (saco crypto). Cartela 5×5 por assento
+    (colunas B-I-N-G-O em faixas de 15, centro LIVRE ★). MARCAR exige
+    bola já cantada (servidor valida); BINGO! conferido no servidor
+    (BINGO_LINHAS: 5 linhas + 5 colunas + 2 diagonais) — falso é
+    recusado. 2–16 jogadores + espectadores ("só torce! 📣"). UI: bola
+    da vez GIGANTE colorida por coluna, contagem regressiva, histórico
+    de bolas, progresso dos rivais (x/25), botão BINGO! que pula quando
+    o cliente detecta linha, linha vencedora dourada no fim.
+  - 184 testes (10 novos). Typecheck limpo. Seed: 29 jogos no banco.
+  - Demo real (2 navegadores): Vera escolheu CHUVEIRO, Tino errou Z/X
+    (boneco na forca) e completou a palavra → rodada 2 ROTACIONOU o
+    escolhedor; no Bingo, linha fechada após 38 bolas cantadas ao vivo
+    e BINGO! validado com a linha dourada + overlay no rival.
+    **LIÇÃO de demo**: Playwright recusa clicar em botão com
+    animate-bounce ("element is not stable") — usar click force:true.
 - **FASE 9 · lote 2 entregue — SUDOKU + CAÇA-PALAVRAS (geradores por
   seed)** (2026-07-05):
   - **`shared/seed.ts`**: mulberry32 + hashSeed (FNV-1a) + embaralha/
@@ -584,9 +615,9 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: FASE 9 · lote 3 (Forca multiplayer + Bingo) —
-  mediante OK do usuário. Depois: lote 4 Quiz Pop+Nostalgia, lote 5
-  Cruzadinha, lote 6 opcional Modo Conforto 60+.
+- **Próximo passo**: FASE 9 · lote 4 (Quiz Pop + Quiz Nostalgia — uma
+  engine de trivia, dois jogos) — mediante OK do usuário. Depois: lote
+  5 Cruzadinha, lote 6 opcional Modo Conforto 60+.
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);
