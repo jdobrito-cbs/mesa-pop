@@ -771,6 +771,11 @@ Base sólida primeiro; os jogos plugam nela.
 8. Se algo na stack definida for má escolha para um requisito específico,
    **sinalizar e propor alternativa ANTES de implementar**.
 9. Idioma do usuário: **português (pt-BR)**. Comunicar em pt-BR.
+11. **TODA ALTERAÇÃO vai para o GitHub** (pedido do usuário em
+    2026-07-06): após cada commit, `git push` para
+    https://github.com/jdobrito-cbs/mesa-pop (remote `origin`, branch
+    `main`, conta jdobrito-cbs via gh). Repositório PÚBLICO — nunca
+    commitar .env/segredos (já no .gitignore).
 10. **A CADA REVISÃO DO SISTEMA, regenerar o instalador** (pedido do
     usuário em 2026-07-06): rodar `npm run installer` ao fechar
     qualquer entrega — ele copia só o necessário para
