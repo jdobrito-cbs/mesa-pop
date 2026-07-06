@@ -669,14 +669,15 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: os 9 jogos da FASE 9 estão entregues. Decisão do
-  usuário pendente: lote 6 OPCIONAL (Modo Conforto 60+ — toggle global
-  de fontes/cartas maiores, alto contraste, timers relaxados por sala,
-  prefers-reduced-motion) fecharia a fase. Backlog geral: desafio
-  diário com seed (Sudoku/Caça/Cruzadinha já são seedáveis), expansão
-  dos bancos de quiz, mão de onze/ferro no Truco, dicionário no
-  termo/duelo, votação no Stop, moderação de chat, arte da fazenda,
-  extração do esqArt.
+- **Próximo passo**: NENHUM em andamento — o usuário encerrou os
+  trabalhos aqui (2026-07-05) com a FASE 9 completa (9/9 jogos, 32 no
+  catálogo). Ideias aguardando priorização futura: Modo Conforto 60+
+  (lote opcional sugerido: fontes/cartas maiores, alto contraste,
+  timers relaxados, prefers-reduced-motion); desafio diário com seed
+  (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de
+  quiz; mão de onze/ferro no Truco; dicionário no termo/duelo; votação
+  no Stop; moderação de chat no admin; arte da fazenda; extração do
+  esqArt do co-op.
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);
