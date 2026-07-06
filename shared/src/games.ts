@@ -70,4 +70,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'bingo', name: 'Bingo', description: 'Bolas cantadas ao vivo — marque a cartela e grite BINGO!', family: 'PARTY', minPlayers: 2, maxPlayers: 16, color: 'pop-orange', icon: '🎱', phase: 9, enabled: true },
   { slug: 'quiz-pop', name: 'Quiz Pop', description: '10 perguntas, 15 segundos cada — rapidez vale bônus!', family: 'PARTY', minPlayers: 2, maxPlayers: 8, color: 'pop-cyan', icon: '❓', phase: 9, enabled: true },
   { slug: 'quiz-nostalgia', name: 'Quiz Nostalgia', description: 'Música, novelas e o Brasil de antigamente — quem lembra, leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 8, color: 'pop-magenta', icon: '📺', phase: 9, enabled: true },
+  { slug: 'cruzadinha', name: 'Cruzadinha', description: 'Palavras-cruzadas de dicas curtas, geradas na hora.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '✏️', phase: 9, enabled: true },
 ]

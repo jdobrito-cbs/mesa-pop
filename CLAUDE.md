@@ -14,12 +14,38 @@ Base sólida primeiro; os jogos plugam nela.
 
 - **Fase atual**: **FASE 9 — "A mesa da família" (9 jogos novos,
   aprovada pelo usuário em 2026-07-05) — EM ANDAMENTO.** Plano em 5
-  lotes: 1) Memória+Pife ✅; 2) Sudoku+Caça-palavras ✅; 3) Forca+Bingo
-  ✅; 4) Quiz Pop+Quiz Nostalgia ✅; 5) Cruzadinha. Lote 6 opcional
-  sugerido: Modo Conforto 60+ (fontes grandes, alto contraste, timers
-  relaxados). Roadmap original 0–8 ✅ completo (23 jogos); FASE 9 leva
-  a 32. **31 jogos jogáveis.**
+  lotes: **TODOS os 9 jogos combinados entregues (lotes 1–5 ✅,
+  2026-07-05): Memória, Pife, Sudoku, Caça-palavras, Forca, Bingo,
+  Quiz Pop, Quiz Nostalgia e Cruzadinha.** Falta só o lote 6 OPCIONAL
+  (Modo Conforto 60+: fontes grandes, alto contraste, timers
+  relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
+  (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FASE 9 · lote 5 entregue — CRUZADINHA (fecha os 9 jogos da fase)**
+  (2026-07-05):
+  - **Gerador** (`shared/cruzadinha.ts`): banco de 80 verbetes
+    palavra+dica pt-BR (A–Z sem acento, dicas estilo Coquetel);
+    `gerarCruzadinha(seed)` coloca a maior palavra no centro e encaixa
+    ~11 outras SEMPRE cruzando (greedy pelo maior nº de cruzamentos,
+    empate decidido pela seed) com as regras clássicas: célula
+    antes/depois vazia e sem vizinhos paralelos acidentais (função
+    `cabe`). Numeração pela ordem de leitura (linha→coluna). Devolve o
+    gabarito completo (cells por palavra) — testado em 5 seeds: grade
+    conectada (toda palavra cruza ≥1 outra), fiel ao gabarito, sem
+    célula órfã.
+  - **CruzadinhaPage** (solo, /jogos/cruzadinha): grade com numerinhos,
+    palavra ativa em roxo + cursor, DICA ATIVA em destaque no topo,
+    lista Horizontais/Verticais clicável com riscado ao completar,
+    clicar 2× numa casa de cruzamento alterna →/↓, teclado físico E
+    A–Z na tela (celular). Letra errada não entra (treme, −15). Pontos
+    = 8×letra + 800 − 3×seg − 15×erros (mín 150), /api/solo com
+    PLAUSIBILITY 'cruzadinha' {40/s, 30s, 2200}. Hook dev
+    `window.__cruz`.
+  - 199 testes (8 novos). Typecheck limpo. Seed: 32 jogos no banco.
+  - Demo real: bot selecionou palavra por DICA (garante a direção
+    certa), preencheu 11 palavras (CAJU, RELOGIO, ABACAXI…) respeitando
+    o minMs do anti-cheat → "Cruzadinha fechada! 1176 pts, 1º no
+    ranking".
 - **FASE 9 · lote 4 entregue — QUIZ POP + QUIZ NOSTALGIA (uma engine,
   dois jogos)** (2026-07-05):
   - **Engine de trivia** (`shared/quiz.ts` + `backend/games/quiz.ts`
@@ -643,10 +669,14 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: FASE 9 · lote 5 (Cruzadinha estilo Coquetel —
-  banco palavra+dica pt-BR e gerador de grade com cruzamentos por
-  seed) — mediante OK do usuário. Depois: lote 6 opcional Modo
-  Conforto 60+ (fecharia a FASE 9).
+- **Próximo passo**: os 9 jogos da FASE 9 estão entregues. Decisão do
+  usuário pendente: lote 6 OPCIONAL (Modo Conforto 60+ — toggle global
+  de fontes/cartas maiores, alto contraste, timers relaxados por sala,
+  prefers-reduced-motion) fecharia a fase. Backlog geral: desafio
+  diário com seed (Sudoku/Caça/Cruzadinha já são seedáveis), expansão
+  dos bancos de quiz, mão de onze/ferro no Truco, dicionário no
+  termo/duelo, votação no Stop, moderação de chat, arte da fazenda,
+  extração do esqArt.
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);
