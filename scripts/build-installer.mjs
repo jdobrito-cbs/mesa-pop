@@ -22,7 +22,8 @@ const ts = require('typescript')
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const staging = path.join(raiz, 'dist', 'installer')
-const zipFinal = path.join(raiz, 'dist', 'mesapop-installer.zip')
+const zipFinal = path.join(raiz, 'releases', 'mesapop-docker-install.zip')
+mkdirSync(path.dirname(zipFinal), { recursive: true })
 
 /* ---------- 1. seleção do que entra no pacote ---------- */
 
@@ -170,4 +171,4 @@ rmSync(zipFinal, { force: true })
 zipDir(staging, zipFinal) // barras normais → extrai certo no Linux
 
 const kb = Math.round(statSync(zipFinal).size / 1024)
-console.log(`✔ instalador pronto: dist/mesapop-installer.zip (${kb} KB, ${total} arquivos, sem comentários)`)
+console.log(`✔ instalador Docker pronto: releases/mesapop-docker-install.zip (${kb} KB, ${total} arquivos, sem comentários)`)

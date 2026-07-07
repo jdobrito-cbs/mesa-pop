@@ -840,13 +840,13 @@ Base sólida primeiro; os jogos plugam nela.
     ao fechar qualquer entrega. Ambos copiam só o necessário, REMOVEM
     TODOS OS COMENTÁRIOS (printer do TypeScript; shell por limpeza
     dirigida) e, no WSRTA, também barram qualquer marca de autoria por
-    IA (varredura) — o original fica intacto. Saídas:
-    `dist/mesapop-installer.zip` (Docker, com `install.sh`) e, em
-    `releases/`, `mesapop-install.zip` + `mesapop-update-AAAA-MM-DD.zip`
-    (WSRTA; datar o update). Os zips do WSRTA VÃO PARA O GITHUB
-    (releases/ é versionado). ZIPs gerados por gerador nativo em Node
-    (`scripts/lib/zip.mjs`) com barras normais — o Compress-Archive do
-    Windows usa barra invertida e quebra a extração no Linux.
+    IA (varredura) — o original fica intacto. TODAS as saídas vão para
+    `releases/` (versionado → GitHub): `mesapop-docker-install.zip`
+    (Docker, com `install.sh`), `mesapop-wsrta-install.zip` e
+    `mesapop-wsrta-update-AAAA-MM-DD.zip` (WSRTA; datar o update).
+    `releases/README.md` explica qual baixar. ZIPs gerados por gerador
+    nativo em Node (`scripts/lib/zip.mjs`) com barras normais — o
+    Compress-Archive do Windows usa barra invertida e quebra no Linux.
 
 ---
 
