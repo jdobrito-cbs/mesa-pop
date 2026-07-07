@@ -11,11 +11,11 @@
  *    .css/.html/.prisma por limpeza dirigida.
  * 3. Empacota tudo em dist/mesapop-installer.zip.
  */
-import { execSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
+import { zipDir } from './lib/zip.mjs'
 
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
@@ -167,11 +167,7 @@ writeFileSync(
 /* ---------- 4. zip ---------- */
 
 rmSync(zipFinal, { force: true })
-const cmd =
-  process.platform === 'win32'
-    ? `powershell -NoProfile -Command "Compress-Archive -Path '${staging}\\*' -DestinationPath '${zipFinal}' -Force"`
-    : `cd '${staging}' && zip -rq '${zipFinal}' .`
-execSync(cmd, { stdio: 'inherit' })
+zipDir(staging, zipFinal) // barras normais → extrai certo no Linux
 
 const kb = Math.round(statSync(zipFinal).size / 1024)
 console.log(`✔ instalador pronto: dist/mesapop-installer.zip (${kb} KB, ${total} arquivos, sem comentários)`)

@@ -1,2 +1,5 @@
 *.sh text eol=lf
 install.sh text eol=lf
+deploy/*.sh text eol=lf
+releases/*.zip binary
+dist/*.zip binary

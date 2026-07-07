@@ -15,6 +15,7 @@ import meRoutes from './routes/me'
 import termoRoutes from './routes/termo'
 import adminRoutes from './routes/admin/index'
 import socketPlugin from './realtime/socket'
+import staticPlugin from './plugins/static'
 
 export interface BuildAppOptions {
   /** Desliga rate limiting (testes de integração). */
@@ -67,6 +68,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(termoRoutes)
   await app.register(adminRoutes)
   await app.register(socketPlugin)
+  await app.register(staticPlugin)
 
   return app
 }

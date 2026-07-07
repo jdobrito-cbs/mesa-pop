@@ -21,6 +21,22 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **DEPLOY WSRTA (pedido do usuário 2026-07-06)**: o backend agora
+  SERVE O SITE (build do frontend) na MESMA porta da API — porta única
+  ($PORT) via `backend/src/plugins/static.ts` (@fastify/static + SPA
+  fallback; só ativa se `frontend/dist` existir, então dev/Docker não
+  mudam). Frontend usa URL relativa quando `VITE_API_URL` vazio (API e
+  socket.io) — casa com a porta única. `deploy/`: `wsrta-install.sh`
+  (instala deps, cria Postgres com senha aleatória, monta .env com
+  segredos, prisma generate/deploy/seed, build do frontend; aceita
+  DOMAIN/PORT do painel ou por argumento; bootstrap de Node/Postgres
+  via apt no terminal) e `wsrta-update.sh` (mantém banco/.env, só deps
+  + migração + rebuild). `app.install.md` e `app.update.md`
+  (frontmatter name/port/workdir/envfile + Steps + Start
+  `npm run start -w backend`). `npm run wsrta` empacota os dois zips em
+  `releases/` (install fixo + update datado), código limpo e sem marca
+  de IA. Verificado: porta única serve site+API+SPA, cópia limpa passa
+  typecheck nos 3 workspaces, zip com barras normais extrai no Linux.
 - **SEO / ROBÔS DE BUSCA (pedido do usuário 2026-07-06)**:
   `frontend/public/robots.txt` (Allow / geral; Disallow /admin e
   /sala/; aponta o sitemap) + `sitemap.xml` (/, /entrar, /criar-conta)
@@ -819,14 +835,18 @@ Base sólida primeiro; os jogos plugam nela.
     https://github.com/jdobrito-cbs/mesa-pop (remote `origin`, branch
     `main`, conta jdobrito-cbs via gh). Repositório PÚBLICO — nunca
     commitar .env/segredos (já no .gitignore).
-10. **A CADA REVISÃO DO SISTEMA, regenerar o instalador** (pedido do
-    usuário em 2026-07-06): rodar `npm run installer` ao fechar
-    qualquer entrega — ele copia só o necessário para
-    `dist/installer/`, REMOVE TODOS OS COMENTÁRIOS da cópia (printer
-    do TypeScript; o original fica intacto) e empacota
-    `dist/mesapop-installer.zip` com `install.sh` (Docker: gera .env
-    com segredos, sobe o stack completo, migra/semeia no boot). O
-    usuário usa esse zip para instalar e testar sempre.
+10. **A CADA REVISÃO DO SISTEMA, regenerar os pacotes** (pedido do
+    usuário em 2026-07-06): rodar `npm run installer` E `npm run wsrta`
+    ao fechar qualquer entrega. Ambos copiam só o necessário, REMOVEM
+    TODOS OS COMENTÁRIOS (printer do TypeScript; shell por limpeza
+    dirigida) e, no WSRTA, também barram qualquer marca de autoria por
+    IA (varredura) — o original fica intacto. Saídas:
+    `dist/mesapop-installer.zip` (Docker, com `install.sh`) e, em
+    `releases/`, `mesapop-install.zip` + `mesapop-update-AAAA-MM-DD.zip`
+    (WSRTA; datar o update). Os zips do WSRTA VÃO PARA O GITHUB
+    (releases/ é versionado). ZIPs gerados por gerador nativo em Node
+    (`scripts/lib/zip.mjs`) com barras normais — o Compress-Archive do
+    Windows usa barra invertida e quebra a extração no Linux.
 
 ---
 
