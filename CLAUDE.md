@@ -21,6 +21,15 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **SEO / ROBÔS DE BUSCA (pedido do usuário 2026-07-06)**:
+  `frontend/public/robots.txt` (Allow / geral; Disallow /admin e
+  /sala/; aponta o sitemap) + `sitemap.xml` (/, /entrar, /criar-conta)
+  — o install.sh grava o DOMÍNIO REAL nos dois na instalação (sed no
+  localhost:8080; Google exige URL absoluta). `index.html` com title
+  rico em palavras-chave, description, keywords, robots index/follow,
+  canônico, Open Graph completo (og:image = icon-512) e JSON-LD
+  WebSite pt-BR. Próximo passo do usuário quando tiver domínio:
+  cadastrar no Google Search Console e enviar o sitemap.
 - **AJUSTES 2026-07-06 (2ª rodada de feedback do usuário)**:
   - **Missão Elevador — agentes DESTRAVADOS e pegando elevador**: bug
     (screenshot do usuário: agentes presos na parede) — o clamp na
