@@ -1,0 +1,8 @@
+# Mesa Pop — bem-vindos, robôs de busca!
+# As páginas de jogo pedem login/convite; o que importa indexar é a casa.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /sala/
+
+Sitemap: http://localhost:8080/sitemap.xml

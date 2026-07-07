@@ -71,6 +71,13 @@ else
   say ".env já existe — mantendo suas configurações."
 fi
 
+# SEO: grava o endereço REAL do site no robots.txt e no sitemap.xml
+# (o Google exige URLs absolutas para indexar)
+if [ "${SITE_URL}" != "http://localhost:8080" ]; then
+  say "Apontando robots.txt e sitemap.xml para ${SITE_URL}…"
+  sed -i "s|http://localhost:8080|${SITE_URL}|g" frontend/public/robots.txt frontend/public/sitemap.xml
+fi
+
 say "Construindo e subindo o stack (Postgres + backend + site)…"
 docker compose --profile full up -d --build
 
