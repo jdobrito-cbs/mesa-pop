@@ -66,5 +66,20 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Informe a senha'),
 })
 
+/** configuração inicial: cria o PRIMEIRO admin (sem telefone) */
+export const setupSchema = z
+  .object({
+    email: emailSchema,
+    username: usernameSchema,
+    name: nameSchema,
+    password: passwordSchema,
+    passwordConfirm: z.string(),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: 'As senhas não conferem',
+    path: ['passwordConfirm'],
+  })
+
 export type RegisterInput = z.input<typeof registerSchema>
 export type LoginInput = z.input<typeof loginSchema>
+export type SetupInput = z.input<typeof setupSchema>

@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AuthResponse, LoginInput, RegisterInput, UserPublic } from '@mesapop/shared'
+import type { AuthResponse, LoginInput, RegisterInput, SetupInput, UserPublic } from '@mesapop/shared'
 import { api, setAccessToken } from './api'
 
 interface AuthContextValue {
@@ -15,6 +15,8 @@ interface AuthContextValue {
   restoring: boolean
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
+  /** configuração inicial: cria o primeiro admin e já entra logado */
+  setupAdmin: (input: SetupInput) => Promise<void>
   /** "jogar sem conta": cria sessão de convidado com o nome informado */
   guest: (name: string) => Promise<void>
   logout: () => Promise<void>
@@ -53,6 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
+  const setupAdmin = useCallback(
+    async (input: SetupInput) => {
+      applySession(await api<AuthResponse>('/api/setup/admin', { body: input }))
+    },
+    [applySession],
+  )
+
   const guest = useCallback(
     async (name: string) => {
       applySession(await api<AuthResponse>('/api/auth/guest', { body: { name } }))
@@ -67,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, restoring, login, register, guest, logout }}>
+    <AuthContext.Provider value={{ user, restoring, login, register, setupAdmin, guest, logout }}>
       {children}
     </AuthContext.Provider>
   )

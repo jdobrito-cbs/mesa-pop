@@ -65,7 +65,6 @@ if [ ! -f .env ]; then
     die "PostgreSQL (psql) nao encontrado e DATABASE_URL nao definido."
   fi
 
-  ADMIN_PASS="Pop@$(rand 6)"
   cat > .env <<EOF
 NODE_ENV=production
 PORT=${PORT}
@@ -77,13 +76,10 @@ ACCESS_TOKEN_TTL=15m
 REFRESH_TOKEN_TTL_DAYS=30
 CORS_ORIGIN=https://${DOMAIN}
 COOKIE_SECURE=true
-ADMIN_EMAIL=admin@${DOMAIN}
-ADMIN_NAME=Administrador
-ADMIN_PASSWORD=${ADMIN_PASS}
 VITE_ADSENSE_CLIENT=
 VITE_ADSENSE_SLOT=
 EOF
-  log "Admin: admin@${DOMAIN} | senha: ${ADMIN_PASS} (guardada no .env)"
+  log "O admin sera criado na 1a vez que abrir o site (tela de configuracao)."
 else
   log ".env encontrado - mantendo credenciais; ajustando porta/dominio."
   sed -i "s|^PORT=.*|PORT=${PORT}|" .env

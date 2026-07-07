@@ -41,7 +41,6 @@ if [ ! -f .env ]; then
   DB_PASS="$(gera_segredo | cut -c1-24)"
   JWT_A="$(gera_segredo)"
   JWT_R="$(gera_segredo)"
-  ADMIN_PASS="Pop@$(gera_segredo | cut -c1-12)"
   cat > .env <<EOF
 POSTGRES_USER=mesapop
 POSTGRES_PASSWORD=${DB_PASS}
@@ -57,16 +56,12 @@ REFRESH_TOKEN_TTL_DAYS=30
 CORS_ORIGIN=${SITE_URL}
 COOKIE_SECURE=false
 
-ADMIN_EMAIL=admin@mesapop.local
-ADMIN_NAME=Administrador
-ADMIN_PASSWORD=${ADMIN_PASS}
-
 VITE_API_URL=${API_URL}
 
 VITE_ADSENSE_CLIENT=
 VITE_ADSENSE_SLOT=
 EOF
-  say ".env criado. Senha do admin: ${ADMIN_PASS} (guarde! também está no .env)"
+  say ".env criado com segredos aleatórios."
 else
   say ".env já existe — mantendo suas configurações."
 fi
@@ -91,11 +86,10 @@ for i in $(seq 1 60); do
   sleep 2
 done
 
-ADMIN_EMAIL_ATUAL="$(grep '^ADMIN_EMAIL=' .env | cut -d= -f2-)"
 say "──────────────────────────────────────────────"
 say "✅ Mesa Pop instalado!"
 say "   Site:  ${SITE_URL}"
-say "   Admin: ${ADMIN_EMAIL_ATUAL} (senha no .env → ADMIN_PASSWORD)"
+say "   Admin: abra o site e crie o administrador na tela de configuração inicial"
 say "   Logs:  docker compose logs -f"
 say "   Parar: docker compose --profile full down"
 say "──────────────────────────────────────────────"

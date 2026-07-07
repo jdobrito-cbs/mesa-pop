@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Setup from './pages/Setup'
+import { api } from './lib/api'
 import Mesa from './pages/Mesa'
 import GameLobby from './pages/GameLobby'
 import MemoriaSoloPage from './pages/MemoriaSoloPage'
@@ -27,6 +29,40 @@ function ScrollToTop() {
     window.scrollTo(0, 0)
   }, [pathname])
   return null
+}
+
+/**
+ * Enquanto não houver admin, a plataforma exige a configuração inicial:
+ * manda todo mundo para /setup. Assim que o admin é criado, o /setup
+ * some (e quem tentar acessá-lo é mandado para a home).
+ */
+function SetupGate({ children }: { children: React.ReactNode }) {
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    api<{ needsSetup: boolean }>('/api/setup/status')
+      .then((s) => setNeedsSetup(s.needsSetup))
+      .catch(() => setNeedsSetup(false))
+  }, [])
+
+  useEffect(() => {
+    if (needsSetup === null) return
+    if (needsSetup && location.pathname !== '/setup') navigate('/setup', { replace: true })
+    if (!needsSetup && location.pathname === '/setup') navigate('/', { replace: true })
+  }, [needsSetup, location.pathname, navigate])
+
+  if (needsSetup === null) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center" aria-label="Carregando">
+        <div className="animate-float">
+          <Chip size={64} spin />
+        </div>
+      </div>
+    )
+  }
+  return <>{children}</>
 }
 
 function RequireAuth() {
@@ -53,8 +89,10 @@ export default function App() {
         <div className="flex min-h-dvh flex-col">
           <Header />
           <div className="flex-1">
+            <SetupGate>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/setup" element={<Setup />} />
               <Route path="/entrar" element={<Login />} />
               <Route path="/criar-conta" element={<Register />} />
               <Route element={<RequireAuth />}>
@@ -74,6 +112,7 @@ export default function App() {
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </SetupGate>
           </div>
           <Footer />
         </div>

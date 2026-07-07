@@ -21,6 +21,20 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **SETUP INICIAL / login do admin pela TELA (pedido do usuário
+  2026-07-06, instala via WSRTA sem editar .env)**: enquanto não
+  existir nenhum admin, a plataforma abre `/setup` (SetupGate no App
+  consulta GET /api/setup/status e redireciona). A tela cria a conta
+  de administrador e já loga (POST /api/setup/admin → emite tokens como
+  o register). SEGURANÇA: a rota se FECHA quando já há admin (403
+  SETUP_DONE) — o primeiro a configurar vira o dono; sem segredo no
+  .env. `shared/auth.ts` ganhou `setupSchema` (sem telefone).
+  Instaladores NÃO pré-criam admin (WSRTA e Docker geram .env SEM
+  ADMIN_PASSWORD → o seed pula o admin e o /setup assume). O seed
+  antigo (ADMIN_PASSWORD no .env) ainda funciona e, se usado, fecha o
+  /setup. 201 testes (2 do setup: status booleano e recusa de 2º
+  admin). Demo: gate manda para /setup, formulário renderiza e o guard
+  recusa criar outro admin.
 - **DEPLOY WSRTA (pedido do usuário 2026-07-06)**: o backend agora
   SERVE O SITE (build do frontend) na MESMA porta da API — porta única
   ($PORT) via `backend/src/plugins/static.ts` (@fastify/static + SPA

@@ -7,6 +7,7 @@ import { config } from './config'
 import prismaPlugin from './plugins/prisma'
 import authPlugin from './plugins/auth'
 import authRoutes from './routes/auth'
+import setupRoutes from './routes/setup'
 import healthRoutes from './routes/health'
 import gamesRoutes from './routes/games'
 import soloRoutes from './routes/solo'
@@ -61,6 +62,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(authPlugin)
   await app.register(healthRoutes)
   await app.register(authRoutes)
+  await app.register(setupRoutes)
   await app.register(gamesRoutes)
   await app.register(soloRoutes)
   await app.register(farmRoutes)
