@@ -178,7 +178,24 @@ const TXT_UPDATE = [
 ].join('\n')
 
 console.log('Gerando pacotes WSRTA em releases/:')
-zipar('install', 'deploy/app.install.md', 'deploy/wsrta-install.sh', 'install.sh', TXT_INSTALL, 'mesapop-install.zip')
-zipar('update', 'deploy/app.update.md', 'deploy/wsrta-update.sh', 'update.sh', TXT_UPDATE, `mesapop-update-${hoje}.zip`)
+zipar('install', 'deploy/app.install.md', 'deploy/wsrta-install.sh', 'install.sh', TXT_INSTALL, 'mesapop-wsrta-install.zip')
+zipar('update', 'deploy/app.update.md', 'deploy/wsrta-update.sh', 'update.sh', TXT_UPDATE, `mesapop-wsrta-update-${hoje}.zip`)
 rmSync(stage, { recursive: true, force: true })
+
+// guia na pasta releases/ (para quem navega pelo GitHub)
+writeFileSync(
+  path.join(releases, 'README.md'),
+  [
+    '# Pacotes de instalação (painel WSRTA)',
+    '',
+    'Baixe o ARQUIVO ZIP daqui (não o "Code > Download ZIP" do repositório) e',
+    'envie no painel. Cada zip já tem o `app.md` na raiz.',
+    '',
+    '- `mesapop-wsrta-install.zip` — instalação (setup completo: cria banco, .env e builda).',
+    '- `mesapop-wsrta-update-AAAA-MM-DD.zip` — atualização (mantém banco/.env; migra e rebuilda).',
+    '',
+    'No painel: Publicar → escolha o domínio → envie o zip de instalação → confirme nome/porta.',
+    'Para atualizar: Atualizar no app → envie o zip de update mais recente.',
+  ].join('\n'),
+)
 console.log('OK - pacotes prontos (codigo sem comentarios e sem marcas de autoria).')
