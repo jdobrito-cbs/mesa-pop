@@ -58,7 +58,8 @@ const updateBody = z.object({
 export default async function usersAdminRoutes(app: FastifyInstance) {
   app.get('/api/admin/users', async (req) => {
     const q = listQuery.parse(req.query)
-    const where: Prisma.UserWhereInput = {}
+    // convidados têm área própria (temporários) — fora da lista de contas
+    const where: Prisma.UserWhereInput = { isGuest: false }
     if (q.search) {
       where.OR = [
         { email: { contains: q.search, mode: 'insensitive' } },

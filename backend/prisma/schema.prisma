@@ -229,6 +229,17 @@ model Setting {
   value String
 }
 
+/// Registro PERMANENTE de cada visita de convidado (jogou sem conta).
+/// O usuário-convidado é temporário e some ao sair; esta linha fica,
+/// para o relatório mensal de quantos jogaram na plataforma.
+model GuestVisit {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 /// Aviso global exibido no lobby (criado pelo admin).
 model Announcement {
   id        String   @id @default(cuid())

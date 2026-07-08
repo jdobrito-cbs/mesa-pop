@@ -5,11 +5,13 @@ import { loginSchema, registerSchema } from '@mesapop/shared'
 import { hashPassword, verifyPassword } from '../lib/password'
 import {
   createRefreshToken,
+  findUserByRefreshToken,
   revokeRefreshToken,
   rotateRefreshToken,
   signAccessToken,
 } from '../lib/tokens'
 import { audit } from '../lib/audit'
+import { deleteGuest } from '../lib/guests'
 import { toPublicUser } from '../lib/user'
 import { getLoginMaxAttempts, LOCK_FOREVER } from '../lib/settings'
 import { config, REFRESH_COOKIE } from '../config'
@@ -72,6 +74,18 @@ export default async function authRoutes(app: FastifyInstance) {
       .object({ name: z.string().trim().min(2, 'Diga como quer ser chamado').max(30) })
       .parse(req.body)
 
+    // nome de convidado é ÚNICO enquanto o convidado existir (sem repetir
+    // um nome já em uso; libera de novo só quando aquele convidado sair)
+    const emUso = await app.prisma.user.findFirst({
+      where: { isGuest: true, displayName: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    })
+    if (emUso) {
+      return reply
+        .code(409)
+        .send({ error: 'GUEST_NAME_TAKEN', message: 'Esse nome já está em uso agora — escolha outro' })
+    }
+
     const user = await app.prisma.user.create({
       data: {
         email: `convidado-${crypto.randomUUID()}@guest.mesapop.local`,
@@ -82,6 +96,8 @@ export default async function authRoutes(app: FastifyInstance) {
         isGuest: true,
       },
     })
+    // registro permanente da visita (relatório mensal) — sobrevive ao convidado
+    await app.prisma.guestVisit.create({ data: { name } })
     await audit(app.prisma, 'user.guest', { userId: user.id, req })
 
     const refresh = await createRefreshToken(app.prisma, user.id)
@@ -175,7 +191,28 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post('/api/auth/logout', async (req, reply) => {
     const token = req.cookies[REFRESH_COOKIE]
     if (token) {
+      // convidado que sai é APAGADO (conta temporária) — a visita já ficou
+      // registrada em GuestVisit para o relatório mensal
+      const user = await findUserByRefreshToken(app.prisma, token)
       await revokeRefreshToken(app.prisma, token)
+      if (user?.isGuest) await deleteGuest(app.prisma, user.id)
+    }
+    reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
+    return { ok: true }
+  })
+
+  /**
+   * Fechou o navegador/aba: o cliente dispara isto via navigator.sendBeacon
+   * no pagehide. Apaga o convidado (temporário) sem depender do logout.
+   */
+  app.post('/api/auth/guest/leave', async (req, reply) => {
+    const token = req.cookies[REFRESH_COOKIE]
+    if (token) {
+      const user = await findUserByRefreshToken(app.prisma, token)
+      if (user?.isGuest) {
+        await revokeRefreshToken(app.prisma, token)
+        await deleteGuest(app.prisma, user.id)
+      }
     }
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
     return { ok: true }

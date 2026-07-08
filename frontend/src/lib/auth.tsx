@@ -41,6 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setRestoring(false))
   }, [applySession])
 
+  // Convidado é temporário: ao FECHAR o navegador/aba, avisa o servidor para
+  // apagar a conta-sombra (o beacon leva o cookie de refresh no mesmo origin).
+  useEffect(() => {
+    if (!user?.isGuest) return
+    const despedir = () => {
+      navigator.sendBeacon('/api/auth/guest/leave')
+    }
+    window.addEventListener('pagehide', despedir)
+    return () => window.removeEventListener('pagehide', despedir)
+  }, [user?.isGuest])
+
   const login = useCallback(
     async (input: LoginInput) => {
       applySession(await api<AuthResponse>('/api/auth/login', { body: input }))

@@ -62,6 +62,15 @@ export async function rotateRefreshToken(prisma: PrismaClient, token: string) {
   return { user: existing.user, ...next }
 }
 
+/** usuário dono de um refresh token (para logout/leave saberem quem é) */
+export async function findUserByRefreshToken(prisma: PrismaClient, token: string) {
+  const row = await prisma.refreshToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: { user: true },
+  })
+  return row?.user ?? null
+}
+
 export async function revokeRefreshToken(prisma: PrismaClient, token: string) {
   await prisma.refreshToken.updateMany({
     where: { tokenHash: hashToken(token), revokedAt: null },

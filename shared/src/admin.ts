@@ -52,6 +52,39 @@ export interface PlatformSettings {
   loginMaxAttempts: number
 }
 
+/** convidado ativo (temporário — some ao sair/fechar o navegador) */
+export interface GuestView {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export interface GuestsOverview {
+  /** convidados ativos agora */
+  items: GuestView[]
+  online: number
+  /** quantos convidados jogaram no mês (relatório — sobrevive à remoção) */
+  monthCount: number
+}
+
+/** um jogo com sua contagem de partidas (para a Visão geral) */
+export interface GameActivityRow {
+  slug: string
+  name: string
+  icon: string
+  color: string
+  matches: number
+}
+
+export interface GamesActivity {
+  /** partidas acontecendo AGORA, por jogo */
+  now: GameActivityRow[]
+  nowTotal: number
+  /** partidas já jogadas no sistema (histórico), por jogo */
+  played: GameActivityRow[]
+  playedTotal: number
+}
+
 export interface Paginated<T> {
   items: T[]
   total: number

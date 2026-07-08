@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import type { Paginated, PlatformSettings, UserAdminView } from '@mesapop/shared'
+import type { GuestsOverview, Paginated, PlatformSettings, UserAdminView } from '@mesapop/shared'
 import { api, ApiRequestError } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { useAuth } from '../../lib/auth'
 import Modal from '../../components/Modal'
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
+const fmtHora = (iso: string) =>
+  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 function statusOf(u: UserAdminView) {
   if (!u.isActive) return { label: 'Desativada', cls: 'bg-ink-700 text-text-muted' }
@@ -51,6 +53,80 @@ function LoginLockSetting() {
       </button>
       {saved && <span className="text-sm font-semibold text-pop-green">Salvo!</span>}
     </form>
+  )
+}
+
+/**
+ * Convidados ("jogar sem conta"): área exclusiva. Contas temporárias que somem
+ * ao sair/fechar o navegador — mas contadas no relatório mensal.
+ */
+function GuestsSection() {
+  const { data, loading, reload } = useFetch<GuestsOverview>('/api/admin/guests')
+  const [busy, setBusy] = useState<string | null>(null)
+
+  async function remove(g: { id: string; name: string }) {
+    if (!window.confirm(`Remover o convidado "${g.name}"? O nome fica livre de novo.`)) return
+    setBusy(g.id)
+    try {
+      await api(`/api/admin/guests/${g.id}`, { method: 'DELETE' })
+      await reload()
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <section className="card mt-5 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-extrabold">
+            🎟️ Convidados <span className="text-text-muted">(temporários)</span>
+          </h2>
+          <p className="mt-0.5 text-sm text-text-muted">
+            Jogam sem cadastro. Somem ao sair ou fechar o navegador; não entram em rankings.
+          </p>
+        </div>
+        <div className="flex items-center gap-4 text-right">
+          <div>
+            <div className="text-2xl font-extrabold text-pop-cyan">{data?.online ?? '–'}</div>
+            <div className="text-xs text-text-muted">agora</div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-pop-purple">{data?.monthCount ?? '–'}</div>
+            <div className="text-xs text-text-muted">jogaram este mês</div>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="mt-3 text-sm text-text-muted">Carregando…</p>
+      ) : data && data.items.length > 0 ? (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {data.items.map((g) => (
+            <li
+              key={g.id}
+              className="flex items-center gap-2 rounded-full bg-ink-800 py-1 pr-1 pl-3 ring-1 ring-ink-700"
+            >
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-pop-cyan/20 text-xs font-bold text-pop-cyan">
+                {g.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="text-sm font-semibold">{g.name}</span>
+              <span className="text-xs text-text-muted">{fmtHora(g.createdAt)}</span>
+              <button
+                onClick={() => remove(g)}
+                disabled={busy === g.id}
+                title="Remover convidado"
+                className="grid h-6 w-6 place-items-center rounded-full text-text-muted hover:bg-pop-orange/20 hover:text-pop-orange disabled:opacity-40"
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm text-text-muted">Nenhum convidado jogando agora.</p>
+      )}
+    </section>
   )
 }
 
@@ -117,6 +193,8 @@ export default function Users() {
           </button>
         </div>
       </div>
+
+      <GuestsSection />
 
       <LoginLockSetting />
 

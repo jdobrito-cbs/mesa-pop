@@ -1,4 +1,4 @@
-import type { AdminStats } from '@mesapop/shared'
+import type { AdminStats, GameActivityRow, GamesActivity } from '@mesapop/shared'
 import { useFetch } from '../../lib/useFetch'
 
 const CARDS: Array<{ key: keyof AdminStats; label: string; color: string; hint?: string }> = [
@@ -12,8 +12,63 @@ const CARDS: Array<{ key: keyof AdminStats; label: string; color: string; hint?:
   { key: 'gamesEnabled', label: 'Jogos habilitados', color: 'text-pop-green' },
 ]
 
+/** lista de jogos com contagem de partidas (agora / histórico) */
+function GameActivityList({
+  title,
+  emoji,
+  rows,
+  total,
+  loading,
+  accent,
+  empty,
+}: {
+  title: string
+  emoji: string
+  rows: GameActivityRow[] | undefined
+  total: number | undefined
+  loading: boolean
+  accent: string
+  empty: string
+}) {
+  return (
+    <div className="card p-5">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 className="font-display text-lg font-extrabold">
+          {emoji} {title}
+        </h2>
+        <span className={`font-display text-3xl font-extrabold tabular-nums ${accent}`}>
+          {loading || total === undefined ? '…' : total}
+        </span>
+      </div>
+      {loading ? (
+        <p className="mt-3 text-sm text-text-muted">Carregando…</p>
+      ) : rows && rows.length > 0 ? (
+        <ul className="mt-3 flex flex-col gap-2">
+          {rows.map((g) => (
+            <li key={g.slug} className="flex items-center gap-3">
+              <span
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-lg"
+                style={{ backgroundColor: `${g.color}22` }}
+              >
+                {g.icon}
+              </span>
+              <span className="flex-1 truncate font-semibold">{g.name}</span>
+              <span className="rounded-full bg-ink-800 px-2.5 py-0.5 text-sm font-bold tabular-nums text-text-muted ring-1 ring-ink-700">
+                {g.matches}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-sm text-text-muted">{empty}</p>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { data, loading, error } = useFetch<AdminStats>('/api/admin/stats')
+  const act = useFetch<GamesActivity>('/api/admin/games-activity')
 
   return (
     <section>
@@ -34,6 +89,27 @@ export default function Dashboard() {
             )}
           </div>
         ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <GameActivityList
+          title="Sendo jogados agora"
+          emoji="🎮"
+          rows={act.data?.now}
+          total={act.data?.nowTotal}
+          loading={act.loading}
+          accent="text-pop-orange"
+          empty="Nenhuma partida em andamento no momento."
+        />
+        <GameActivityList
+          title="Já jogados no sistema"
+          emoji="🏆"
+          rows={act.data?.played}
+          total={act.data?.playedTotal}
+          loading={act.loading}
+          accent="text-pop-purple"
+          empty="Ainda não há partidas registradas."
+        />
       </div>
     </section>
   )

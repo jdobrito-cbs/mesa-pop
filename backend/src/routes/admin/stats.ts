@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import type { AdminStats } from '@mesapop/shared'
+import type { AdminStats, GameActivityRow, GamesActivity } from '@mesapop/shared'
 
 export default async function statsRoutes(app: FastifyInstance) {
   app.get('/api/admin/stats', async (): Promise<AdminStats> => {
@@ -52,6 +52,51 @@ export default async function statsRoutes(app: FastifyInstance) {
       roomsOpen,
       gamesEnabled,
       gamesTotal,
+    }
+  })
+
+  /**
+   * Atividade de jogos para a Visão geral: o que está sendo jogado AGORA
+   * (partidas em andamento por jogo) e o que já foi jogado no sistema
+   * (histórico de partidas por jogo).
+   */
+  app.get('/api/admin/games-activity', async (): Promise<GamesActivity> => {
+    const [nowGroups, playedGroups, games] = await Promise.all([
+      app.prisma.match.groupBy({
+        by: ['gameId'],
+        where: { status: 'IN_PROGRESS' },
+        _count: { _all: true },
+      }),
+      app.prisma.match.groupBy({ by: ['gameId'], _count: { _all: true } }),
+      app.prisma.game.findMany({
+        select: { id: true, slug: true, name: true, icon: true, color: true },
+      }),
+    ])
+
+    const byId = new Map(games.map((g) => [g.id, g]))
+    const toRows = (groups: { gameId: string; _count: { _all: number } }[]): GameActivityRow[] =>
+      groups
+        .map((row) => {
+          const g = byId.get(row.gameId)
+          if (!g) return null
+          return {
+            slug: g.slug,
+            name: g.name,
+            icon: g.icon,
+            color: g.color,
+            matches: row._count._all,
+          }
+        })
+        .filter((r): r is GameActivityRow => r !== null)
+        .sort((a, b) => b.matches - a.matches)
+
+    const now = toRows(nowGroups)
+    const played = toRows(playedGroups)
+    return {
+      now,
+      nowTotal: now.reduce((s, r) => s + r.matches, 0),
+      played,
+      playedTotal: played.reduce((s, r) => s + r.matches, 0),
     }
   })
 }

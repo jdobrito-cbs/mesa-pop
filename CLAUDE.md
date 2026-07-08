@@ -20,7 +20,39 @@ Base sólida primeiro; os jogos plugam nela.
   (Modo Conforto 60+: fontes grandes, alto contraste, timers
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
-- **Última atualização**: 2026-07-05
+- **Última atualização**: 2026-07-08
+- **CONVIDADOS TEMPORÁRIOS + ÁREA EXCLUSIVA NO ADMIN (pedido do
+  usuário 2026-07-08)**: os "jogar sem conta" agora são TEMPORÁRIOS —
+  somem ao SAIR (logout apaga a conta-sombra) e ao FECHAR o navegador
+  (`pagehide` → `navigator.sendBeacon('/api/auth/guest/leave')`), com
+  rede de segurança (reaper de hora em hora no `server.ts`, remove
+  convidados com >12h). Mas CONTAM no relatório mensal: cada visita
+  grava uma linha PERMANENTE em `GuestVisit` (migração
+  `20260708160000_guest_visits`) que sobrevive à remoção do convidado.
+  Nome de convidado é ÚNICO enquanto ativo (case-insensitive; repetir
+  → 409 GUEST_NAME_TAKEN; libera ao sair). `lib/guests.ts`
+  (`deleteGuest` apaga as salas do host ANTES por causa da FK, +
+  `reapOldGuests`, + `inicioDoMes`). `tokens.ts` ganhou
+  `findUserByRefreshToken` (logout/leave descobrem o dono pelo cookie).
+  No ADMIN: a lista principal de Usuários EXCLUI convidados
+  (`where.isGuest=false`); nova seção "🎟️ Convidados (temporários)"
+  com chips (nome/hora/✕), contadores "agora" e "jogaram este mês", e
+  remoção manual via `DELETE /api/admin/guests/:id`
+  (`GET /api/admin/guests` = ativos + monthCount de GuestVisit).
+- **VISÃO GERAL: jogos AGORA e JÁ JOGADOS (pedido do usuário
+  2026-07-08)**: novo `GET /api/admin/games-activity` (groupBy de Match
+  por gameId: IN_PROGRESS = agora, todos = histórico) alimenta dois
+  painéis no Dashboard — "🎮 Sendo jogados agora" e "🏆 Já jogados no
+  sistema" — cada um com o total no topo e a listagem por jogo
+  (ícone/cor/nome + contagem). Tipos `GuestView`/`GuestsOverview`/
+  `GameActivityRow`/`GamesActivity` no `shared/admin.ts`. 207 testes (4
+  novos de convidados: cria+registra visita+recusa nome repetido; some
+  da lista de contas mas aparece na área; sair apaga mas mantém a
+  contagem mensal e libera o nome; /guest/leave apaga). Typecheck limpo
+  nos 3 workspaces. Demo real (Playwright): 2 convidados entraram
+  (Tião/Marli), nome repetido barrado, painel do admin com "12 agora /
+  2 no mês", Visão geral com "75 agora / 174 já jogados" listados por
+  jogo, e a saída de um convidado sumiu da área.
 - **PROTEÇÃO CONTRA FORÇA BRUTA (pedido do usuário 2026-07-08)**: após
   N senhas erradas seguidas a conta BLOQUEIA (indefinido, até o admin
   liberar). N é CONFIGURÁVEL pelo painel admin → Usuários (controle
