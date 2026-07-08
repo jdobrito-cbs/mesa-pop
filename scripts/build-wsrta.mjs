@@ -149,6 +149,8 @@ function zipar(alvo, appMdOrigem, scriptOrigem, scriptNome, txt, saidaZip) {
   cpSync(stage, tmp, { recursive: true })
   writeFileSync(path.join(tmp, 'app.md'), readFileSync(path.join(raiz, appMdOrigem), 'utf8'))
   writeFileSync(path.join(tmp, scriptNome), limpaSh(readFileSync(path.join(raiz, scriptOrigem), 'utf8')))
+  // remove.sh vai nos DOIS zips (## Remove do app.md chama ele ao remover)
+  writeFileSync(path.join(tmp, 'remove.sh'), limpaSh(readFileSync(path.join(raiz, 'deploy/wsrta-remove.sh'), 'utf8')))
   writeFileSync(path.join(tmp, 'LEIAME.txt'), txt)
   const zip = path.join(releases, saidaZip)
   rmSync(zip, { force: true })

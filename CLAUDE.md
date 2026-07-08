@@ -21,6 +21,17 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **`## Remove` no app.md (WSRTA, pedido do usuário 2026-07-08)**: o
+  painel passou a suportar a seção `## Remove` (roda ao REMOVER o app,
+  no workdir com o .env carregado) — recomendada para apps que criam
+  banco, senão o banco antigo persiste e remover+reinstalar falha na
+  auth. Adicionado `deploy/wsrta-remove.sh` (lê DATABASE_URL do .env,
+  só age em banco LOCAL, encerra conexões e faz DROP DATABASE + DROP
+  ROLE do `mp_<slug>`; banco externo é preservado). Os dois `app.md`
+  (install e update) ganharam `## Remove → bash remove.sh`, e o
+  empacotador inclui `remove.sh` nos DOIS zips. Isso, junto do ALTER
+  ROLE do fix anterior, deixa o ciclo remover→reinstalar limpo. Sintaxe
+  conferida com `bash -n` (não testável sem psql/sudo no Windows).
 - **FIX P1000 na instalação WSRTA (2026-07-07)**: `prisma migrate
   deploy` falhava com "Authentication failed ... credentials for
   `mesapop`" porque o role `mesapop` já existia no Postgres do servidor

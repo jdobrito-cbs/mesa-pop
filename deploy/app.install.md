@@ -17,3 +17,10 @@ bash install.sh
 ```bash
 npm run start -w backend
 ```
+
+## Remove
+```bash
+# limpa o banco e o usuario que a instalacao criou (senao um
+# remover+reinstalar falha na autenticacao com o banco antigo).
+bash remove.sh
+```
