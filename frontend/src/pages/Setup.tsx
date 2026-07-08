@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setupSchema, type SetupInput } from '@mesapop/shared'
-import { ApiRequestError } from '../lib/api'
+import { api, ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Chip } from '../components/Logo'
 
@@ -9,12 +9,23 @@ type FieldErrors = Partial<Record<keyof SetupInput, string>>
 
 /**
  * Configuração inicial — primeira vez que a plataforma sobe, ainda sem
- * nenhum admin. Aqui se cria a conta de administrador; depois disso a
- * tela some (o backend fecha /api/setup quando já existe um admin).
+ * nenhum admin. Depois que o admin é criado esta tela NÃO funciona mais:
+ * ao abrir, confere com o servidor e, se já houver admin, sai na hora
+ * (e o backend também recusa a criação de um segundo admin).
  */
 export default function Setup() {
   const { setupAdmin } = useAuth()
   const navigate = useNavigate()
+  const [checando, setChecando] = useState(true)
+
+  useEffect(() => {
+    api<{ needsSetup: boolean }>('/api/setup/status')
+      .then((s) => {
+        if (!s.needsSetup) navigate('/entrar', { replace: true })
+        else setChecando(false)
+      })
+      .catch(() => setChecando(false))
+  }, [navigate])
   const [form, setForm] = useState<SetupInput>({
     email: '',
     username: '',
@@ -62,6 +73,16 @@ export default function Setup() {
     { key: 'password' as const, label: 'Senha', type: 'password', placeholder: 'Mínimo 8, com maiúscula, minúscula e número', autoComplete: 'new-password' },
     { key: 'passwordConfirm' as const, label: 'Confirmar senha', type: 'password', placeholder: 'A mesma senha de novo', autoComplete: 'new-password' },
   ]
+
+  if (checando) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center" aria-label="Carregando">
+        <div className="animate-float">
+          <Chip size={64} spin />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <main className="mx-auto flex max-w-md flex-col px-4 py-14">

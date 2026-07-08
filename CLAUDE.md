@@ -49,8 +49,14 @@ Base sólida primeiro; os jogos plugam nela.
   ADMIN_PASSWORD → o seed pula o admin e o /setup assume). O seed
   antigo (ADMIN_PASSWORD no .env) ainda funciona e, se usado, fecha o
   /setup. 201 testes (2 do setup: status booleano e recusa de 2º
-  admin). Demo: gate manda para /setup, formulário renderiza e o guard
-  recusa criar outro admin.
+  admin). **FIX 2026-07-08 (feedback do usuário)**: (a) após criar o
+  admin a tela ficava PRESA — o SetupGate tinha `needsSetup` cacheado
+  (fetch único no load); agora o gate não força /setup quando há
+  usuário logado e a página `/setup` se AUTO-GUARDA (consulta o status
+  no mount e, se já há admin, redireciona para /entrar antes de
+  renderizar o form) — garante que depois do 1º admin o /setup não
+  funciona nem aparece. Demos: criar admin → vai para /mesa; abrir
+  /setup com admin existente → cai em /entrar sem mostrar o form.
 - **DEPLOY WSRTA (pedido do usuário 2026-07-06)**: o backend agora
   SERVE O SITE (build do frontend) na MESMA porta da API — porta única
   ($PORT) via `backend/src/plugins/static.ts` (@fastify/static + SPA

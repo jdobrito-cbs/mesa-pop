@@ -38,6 +38,7 @@ function ScrollToTop() {
  */
 function SetupGate({ children }: { children: React.ReactNode }) {
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null)
+  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -49,9 +50,11 @@ function SetupGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (needsSetup === null) return
-    if (needsSetup && location.pathname !== '/setup') navigate('/setup', { replace: true })
-    if (!needsSetup && location.pathname === '/setup') navigate('/', { replace: true })
-  }, [needsSetup, location.pathname, navigate])
+    // se já há alguém logado (ex.: acabou de criar o admin), o setup
+    // terminou — não empurra mais para /setup (senão fica preso na tela).
+    if (needsSetup && !user && location.pathname !== '/setup') navigate('/setup', { replace: true })
+    if ((!needsSetup || user) && location.pathname === '/setup') navigate('/mesa', { replace: true })
+  }, [needsSetup, user, location.pathname, navigate])
 
   if (needsSetup === null) {
     return (
