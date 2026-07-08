@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -38,9 +38,11 @@ function ScrollToTop() {
  */
 function SetupGate({ children }: { children: React.ReactNode }) {
   const [needsSetup, setNeedsSetup] = useState<boolean | null>(null)
-  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  // só empurra para /setup UMA vez por carregamento — depois disso nunca
+  // mais (evita o loop de voltar ao setup ao deslogar/navegar).
+  const jaMandou = useRef(false)
 
   useEffect(() => {
     api<{ needsSetup: boolean }>('/api/setup/status')
@@ -50,11 +52,12 @@ function SetupGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (needsSetup === null) return
-    // se já há alguém logado (ex.: acabou de criar o admin), o setup
-    // terminou — não empurra mais para /setup (senão fica preso na tela).
-    if (needsSetup && !user && location.pathname !== '/setup') navigate('/setup', { replace: true })
-    if ((!needsSetup || user) && location.pathname === '/setup') navigate('/mesa', { replace: true })
-  }, [needsSetup, user, location.pathname, navigate])
+    if (needsSetup && !jaMandou.current && location.pathname !== '/setup') {
+      jaMandou.current = true
+      navigate('/setup', { replace: true })
+    }
+    if (!needsSetup && location.pathname === '/setup') navigate('/entrar', { replace: true })
+  }, [needsSetup, location.pathname, navigate])
 
   if (needsSetup === null) {
     return (

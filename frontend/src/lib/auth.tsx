@@ -55,12 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   )
 
-  const setupAdmin = useCallback(
-    async (input: SetupInput) => {
-      applySession(await api<AuthResponse>('/api/setup/admin', { body: input }))
-    },
-    [applySession],
-  )
+  const setupAdmin = useCallback(async (input: SetupInput) => {
+    // cria o admin e NÃO abre sessão: o usuário é levado ao login.
+    await api('/api/setup/admin', { body: input })
+  }, [])
 
   const guest = useCallback(
     async (name: string) => {

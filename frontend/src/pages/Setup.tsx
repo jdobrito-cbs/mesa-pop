@@ -58,7 +58,8 @@ export default function Setup() {
     setSending(true)
     try {
       await setupAdmin(form)
-      navigate('/admin')
+      // admin criado — vai para o login (o /setup some a partir de agora)
+      navigate('/entrar', { replace: true, state: { justSetup: true } })
     } catch (err) {
       setTopError(err instanceof ApiRequestError ? err.message : 'Algo deu errado. Tente de novo.')
     } finally {
@@ -126,7 +127,7 @@ export default function Setup() {
           disabled={sending}
           className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-6 py-3.5 text-white shadow-lg shadow-pop-purple/25 disabled:opacity-60"
         >
-          {sending ? 'Criando…' : 'Criar administrador e entrar'}
+          {sending ? 'Criando…' : 'Criar administrador'}
         </button>
       </form>
 

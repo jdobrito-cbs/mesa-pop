@@ -9,7 +9,9 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   // link compartilhado (ex.: /sala/ABC123) → volta para lá depois de entrar
-  const from = (location.state as { from?: string } | null)?.from ?? '/mesa'
+  const navState = location.state as { from?: string; justSetup?: boolean } | null
+  const from = navState?.from ?? '/mesa'
+  const justSetup = !!navState?.justSetup
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [guestName, setGuestName] = useState('')
@@ -58,6 +60,11 @@ export default function Login() {
       <h1 className="text-center text-4xl font-extrabold">Bem-vindo à mesa</h1>
       <p className="mt-2 text-center text-text-muted">Escolha um nome e já comece a jogar.</p>
 
+      {justSetup && !error && (
+        <p className="mt-6 rounded-field bg-pop-green/15 px-4 py-3 text-sm font-semibold text-pop-green">
+          Administrador criado! Entre com o e-mail e a senha que você acabou de definir.
+        </p>
+      )}
       {error && (
         <p role="alert" className="mt-6 rounded-field bg-pop-magenta/15 px-4 py-3 text-sm font-semibold text-pop-magenta">
           {error}

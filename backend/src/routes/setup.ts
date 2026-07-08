@@ -1,16 +1,13 @@
-import type { FastifyInstance, FastifyReply } from 'fastify'
+import type { FastifyInstance } from 'fastify'
 import { setupSchema } from '@mesapop/shared'
 import { hashPassword } from '../lib/password'
-import { createRefreshToken, signAccessToken } from '../lib/tokens'
 import { audit } from '../lib/audit'
-import { toPublicUser } from '../lib/user'
-import { config, REFRESH_COOKIE } from '../config'
 
 /**
  * Configuração inicial (primeiro acesso): enquanto NÃO existir nenhum
  * admin, o app abre a tela /setup para criar a conta de administrador.
  * Assim que houver um admin, estas rotas se fecham — o primeiro a
- * configurar vira o dono. Nenhum segredo precisa ir no .env.
+ * configurar vira o dono. Não emite sessão: ao criar, manda para o login.
  */
 export default async function setupRoutes(app: FastifyInstance) {
   const temAdmin = () => app.prisma.user.count({ where: { role: 'ADMIN' } })
@@ -51,23 +48,7 @@ export default async function setupRoutes(app: FastifyInstance) {
         },
       })
       await audit(app.prisma, 'setup.admin_created', { userId: user.id, req })
-
-      const refresh = await createRefreshToken(app.prisma, user.id)
-      setRefreshCookie(reply, refresh.token, refresh.expiresAt)
-      return reply.code(201).send({
-        user: toPublicUser(user),
-        accessToken: signAccessToken(user.id, user.role),
-      })
+      return reply.code(201).send({ ok: true })
     },
   )
-}
-
-function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
-  reply.setCookie(REFRESH_COOKIE, token, {
-    httpOnly: true,
-    secure: config.cookieSecure,
-    sameSite: 'lax',
-    path: '/api/auth',
-    expires: expiresAt,
-  })
 }

@@ -21,6 +21,19 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FIX loop do /setup ao deslogar após instalar (2026-07-08)**: depois
+  de criar o admin na MESMA sessão, o SetupGate ficava com `needsSetup`
+  cacheado (true) e, ao deslogar, empurrava de volta para /setup — que
+  se auto-guardava mandando para /entrar → loop/pisca. Correção
+  definitiva (pedido do usuário): (1) o setup NÃO abre mais sessão — o
+  backend `POST /api/setup/admin` retorna `{ok:true}` e a tela vai para
+  `/entrar` (login) com aviso "Administrador criado!"; (2) o SetupGate
+  virou ONE-SHOT (`jaMandou` ref) — só força /setup UMA vez por
+  carregamento, nunca mais depois (mata o loop ao deslogar/navegar); e
+  redireciona /setup→/entrar quando não precisa de setup. A página
+  /setup também se auto-guarda no mount. Verificado: fresh→/setup;
+  criar admin→/entrar sem voltar; abrir /setup com admin existente→
+  /entrar. Testes seguem em 201.
 - **FIX logout com pisca-pisca (2026-07-08)**: ao clicar em "Sair" de
   uma rota protegida, o `logout()` zerava o user e o `RequireAuth` da
   rota atual disparava `Navigate → /entrar` competindo com o
