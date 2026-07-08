@@ -11,6 +11,7 @@ import {
 } from '../lib/tokens'
 import { audit } from '../lib/audit'
 import { toPublicUser } from '../lib/user'
+import { getLoginMaxAttempts, LOCK_FOREVER } from '../lib/settings'
 import { config, REFRESH_COOKIE } from '../config'
 
 function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
@@ -99,10 +100,34 @@ export default async function authRoutes(app: FastifyInstance) {
     const user = await app.prisma.user.findUnique({ where: { email: input.email } })
     if (!user || user.isGuest) return invalid()
 
+    // conta bloqueada por tentativas → só o admin libera
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      return reply.code(403).send({
+        error: 'ACCOUNT_LOCKED',
+        message: 'Conta bloqueada por tentativas de login. Peça ao administrador para desbloquear.',
+      })
+    }
+
     const ok = await verifyPassword(user.passwordHash, input.password)
     if (!ok) {
-      await audit(app.prisma, 'auth.login_failed', { userId: user.id, req })
-      return invalid()
+      const max = await getLoginMaxAttempts(app.prisma)
+      const failed = user.failedLogins + 1
+      const lock = failed >= max
+      await app.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLogins: failed, ...(lock ? { lockedUntil: LOCK_FOREVER } : {}) },
+      })
+      await audit(app.prisma, lock ? 'auth.login_locked' : 'auth.login_failed', { userId: user.id, req })
+      if (lock) {
+        return reply.code(403).send({
+          error: 'ACCOUNT_LOCKED',
+          message: 'Conta bloqueada após várias tentativas. Peça ao administrador para desbloquear.',
+        })
+      }
+      return reply.code(401).send({
+        error: 'INVALID_CREDENTIALS',
+        message: `E-mail ou senha incorretos (${max - failed} tentativa(s) antes do bloqueio)`,
+      })
     }
     if (!user.isActive) {
       return reply.code(403).send({ error: 'ACCOUNT_DISABLED', message: 'Conta desativada' })
@@ -114,6 +139,13 @@ export default async function authRoutes(app: FastifyInstance) {
       })
     }
 
+    // login ok → zera o contador de tentativas
+    if (user.failedLogins > 0 || user.lockedUntil) {
+      await app.prisma.user.update({
+        where: { id: user.id },
+        data: { failedLogins: 0, lockedUntil: null },
+      })
+    }
     await audit(app.prisma, 'auth.login', { userId: user.id, req })
     const refresh = await createRefreshToken(app.prisma, user.id)
     setRefreshCookie(reply, refresh.token, refresh.expiresAt)

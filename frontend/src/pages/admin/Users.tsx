@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import type { Paginated, UserAdminView } from '@mesapop/shared'
+import type { Paginated, PlatformSettings, UserAdminView } from '@mesapop/shared'
 import { api, ApiRequestError } from '../../lib/api'
 import { useFetch } from '../../lib/useFetch'
 import { useAuth } from '../../lib/auth'
@@ -9,9 +9,49 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
 
 function statusOf(u: UserAdminView) {
   if (!u.isActive) return { label: 'Desativada', cls: 'bg-ink-700 text-text-muted' }
+  if (u.locked) return { label: 'Bloqueada', cls: 'bg-pop-magenta/15 text-pop-magenta' }
   if (u.bannedUntil && new Date(u.bannedUntil) > new Date())
     return { label: 'Banida', cls: 'bg-pop-orange/15 text-pop-orange' }
   return { label: 'Ativa', cls: 'bg-pop-green/15 text-pop-green' }
+}
+
+/** controle do limite de tentativas de login antes do bloqueio */
+function LoginLockSetting() {
+  const { data, reload } = useFetch<PlatformSettings>('/api/admin/settings')
+  const [value, setValue] = useState('')
+  const [saved, setSaved] = useState(false)
+  const atual = data?.loginMaxAttempts
+  const campo = value !== '' ? value : (atual?.toString() ?? '')
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    setSaved(false)
+    await api('/api/admin/settings', { method: 'PUT', body: { loginMaxAttempts: Number(campo) } })
+    setValue('')
+    setSaved(true)
+    await reload()
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <form onSubmit={save} className="card mt-5 flex flex-wrap items-center gap-3 p-4">
+      <span className="text-sm font-bold">🔒 Bloquear conta após</span>
+      <input
+        type="number"
+        min={3}
+        max={20}
+        className="field w-20 text-center"
+        value={campo}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label="Tentativas de login antes do bloqueio"
+      />
+      <span className="text-sm text-text-muted">tentativas de senha erradas</span>
+      <button className="btn-pop px-4 py-1.5 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
+        Salvar
+      </button>
+      {saved && <span className="text-sm font-semibold text-pop-green">Salvo!</span>}
+    </form>
+  )
 }
 
 export default function Users() {
@@ -45,6 +85,16 @@ export default function Users() {
     }
   }
 
+  async function unlock(u: UserAdminView) {
+    try {
+      await api(`/api/admin/users/${u.id}/unlock`, { method: 'POST' })
+      setFeedback(`Conta de ${u.email} desbloqueada.`)
+      await reload()
+    } catch (err) {
+      setFeedback(err instanceof ApiRequestError ? err.message : 'Erro ao desbloquear')
+    }
+  }
+
   return (
     <section>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -67,6 +117,8 @@ export default function Users() {
           </button>
         </div>
       </div>
+
+      <LoginLockSetting />
 
       <form onSubmit={submitSearch} className="mt-5 flex gap-2">
         <input
@@ -133,6 +185,14 @@ export default function Users() {
                   </td>
                   <td className="px-4 py-3 text-text-muted">{fmtDate(u.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
+                    {u.locked && (
+                      <button
+                        onClick={() => unlock(u)}
+                        className="btn-pop mr-2 px-3 py-1.5 text-xs font-bold text-pop-magenta ring-1 ring-pop-magenta/50 hover:ring-pop-magenta"
+                      >
+                        Desbloquear
+                      </button>
+                    )}
                     <button
                       onClick={() => setEditing(u)}
                       className="btn-pop px-3 py-1.5 text-xs ring-1 ring-ink-700 hover:ring-pop-cyan"

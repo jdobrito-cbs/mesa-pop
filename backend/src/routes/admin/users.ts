@@ -22,6 +22,8 @@ function toAdminView(u: User): UserAdminView {
     isActive: u.isActive,
     bannedUntil: u.bannedUntil?.toISOString() ?? null,
     banReason: u.banReason,
+    locked: !!u.lockedUntil && u.lockedUntil > new Date(),
+    failedLogins: u.failedLogins,
   }
 }
 
@@ -184,6 +186,23 @@ export default async function usersAdminRoutes(app: FastifyInstance) {
       userId: req.auth!.sub,
       req,
       detail: { targetUserId: id, changes: Object.keys(input) },
+    })
+    return { user: toAdminView(user) }
+  })
+
+  // desbloqueia uma conta travada por tentativas de login
+  app.post('/api/admin/users/:id/unlock', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const target = await app.prisma.user.findUnique({ where: { id } })
+    if (!target) return reply.code(404).send({ error: 'NOT_FOUND', message: 'Usuário não encontrado' })
+    const user = await app.prisma.user.update({
+      where: { id },
+      data: { failedLogins: 0, lockedUntil: null },
+    })
+    await audit(app.prisma, 'admin.user.unlock', {
+      userId: req.auth!.sub,
+      req,
+      detail: { targetUserId: id, email: target.email },
     })
     return { user: toAdminView(user) }
   })

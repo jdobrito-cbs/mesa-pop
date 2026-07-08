@@ -21,6 +21,21 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **PROTEÇÃO CONTRA FORÇA BRUTA (pedido do usuário 2026-07-08)**: após
+  N senhas erradas seguidas a conta BLOQUEIA (indefinido, até o admin
+  liberar). N é CONFIGURÁVEL pelo painel admin → Usuários (controle
+  "🔒 Bloquear conta após [N] tentativas"; padrão 5, faixa 3–20).
+  Schema: `User.failedLogins`/`lockedUntil` + model `Setting` (kv);
+  migração `20260708120000_bruteforce`. `lib/settings.ts`
+  (get/setLoginMaxAttempts, sentinela LOCK_FOREVER). Login: checa
+  lock ANTES da senha; erro incrementa e bloqueia no limite (403
+  ACCOUNT_LOCKED; msg mostra tentativas restantes); acerto zera
+  contador/lock. `POST /api/admin/users/:id/unlock` (botão
+  Desbloquear, aparece só em conta travada) e `GET/PUT
+  /api/admin/settings`. UserAdminView ganhou `locked`/`failedLogins`;
+  status "Bloqueada" (magenta) na tabela. 203 testes (2 novos:
+  bloqueia no limite + admin desbloqueia e zera). Demo real: limite 3,
+  vítima travada, admin desbloqueou, vítima logou.
 - **FIX loop do /setup ao deslogar após instalar (2026-07-08)**: depois
   de criar o admin na MESMA sessão, o SetupGate ficava com `needsSetup`
   cacheado (true) e, ao deslogar, empurrava de volta para /setup — que

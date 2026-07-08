@@ -6,6 +6,7 @@ import gamesAdminRoutes from './games'
 import roomsAdminRoutes from './rooms'
 import rankingsRoutes from './rankings'
 import announcementsRoutes from './announcements'
+import settingsAdminRoutes from './settings'
 
 /** Todas as rotas /api/admin/* exigem role ADMIN. */
 export default async function adminRoutes(app: FastifyInstance) {
@@ -18,4 +19,5 @@ export default async function adminRoutes(app: FastifyInstance) {
   await app.register(roomsAdminRoutes)
   await app.register(rankingsRoutes)
   await app.register(announcementsRoutes)
+  await app.register(settingsAdminRoutes)
 }

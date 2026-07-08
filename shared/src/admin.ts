@@ -41,7 +41,15 @@ export interface UserAdminView extends UserPublic {
   isActive: boolean
   bannedUntil: string | null
   banReason: string | null
+  /** bloqueada por tentativas de login (aguarda o admin desbloquear) */
+  locked: boolean
+  failedLogins: number
   updatedAt: string
+}
+
+export interface PlatformSettings {
+  /** tentativas de senha erradas até bloquear a conta */
+  loginMaxAttempts: number
 }
 
 export interface Paginated<T> {
