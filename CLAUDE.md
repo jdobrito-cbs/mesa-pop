@@ -21,6 +21,17 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **BANCO GERENCIADO pelo painel (WSRTA 1.0.2, pedido do usuário
+  2026-07-08)**: com `database: postgres` no frontmatter, o WSRTA cria
+  `app_<dominio>`, injeta a `DATABASE_URL` pronta e apaga o banco ao
+  remover. Adicionado `database: postgres` aos dois `app.md`. Os
+  scripts ganharam a flag `DB_MANAGED` (gravada no .env): quando o
+  painel fornece a DATABASE_URL → `DB_MANAGED=wsrta` e o install NÃO
+  cria/altera role nem banco (evita erro de permissão), e o
+  `remove.sh` NÃO dropa (o painel apaga). Sem DATABASE_URL injetada →
+  `DB_MANAGED=app` (modo self-managed do terminal/Docker: cria e dropa
+  o `mp_<slug>` como antes). Precondição no painel: habilitar o
+  PostgreSQL no cliente "Minha VPS". Sintaxe conferida com `bash -n`.
 - **`## Remove` no app.md (WSRTA, pedido do usuário 2026-07-08)**: o
   painel passou a suportar a seção `## Remove` (roda ao REMOVER o app,
   no workdir com o .env carregado) — recomendada para apps que criam

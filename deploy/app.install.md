@@ -1,6 +1,7 @@
 ---
 name: Mesa Pop
 port: 3001
+database: postgres
 workdir: .
 envfile: .env
 ---
