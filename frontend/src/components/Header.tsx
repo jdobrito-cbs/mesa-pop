@@ -7,8 +7,11 @@ export default function Header() {
   const navigate = useNavigate()
 
   async function handleLogout() {
-    await logout()
+    // vai para a home ANTES de limpar a sessão: assim saímos da rota
+    // protegida primeiro e o RequireAuth não desvia para /entrar (o que
+    // causava o pisca-pisca login/spinner). Termina direto na home.
     navigate('/')
+    await logout()
   }
 
   return (

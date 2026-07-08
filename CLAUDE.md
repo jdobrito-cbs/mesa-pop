@@ -21,6 +21,14 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FIX logout com pisca-pisca (2026-07-08)**: ao clicar em "Sair" de
+  uma rota protegida, o `logout()` zerava o user e o `RequireAuth` da
+  rota atual disparava `Navigate → /entrar` competindo com o
+  `navigate('/')` do Header — resultado: pisca login/spinner e terminava
+  em /entrar (às vezes em loop). Correção no `Header.handleLogout`:
+  `navigate('/')` ANTES de `await logout()` — sai da rota protegida
+  primeiro, então o guard não desvia. Verificado: transições pós-Sair =
+  `["/"]`, termina na home sem flash.
 - **BANCO GERENCIADO pelo painel (WSRTA 1.0.2, pedido do usuário
   2026-07-08)**: com `database: postgres` no frontmatter, o WSRTA cria
   `app_<dominio>`, injeta a `DATABASE_URL` pronta e apaga o banco ao
