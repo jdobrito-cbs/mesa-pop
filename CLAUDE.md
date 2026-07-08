@@ -21,6 +21,22 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-05
+- **FIX P1000 na instalação WSRTA (2026-07-07)**: `prisma migrate
+  deploy` falhava com "Authentication failed ... credentials for
+  `mesapop`" porque o role `mesapop` já existia no Postgres do servidor
+  (tentativa anterior) e o script só fazia `CREATE ROLE IF NOT EXISTS`
+  — a senha nova do .env não batia. Correções no `deploy/wsrta-install.sh`:
+  (1) nome de role/banco derivado do DOMÍNIO (`mp_<slug>`) para não
+  colidir com roles antigos/de outros apps; (2) `ALTER ROLE ... WITH
+  LOGIN PASSWORD` SEMPRE (idempotente e auto-corretivo — força a senha
+  a bater com o .env, mesmo em role pré-existente); (3) parsing de
+  user/pass/db do DATABASE_URL por sed; (4) VALIDA a conexão
+  (`psql "$DB_URL" -c 'SELECT 1'`) ANTES do migrate → mensagem clara em
+  vez do P1000 no meio, com escape para DATABASE_URL externo; (5)
+  DATABASE_URL passado inline aos comandos prisma. Reexecução reaproveita
+  o .env e re-alinha a senha. `wsrta-update.sh` também passa o
+  DATABASE_URL inline. (Não testável no Windows — sem psql/sudo local;
+  sintaxe conferida com `bash -n` e parsing testado.)
 - **SETUP INICIAL / login do admin pela TELA (pedido do usuário
   2026-07-06, instala via WSRTA sem editar .env)**: enquanto não
   existir nenhum admin, a plataforma abre `/setup` (SetupGate no App

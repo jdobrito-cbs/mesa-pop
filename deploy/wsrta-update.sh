@@ -24,11 +24,12 @@ log "Atualizando dependencias..."
 npm ci --include=dev
 
 set -a; . ./.env; set +a
+DB_URL="$(grep '^DATABASE_URL=' .env | cut -d= -f2-)"
 
 log "Aplicando migracoes do banco..."
-npm run db:generate -w backend
-npm run db:deploy -w backend
-npm run db:seed -w backend
+DATABASE_URL="$DB_URL" npm run db:generate -w backend
+DATABASE_URL="$DB_URL" npm run db:deploy -w backend
+DATABASE_URL="$DB_URL" npm run db:seed -w backend
 
 log "Recompilando o site..."
 export VITE_API_URL=
