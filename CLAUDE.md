@@ -21,6 +21,16 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **FIX visual Damas — dama do mesmo tamanho das peças (pedido do
+  usuário 2026-07-09)**: a peça-dama (com 👑) esticava a célula porque
+  as linhas do tabuleiro estavam em altura AUTO — a coroa fazia aquela
+  linha crescer e a peça virava um oval, bagunçando o espaço. Corrigido
+  no `CheckersBoard`: grade com `grid-rows-[repeat(8,minmax(0,1fr))]`
+  (8 linhas iguais; conteúdo não estica mais a linha) + discos com
+  `aspect-square` e a coroa `text-base leading-none` centralizada.
+  Agora a dama é um disco redondo idêntico às outras peças, só com a
+  coroa no centro. Verificado por demo (robô promoveu; tabuleiro sem
+  distorção).
 - **BOTS · LOTE 2 entregue — Dominó, One e Pife (mão escondida)
   (2026-07-09)**: bots que só olham a PRÓPRIA mão + o estado público
   (o `bot(state, seat)` recebe o estado completo mas cada bot lê apenas

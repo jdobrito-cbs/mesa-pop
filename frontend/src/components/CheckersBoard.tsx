@@ -88,7 +88,7 @@ export default function CheckersBoard({
       </div>
 
       <div
-        className="grid aspect-square grid-cols-8 overflow-hidden rounded-card ring-2 ring-ink-700 select-none"
+        className="grid aspect-square grid-cols-8 grid-rows-[repeat(8,minmax(0,1fr))] overflow-hidden rounded-card ring-2 ring-ink-700 select-none"
         role="grid"
         aria-label="Tabuleiro de damas"
       >
@@ -113,12 +113,16 @@ export default function CheckersBoard({
               )}
               {piece && (
                 <span
-                  className={`flex size-[78%] items-center justify-center rounded-full shadow-lg transition-transform ${seatColor(piece.p)} ${
+                  className={`flex aspect-square size-[78%] items-center justify-center rounded-full shadow-lg transition-transform ${seatColor(piece.p)} ${
                     isSelected ? 'scale-110 ring-4 ring-pop-yellow' : canPick ? 'ring-2 ring-cream/60' : ''
                   }`}
                 >
-                  <span className="flex size-[70%] items-center justify-center rounded-full border-2 border-ink-950/25 text-lg">
-                    {piece.k && <span aria-label="dama">👑</span>}
+                  <span className="flex aspect-square size-[70%] items-center justify-center rounded-full border-2 border-ink-950/25 text-base leading-none">
+                    {piece.k && (
+                      <span aria-label="dama" className="leading-none">
+                        👑
+                      </span>
+                    )}
                   </span>
                 </span>
               )}
