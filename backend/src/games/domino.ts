@@ -6,6 +6,7 @@ import {
   type DominoState,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseDominoAction } from './dominoBot'
 
 export const dominoModule: GameModule<DominoState, DominoAction> = {
   slug: 'domino',
@@ -29,6 +30,14 @@ export const dominoModule: GameModule<DominoState, DominoAction> = {
   // MÃO ESCONDIDA: cada assento só recebe a própria mão + contagens.
   getStateFor(state, seat) {
     return dominoViewFor(state, seat)
+  },
+
+  currentSeat(state) {
+    return state.winnerSeats.length || state.draw ? null : state.turn
+  },
+
+  bot(state, seat) {
+    return chooseDominoAction(state, seat)
   },
 
   result(state) {

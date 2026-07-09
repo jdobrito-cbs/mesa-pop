@@ -13,6 +13,7 @@ import {
   type PifeView,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { choosePifeAction } from './pifeBot'
 
 export interface PifeState {
   players: number
@@ -161,6 +162,14 @@ export const pifeModule: GameModule<PifeState, PifeAction> = {
   // MÃO ESCONDIDA: cada assento só recebe a própria mão + contagens.
   getStateFor(state, seat) {
     return pifeViewFor(state, seat)
+  },
+
+  currentSeat(state) {
+    return state.fase === 'fim' ? null : state.turno
+  },
+
+  bot(state, seat) {
+    return choosePifeAction(state, seat)
   },
 
   result(state) {

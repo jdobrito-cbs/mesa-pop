@@ -2,18 +2,26 @@ import { describe, expect, it } from 'vitest'
 import {
   allLegalChessMoves,
   applyChessMove,
+  applyDominoAction,
   applyMove,
+  applyOneAction,
   chessStatus,
   findMove,
   initialCheckersState,
+  initialDominoState,
+  initialOneState,
   legalMoves,
   type ChessPiece,
   type ChessState,
 } from '@mesapop/shared'
 import { chooseCheckersMove } from '../src/games/checkersBot'
 import { chooseChessMove } from '../src/games/chessBot'
+import { chooseDominoAction } from '../src/games/dominoBot'
+import { chooseOneAction } from '../src/games/oneBot'
+import { choosePifeAction } from '../src/games/pifeBot'
 import { checkersModule } from '../src/games/checkers'
 import { chessModule } from '../src/games/chess'
+import { aplicaPifeAction, initialPifeState } from '../src/games/pife'
 
 /** tabuleiro de xadrez vazio, brancas na vez (para montar posições de teste) */
 function emptyChess(): ChessState {
@@ -103,5 +111,63 @@ describe('Bot de Xadrez', () => {
     s.turn = 1 // pretas na vez, sem lances (mate de dama apoiada)
     expect(chessStatus(s).kind).toBe('checkmate')
     expect(chessModule.currentSeat!(s)).toBeNull()
+  })
+})
+
+describe('Bot de Dominó (mão escondida)', () => {
+  it('abre com o [6|6] quando é o abridor', () => {
+    const s = initialDominoState()
+    const act = chooseDominoAction(s, s.turn)
+    expect(act).toEqual({ type: 'play', tile: [6, 6], side: 0 })
+  })
+
+  it('joga uma mão inteira contra si mesmo sem nunca gerar ação ilegal', () => {
+    let s = initialDominoState()
+    let guard = 0
+    while (!s.winnerSeats.length && !s.draw && guard++ < 400) {
+      const act = chooseDominoAction(s, s.turn)
+      expect(act).not.toBeNull()
+      const outcome = applyDominoAction(s, s.turn, act!)
+      expect('state' in outcome).toBe(true)
+      s = (outcome as { state: typeof s }).state
+    }
+    expect(s.winnerSeats.length > 0 || s.draw).toBe(true)
+  })
+})
+
+describe('Bot do One (mão escondida)', () => {
+  it('a ação escolhida na abertura é sempre legal', () => {
+    const s = initialOneState(2)
+    const act = chooseOneAction(s, s.turn)
+    expect(act).not.toBeNull()
+    const outcome = applyOneAction(s, s.turn, act!)
+    expect('state' in outcome).toBe(true)
+  })
+
+  it('joga uma partida 2p contra si mesmo até alguém vencer, tudo legal', () => {
+    let s = initialOneState(2)
+    let guard = 0
+    while (!s.winnerSeats.length && guard++ < 4000) {
+      const act = chooseOneAction(s, s.turn)
+      expect(act).not.toBeNull()
+      const outcome = applyOneAction(s, s.turn, act!)
+      expect('state' in outcome).toBe(true)
+      s = (outcome as { state: typeof s }).state
+    }
+    expect(s.winnerSeats.length).toBe(1)
+  })
+})
+
+describe('Bot do Pife (mão escondida)', () => {
+  it('produz ações legais nas duas fases (comprar e descartar/bater)', () => {
+    const s = initialPifeState(2)
+    let guard = 0
+    // roda ~200 meios-lances: compra e descarte/bater precisam ser sempre válidos
+    while (s.fase !== 'fim' && guard++ < 200) {
+      const act = choosePifeAction(s, s.turno)
+      expect(act).not.toBeNull()
+      const outcome = aplicaPifeAction(s, s.turno, act!)
+      expect('state' in outcome).toBe(true)
+    }
   })
 })

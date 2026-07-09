@@ -6,6 +6,7 @@ import {
   type OneState,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseOneAction } from './oneBot'
 
 export const oneModule: GameModule<OneState, OneAction> = {
   slug: 'one',
@@ -26,6 +27,14 @@ export const oneModule: GameModule<OneState, OneAction> = {
   // MÃO ESCONDIDA: cada assento só recebe a própria mão + contagens.
   getStateFor(state, seat) {
     return oneViewFor(state, seat)
+  },
+
+  currentSeat(state) {
+    return state.winnerSeats.length ? null : state.turn
+  },
+
+  bot(state, seat) {
+    return chooseOneAction(state, seat)
   },
 
   result(state) {

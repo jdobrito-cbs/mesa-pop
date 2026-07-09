@@ -59,7 +59,7 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const isCoop = slug === 'esquadrao-coop'
   const isRace = slug === 'corrida'
   // jogos que já jogam contra o robô (cresce a cada lote)
-  const hasBot = slug === 'damas' || slug === 'xadrez'
+  const hasBot = ['damas', 'xadrez', 'domino', 'one', 'pife'].includes(slug ?? '')
 
   async function playVsBot() {
     setBusy(true)

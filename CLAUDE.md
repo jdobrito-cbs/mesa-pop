@@ -21,6 +21,24 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **BOTS · LOTE 2 entregue — Dominó, One e Pife (mão escondida)
+  (2026-07-09)**: bots que só olham a PRÓPRIA mão + o estado público
+  (o `bot(state, seat)` recebe o estado completo mas cada bot lê apenas
+  `hands[seat]`/`maos[seat]`). `dominoBot.ts` (greedy: joga a
+  pedra/ponta que mais PONTUA pela dupla; empate solta a mais pesada;
+  evita bater atrás no placar; abre com [6|6]), `oneBot.ts` (guarda
+  curingas, prefere cartas de ação, solta números altos, cor do curinga
+  = a que tem mais na mão), `pifeBot.ts` (compra do lixo só se formar
+  par/vizinho; bate assim que dá; senão descarta a menos útil — turno de
+  2 fases resolvido pelo encadeamento do `scheduleBotTurn`). Botão do
+  lobby estendido a domino/one/pife (Dominó = 1 humano + 3 robôs;
+  One/Pife = 1 humano + 1 robô). 219 testes (5 novos: abertura do
+  Dominó com [6|6], mão inteira sem lance ilegal; One legal na abertura
+  + partida 2p até vencer; Pife 200 lances legais nas 2 fases).
+  Typecheck limpo. Demo real: Dominó com Robô Zé/Nina/Téo (spinner na
+  mesa, "pontas somam 17", vez do humano), One round-trip (joguei
+  amarelo 1, o robô respondeu amarelo 2), Pife montado. Próximos: 3 =
+  Truco/Memória/Forca, 4 = Quiz Pop/Nostalgia.
 - **BOTS NOS JOGOS DE TURNO — LOTE 1 entregue (Damas e Xadrez)
   (iniciativa aprovada pelo usuário 2026-07-09)**: opção "🤖 Jogar
   contra o robô" no lobby (cresce lote a lote; escopo combinado: máximo
@@ -948,11 +966,9 @@ Base sólida primeiro; os jogos plugam nela.
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
 - **Próximo passo**: INICIATIVA "Bots nos jogos de turno" EM ANDAMENTO
-  (aprovada 2026-07-09). Lote 1 (Damas + Xadrez) ✅. **Próximo: Lote 2 —
-  Dominó, One e Pife** (bots de mão escondida: o bot só olha a própria
-  mão + estado público). Depois Lote 3 (Truco/Memória/Forca) e Lote 4
-  (Quiz Pop/Nostalgia). Cada lote fecha com testes + demo + pacotes +
-  push. Ideias aguardando priorização futura: Modo Conforto 60+
+  (aprovada 2026-07-09). Lotes 1 (Damas + Xadrez) e 2 (Dominó/One/Pife)
+  ✅. **Próximo: Lote 3 — Truco, Memória e Forca**; depois Lote 4 (Quiz
+  Pop/Nostalgia). Cada lote fecha com testes + demo + pacotes + push. Ideias aguardando priorização futura: Modo Conforto 60+
   (lote opcional sugerido: fontes/cartas maiores, alto contraste,
   timers relaxados, prefers-reduced-motion); desafio diário com seed
   (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de
