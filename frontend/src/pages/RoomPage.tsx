@@ -26,6 +26,7 @@ import type {
 } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
+import { useFullscreen } from '../lib/useFullscreen'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
 import GansoBoard from '../components/GansoBoard'
@@ -76,6 +77,9 @@ export default function RoomPage() {
 
   // a tela do jogo abre no topo, sem rolagem automática (título junto ao header)
   const partidaRef = useRef<HTMLDivElement>(null)
+  // tela cheia da área de jogo + chat
+  const fsRef = useRef<HTMLDivElement>(null)
+  const { isFs, toggle: toggleFs } = useFullscreen(fsRef)
 
   useEffect(() => {
     if (!code || !user) return
@@ -223,6 +227,12 @@ export default function RoomPage() {
         </h1>
         <div className="flex gap-2">
           <button
+            onClick={() => void toggleFs()}
+            className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan"
+          >
+            {isFs ? '⤢ Sair da tela cheia' : '⛶ Tela cheia'}
+          </button>
+          <button
             onClick={() => void shareRoom()}
             className="btn-pop px-4 py-2 text-sm ring-1 ring-pop-cyan/50 hover:ring-pop-cyan"
           >
@@ -242,7 +252,8 @@ export default function RoomPage() {
 
       {/* Desenha & Adivinha tem chat PRÓPRIO (RESPOSTAS) — o geral sai de cena na partida */}
       <div
-        className={`mt-6 grid items-start gap-4 ${
+        ref={fsRef}
+        className={`game-fs mt-6 grid items-start gap-4 ${
           room.gameSlug === 'desenha-adivinha' && playing ? '' : 'lg:grid-cols-[1fr_320px]'
         }`}
       >
@@ -435,7 +446,8 @@ export default function RoomPage() {
 
         {/* chat geral da mesa — jogadores e espectadores */}
         {!(room.gameSlug === 'desenha-adivinha' && playing) && (
-          <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+          // no celular/tablet o chat só aparece na horizontal (retrato esconde)
+          <div className="flex flex-col gap-4 max-lg:portrait:hidden lg:sticky lg:top-20">
             <RoomChat className="h-80 lg:h-[calc(100vh-14rem)] lg:max-h-[560px]" />
             <AdSlot />
           </div>

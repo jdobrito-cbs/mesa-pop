@@ -21,6 +21,22 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **TELA CHEIA nos jogos (pedido do usuário 2026-07-09)**: botão
+  "⛶ Tela cheia / ⤢ Sair da tela cheia" que usa a Fullscreen API (PC e
+  Android) com FALLBACK CSS para iOS (classe `mp-fs--fake` fixa cobrindo
+  a viewport, pois o Safari do iPhone não expõe requestFullscreen em
+  elemento). Hook reutilizável `lib/useFullscreen.ts`; CSS `.game-fs`
+  (`:fullscreen` + fake) no `global.css`. Aplicado no **RoomPage** (TODOS
+  os multiplayer — o alvo é a grade JOGO+CHAT, então na tela cheia o
+  chat fica AO LADO) e no **SoloGamePage** (arcades/ação solo). Regra do
+  usuário: **no celular/tablet o chat só aparece na HORIZONTAL** — a
+  coluna do chat leva `max-lg:portrait:hidden` (em retrato abaixo de lg,
+  some; paisagem/desktop aparece). Verificado por demo: a Fullscreen API
+  real escondeu o header deixando tabuleiro+chat; retrato de celular
+  ocultou o chat (display none) e paisagem mostrou. **PENDÊNCIA (lote
+  2)**: as páginas solo DEDICADAS (Sudoku, Mahjong, Caça-palavras,
+  Cruzadinha, Paciência, Memória solo, Palavra do Dia, Fazenda) ainda
+  não têm o botão — próximo micro-lote.
 - **NOVO JOGO — GIRA GÊNIO (clone do Perguntados; pedido do usuário
   2026-07-09, nome e escopo aprovados: jogo completo de uma vez)**:
   trivia com ROLETA de 6 categorias (🌎 Geografia · 📜 História · 🔬

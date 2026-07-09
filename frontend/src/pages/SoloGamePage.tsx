@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
+import { useFullscreen } from '../lib/useFullscreen'
 import AdSlot from '../components/AdSlot'
 import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
@@ -206,6 +207,8 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
   const { user } = useAuth()
   const isGuest = !!user?.isGuest
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const fsRef = useRef<HTMLDivElement>(null)
+  const { isFs, toggle: toggleFs } = useFullscreen(fsRef)
   const gameRef = useRef<SoloGame | null>(null)
   const matchIdRef = useRef<string | null>(null)
   const [hud, setHud] = useState<Record<string, unknown>>({})
@@ -291,15 +294,23 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">{def.icon}</span> {def.title}
         </h1>
-        <button
-          onClick={() => navigate('/mesa')}
-          className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange"
-        >
-          Voltar à mesa
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => void toggleFs()}
+            className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan"
+          >
+            {isFs ? '⤢ Sair da tela cheia' : '⛶ Tela cheia'}
+          </button>
+          <button
+            onClick={() => navigate('/mesa')}
+            className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange"
+          >
+            Voltar à mesa
+          </button>
+        </div>
       </div>
 
-      <div className={`mt-5 grid items-start gap-5 ${def.wide ? '' : 'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
+      <div ref={fsRef} className={`game-fs mt-5 grid items-start gap-5 ${def.wide ? '' : 'lg:grid-cols-[minmax(0,1fr)_300px]'}`}>
         {/* jogo */}
         <div className={`relative mx-auto w-full ${def.wide ? 'max-w-4xl' : 'max-w-md'}`}>
           <canvas

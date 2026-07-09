@@ -557,3 +557,19 @@
     }
   }
 }
+
+/* ——— Tela cheia dos jogos (Fullscreen API + fallback CSS p/ iOS) ——— */
+.game-fs:fullscreen,
+.game-fs:-webkit-full-screen,
+.game-fs.mp-fs--fake {
+  background: var(--color-ink-950, #0b0f1e);
+  overflow: auto;
+  padding: 0.75rem;
+}
+.game-fs.mp-fs--fake {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100vh;
+}
