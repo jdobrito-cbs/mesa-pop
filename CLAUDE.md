@@ -21,6 +21,24 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **NOVO JOGO — CORRIDA DO GANSO (pedido do usuário 2026-07-09,
+  aprovado com esse nome)**: jogo de trilha clássico (Jogo do Ganso,
+  domínio público) — 2–4 jogadores + "🤖 Jogar contra o robô"
+  (reaproveita 100% a infra de bots; o bot só rola o dado, sorte pura).
+  `shared/ganso.ts`: trilha de 63 casas, dados sorteados NO SERVIDOR
+  (`backend/games/ganso.ts`, crypto), regra pura `aplicaRolagem`
+  (ricochete ao passar de 63; chegar EXATO vence). Casas especiais:
+  🪿 ganso [5,9,14,18,23,27,32,36,41,45,50,54,59] avança de novo
+  (encadeia); 🌉 ponte 6→12; 🏨 estalagem 19 (perde 1 vez); 🕳️ poço 31
+  (perde 2); 🌀 labirinto 42→30; 💀 caveira 58→0. `GameModule` de turno
+  (currentSeat/bot), sem rotação. `GansoBoard.tsx`: espiral 8×8 gerada
+  em código, casas com ícone/cor, peões 🦢 coloridos que deslizam
+  (transition), dados desenhados (pips SVG), narração do último lance,
+  vez destacada. RoomPage/GameLobby (hasBot) ligados. Catálogo: 34
+  jogos. 235 testes (9 novos: soma dos dados, ganso encadeia, ponte,
+  poço=skip 2, caveira→0, ricochete/vitória exata, castigo consome
+  skip, casaInfo). Typecheck limpo. Demo real: humano × Robô Zé, peões
+  andando pela espiral com narração ("Robô Zé tirou 7 → casa 57").
 - **NOVO JOGO — MAHJONG SOLITAIRE (pedido do usuário 2026-07-09)**:
   paciência de mahjong (combinar pares de peças LIVRES até esvaziar a
   mesa), SOLO com ranking, 3 níveis (fácil 2 camadas ~68, médio 3 ~122,
@@ -1038,10 +1056,26 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: INICIATIVA "Bots nos jogos de turno" EM ANDAMENTO
-  (aprovada 2026-07-09). Lotes 1 (Damas + Xadrez) e 2 (Dominó/One/Pife)
-  ✅. **Próximo: Lote 3 — Truco, Memória e Forca**; depois Lote 4 (Quiz
-  Pop/Nostalgia). Cada lote fecha com testes + demo + pacotes + push. Ideias aguardando priorização futura: Modo Conforto 60+
+- **FILA DE JOGOS NOVOS APROVADOS (2026-07-09)**:
+  1. **"Magnata" — clone do Monopoly, tema Brasil** (aprovado para fazer
+     DEPOIS da Corrida do Ganso, POR LOTES). Nome/arte genéricos (Monopoly
+     e "Banco Imobiliário" são marcas); ruas/cidades reais do Brasil OK.
+     Lotes previstos: 1 tabuleiro+dados+comprar/aluguel+dinheiro+Início/
+     Prisão; 2 casas/hotéis+cartas Sorte/Cofre+impostos; 3 negociação+
+     leilão+hipoteca; 4 bots com estratégia; 5 capricho visual.
+     **REQUISITO do usuário (2026-07-09): CARTÃO DE CRÉDITO** — cada
+     jogador tem um cartão com LIMITE inicial que AUMENTA conforme os
+     recebimentos e DIMINUI conforme os pagamentos (linha de crédito
+     dinâmica, além do dinheiro em caixa).
+  2. **Clone do "Perguntados"/Trivia** (roleta de categorias) — pedido
+     2026-07-09; aguardando plano/OK. Nome genérico; reaproveitar a
+     engine de quiz (`makeQuizModule`) + bancos. Mecânica-chave: roleta
+     de 6 categorias, coletar "coroas"/personagens, duelo 1×1.
+- **Próximo passo**: INICIATIVA "Bots nos jogos de turno" segue aberta
+  (Lotes 1 Damas+Xadrez e 2 Dominó/One/Pife ✅; faltam Lote 3
+  Truco/Memória/Forca e Lote 4 Quiz). Jogos novos entregues fora da
+  iniciativa: Mahjong e Corrida do Ganso. Fila aprovada acima (Magnata,
+  Perguntados). Perguntar ao usuário a prioridade do próximo. Ideias aguardando priorização futura: Modo Conforto 60+
   (lote opcional sugerido: fontes/cartas maiores, alto contraste,
   timers relaxados, prefers-reduced-motion); desafio diário com seed
   (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de

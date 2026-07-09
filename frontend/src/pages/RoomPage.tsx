@@ -12,6 +12,7 @@ import type {
   BingoView,
   ForcaView,
   GameEndView,
+  GansoState,
   MemoriaView,
   OneAction,
   OneView,
@@ -26,6 +27,7 @@ import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
+import GansoBoard from '../components/GansoBoard'
 import DesenhaGame from '../components/DesenhaGame'
 import DueloGame from '../components/DueloGame'
 import StopGame from '../components/StopGame'
@@ -313,6 +315,14 @@ export default function RoomPage() {
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                   onMove={(move: ChessMove) => void sendAction(move)}
+                />
+              )}
+              {room.gameSlug === 'ganso' && (
+                <GansoBoard
+                  state={game.state as GansoState}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onRoll={() => void sendAction({ type: 'roll' })}
                 />
               )}
               {room.gameSlug === 'domino' && (

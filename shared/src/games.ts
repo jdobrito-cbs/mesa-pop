@@ -72,4 +72,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'quiz-nostalgia', name: 'Quiz Nostalgia', description: 'Música, novelas e o Brasil de antigamente — quem lembra, leva.', family: 'PARTY', minPlayers: 2, maxPlayers: 8, color: 'pop-magenta', icon: '📺', phase: 9, enabled: true },
   { slug: 'cruzadinha', name: 'Cruzadinha', description: 'Palavras-cruzadas de dicas curtas, geradas na hora.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '✏️', phase: 9, enabled: true },
   { slug: 'mahjong', name: 'Mahjong', description: 'Combine pares de peças livres até esvaziar a mesa — 3 níveis.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '🀄', phase: 9, enabled: true },
+  { slug: 'ganso', name: 'Corrida do Ganso', description: 'Trilha clássica com dados — casas especiais e sorte. Até 4, ou contra o robô.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-yellow', icon: '🦢', phase: 9, enabled: true },
 ]
