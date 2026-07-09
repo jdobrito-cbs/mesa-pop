@@ -21,6 +21,19 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **FIX SEO na ATUALIZAÇÃO WSRTA (pedido do usuário 2026-07-09)**: o
+  `wsrta-update.sh` recompilava o site mas NÃO regravava o domínio no
+  `robots.txt`/`sitemap.xml` — como o pacote de update traz esses
+  arquivos com `localhost:8080`, cada atualização revertia o sitemap
+  para localhost e derrubava o SEO. Corrigido: o update agora reaplica
+  o mesmo `sed` do install ANTES do build, usando o `DOMAIN` do painel
+  ou, na falta dele, derivando do `CORS_ORIGIN` já gravado no `.env`
+  (`SITE_ORIGIN=${DOMAIN:+https://…}` → senão `${CORS_ORIGIN%%,*}`).
+  Sintaxe conferida (`bash -n`) e o `sed` testado em cópias (sitemap/
+  robots ficam com o domínio real). Contexto p/ indexar no Google:
+  Search Console → adicionar propriedade (Domínio via DNS TXT, ou
+  Prefixo via meta-tag) → enviar `sitemap.xml` → Inspeção de URL /
+  Solicitar indexação. /admin e /sala já ficam fora (robots).
 - **FIX visual Damas — dama do mesmo tamanho das peças (pedido do
   usuário 2026-07-09)**: a peça-dama (com 👑) esticava a célula porque
   as linhas do tabuleiro estavam em altura AUTO — a coroa fazia aquela

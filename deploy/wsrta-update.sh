@@ -31,6 +31,17 @@ DATABASE_URL="$DB_URL" npm run db:generate -w backend
 DATABASE_URL="$DB_URL" npm run db:deploy -w backend
 DATABASE_URL="$DB_URL" npm run db:seed -w backend
 
+# SEO: reaplica o dominio real no robots.txt/sitemap.xml (o pacote de update
+# traz esses arquivos com localhost; sem isto a atualizacao reverte o sitemap).
+# Usa o DOMAIN do painel; sem ele, deriva do CORS_ORIGIN gravado no .env.
+SITE_ORIGIN="${DOMAIN:+https://${DOMAIN}}"
+if [ -z "$SITE_ORIGIN" ]; then SITE_ORIGIN="${CORS_ORIGIN:-}"; fi
+SITE_ORIGIN="${SITE_ORIGIN%%,*}"
+if [ -n "$SITE_ORIGIN" ] && [ "$SITE_ORIGIN" != "http://localhost:8080" ]; then
+  log "Apontando robots.txt e sitemap.xml para ${SITE_ORIGIN}..."
+  sed -i "s|http://localhost:8080|${SITE_ORIGIN}|g" frontend/public/robots.txt frontend/public/sitemap.xml 2>/dev/null || true
+fi
+
 log "Recompilando o site..."
 export VITE_API_URL=
 npm run build -w frontend
