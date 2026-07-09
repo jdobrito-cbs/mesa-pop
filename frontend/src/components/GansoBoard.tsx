@@ -89,10 +89,12 @@ export default function GansoBoard({
   const miolo = raw.slice(GANSO_FIM + 1)
   const cCols = miolo.map((c) => c[0])
   const cRows = miolo.map((c) => c[1])
+  // a numeração começa pela BASE (casa 1 embaixo), como no tabuleiro clássico
+  const ty = (row: number) => (ROWS - 1 - row) * CELL
   const medalhao = miolo.length
     ? {
         left: Math.min(...cCols) * CELL + 6,
-        top: Math.min(...cRows) * CELL + 6,
+        top: ty(Math.max(...cRows)) + 6,
         width: (Math.max(...cCols) - Math.min(...cCols) + 1) * CELL - 12,
         height: (Math.max(...cRows) - Math.min(...cRows) + 1) * CELL - 12,
       }
@@ -179,16 +181,27 @@ export default function GansoBoard({
       </div>
 
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-center">
-        {/* tabuleiro — trilha de madeira em espiral sobre a grama */}
+        {/* tabuleiro — trilha de madeira coilando na grama, cercada por pedras */}
         <div
-          className="overflow-auto rounded-[20px] p-3"
+          className="overflow-auto rounded-[26px] p-4"
           style={{
-            background: 'radial-gradient(circle at 50% 40%, #5aa85e, #3c7a44 70%, #2c5e37)',
-            border: '10px solid #7a5a34',
-            boxShadow: 'inset 0 0 0 3px #9c7846, inset 0 0 22px rgba(0,0,0,.35), 0 8px 20px rgba(0,0,0,.45)',
+            // calçada de pedrinhas (borda) — desenhada em CSS
+            backgroundColor: '#6f6a60',
+            backgroundImage:
+              'radial-gradient(circle at 30% 32%, #d2cabb 0 26%, #a59c8c 42%, transparent 56%), radial-gradient(circle at 72% 70%, #c3baa9 0 24%, #948b7b 40%, transparent 54%)',
+            backgroundSize: '20px 20px, 24px 24px',
+            backgroundPosition: '0 0, 11px 9px',
+            boxShadow: 'inset 0 0 0 2px #4f4a42, 0 8px 22px rgba(0,0,0,.5)',
           }}
         >
-          <div className="relative" style={{ width: boardW, height: boardH }}>
+          <div
+            className="rounded-[14px] p-2"
+            style={{
+              background: 'radial-gradient(circle at 50% 42%, #5aa85e, #3c7a44 72%, #2c5e37)',
+              boxShadow: 'inset 0 0 16px rgba(0,0,0,.35)',
+            }}
+          >
+            <div className="relative" style={{ width: boardW, height: boardH }}>
             {coords.map(([col, row], pos) => {
               const info = casaInfo(pos)
               const icone = ICONE[info.tipo]
@@ -215,7 +228,7 @@ export default function GansoBoard({
                   className="absolute flex flex-col items-center justify-center"
                   style={{
                     left: col * CELL + 3,
-                    top: row * CELL + 3,
+                    top: ty(row) + 3,
                     width: CELL - 6,
                     height: CELL - 6,
                     borderRadius: 10,
@@ -284,7 +297,7 @@ export default function GansoBoard({
                   className="pointer-events-none absolute grid place-items-center rounded-full text-[12px] shadow-lg ring-2 ring-white/80 transition-all duration-300"
                   style={{
                     left: col * CELL + ox,
-                    top: row * CELL + oy,
+                    top: ty(row) + oy,
                     width: 22,
                     height: 22,
                     backgroundColor: CORES_HEX[seat],
@@ -296,6 +309,7 @@ export default function GansoBoard({
                 </div>
               )
             })}
+            </div>
           </div>
         </div>
 

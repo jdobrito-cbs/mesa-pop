@@ -64,7 +64,15 @@ Base sólida primeiro; os jogos plugam nela.
     miolo ABERTO** — `espiralRect(9×8)` gera 72 slots, o jogo usa os 64
     primeiros (casas 0–63) e o restante vira o medalhão do centro;
     casas especiais com borda/ícone coloridos por tipo. Substitui a
-    grade 8×8 cheia anterior.
+    grade 8×8 cheia anterior. **2ª rodada**: para ficar fiel ao visual
+    clássico da referência do usuário — **borda de CALÇADA DE PEDRAS**
+    (desenhada em CSS) cercando a trilha de madeira sobre a grama, e a
+    numeração começando pela BASE (casa 1 embaixo, `ty(row)` inverte o
+    eixo) coilando até o medalhão central. **IMPORTANTE (regra 6)**: a
+    arte é NOSSA (Mesa Pop) inspirada no Jogo do Ganso de domínio
+    público — NÃO se copia o logo/ilustração/peões daquele produto
+    específico protegido; o usuário pediu "idêntico à imagem" e a
+    resposta foi recriar o ESTILO clássico, não clonar a arte.
   - 275 testes seguem verdes; typecheck limpo nos 3 workspaces. Demos
     reais (Playwright): Magnata (tabuleiro grande, fichas, dados
     "rolando os dados…", molduras coloridas, dica de grupo), Gira Gênio
