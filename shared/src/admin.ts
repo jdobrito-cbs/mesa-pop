@@ -67,6 +67,21 @@ export interface GuestsOverview {
   monthCount: number
 }
 
+/** usuário conectado agora + o jogo (multiplayer) em que está, se houver */
+export interface OnlineUser {
+  userId: string
+  displayName: string
+  /** jogo que está jogando agora; null = online mas sem partida (no lobby) */
+  game: { slug: string; name: string; icon: string; color: string } | null
+}
+
+export interface OnlineOverview {
+  /** convidados (sem cadastro) conectados agora */
+  guests: OnlineUser[]
+  /** usuários com conta conectados agora */
+  users: OnlineUser[]
+}
+
 /** um jogo com sua contagem de partidas (para a Visão geral) */
 export interface GameActivityRow {
   slug: string

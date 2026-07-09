@@ -8,6 +8,7 @@ import {
 } from 'react'
 import type { AuthResponse, LoginInput, RegisterInput, SetupInput, UserPublic } from '@mesapop/shared'
 import { api, setAccessToken } from './api'
+import { connectSocket, disconnectSocket } from './socket'
 
 interface AuthContextValue {
   user: UserPublic | null
@@ -40,6 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => setAccessToken(null))
       .finally(() => setRestoring(false))
   }, [applySession])
+
+  // Mantém o socket conectado enquanto logado — assim a presença "online"
+  // vale em qualquer página (não só nas de jogo). Sai ao deslogar.
+  useEffect(() => {
+    if (user) connectSocket()
+  }, [user])
 
   // Convidado é temporário: ao FECHAR o navegador/aba, avisa o servidor para
   // apagar a conta-sombra (o beacon leva o cookie de refresh no mesmo origin).
@@ -79,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(async () => {
+    disconnectSocket()
     await api('/api/auth/logout', { method: 'POST' }).catch(() => {})
     setAccessToken(null)
     setUser(null)

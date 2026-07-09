@@ -4,6 +4,7 @@ import type { Ack } from '@mesapop/shared'
 import { verifyAccessToken } from '../lib/tokens'
 import { config } from '../config'
 import { RoomManager, type RoomUser } from './roomManager'
+import { Presence } from './presence'
 import { registerGame } from '../games/module'
 import { checkersModule } from '../games/checkers'
 import { dominoModule } from '../games/domino'
@@ -26,6 +27,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     io: Server
     rooms: RoomManager
+    presence: Presence
   }
 }
 
@@ -65,8 +67,10 @@ export default fp(async (app) => {
     cors: { origin: config.corsOrigin.split(','), credentials: true },
   })
   const rooms = new RoomManager(app.prisma, io)
+  const presence = new Presence()
   app.decorate('io', io)
   app.decorate('rooms', rooms)
+  app.decorate('presence', presence)
 
   // autenticação do socket: JWT de acesso no handshake
   io.use(async (socket, next) => {
@@ -89,6 +93,7 @@ export default fp(async (app) => {
 
   io.on('connection', (socket) => {
     const user = socket.data.user as RoomUser
+    presence.add(user, socket.id)
 
     // reconexão automática: se o usuário já está numa sala viva, retoma
     const existing = rooms.roomOf(user.id)
@@ -156,6 +161,7 @@ export default fp(async (app) => {
     })
 
     socket.on('disconnect', () => {
+      presence.remove(user.id, socket.id)
       void rooms.onDisconnect(user.id, socket.id)
     })
   })

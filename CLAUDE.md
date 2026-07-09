@@ -21,6 +21,25 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **QUEM ESTÁ ONLINE AGORA na Visão geral (pedido do usuário
+  2026-07-09)**: dois boxes novos no Dashboard — "🎟️ Convidados online"
+  e "🟢 Usuários online" — cada pessoa conectada com um selo do JOGO em
+  que está (ícone/cor/nome) ou "no lobby". Presença rastreada no
+  servidor (`realtime/presence.ts` — `Presence` conta socketIds por
+  userId, suporta várias abas; `app.presence` decorado; add/remove no
+  connect/disconnect do socket). O jogo vem do `RoomManager.roomOf` (só
+  quando a sala está PLAYING). Rota `GET /api/admin/online`
+  (`OnlineOverview {guests, users}` no `shared/admin.ts`; cruza presença
+  + salas + catálogo p/ ícone). Frontend: o socket agora fica conectado
+  ENQUANTO logado (connect no `AuthProvider` quando há user; disconnect
+  no logout) — antes só conectava nas telas de jogo, então a presença
+  vale em qualquer página. Boxes no polling de 4s (tempo real). Demo
+  real: admin jogando Damas apareceu em "Usuários online", convidado
+  "Tião" jogando Xadrez em "Convidados online". OBS: jogos SOLO (REST,
+  fora do RoomManager) contam como "online / no lobby" (sem selo de
+  jogo). LIÇÃO de demo: `page.goto` (reload) dispara o `pagehide` do
+  convidado → beacon `/guest/leave` apaga o convidado; navegar por
+  clique (SPA) preserva. Pacotes regenerados.
 - **FIX SEO na ATUALIZAÇÃO WSRTA (pedido do usuário 2026-07-09)**: o
   `wsrta-update.sh` recompilava o site mas NÃO regravava o domínio no
   `robots.txt`/`sitemap.xml` — como o pacote de update traz esses
