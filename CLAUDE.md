@@ -21,6 +21,36 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **DESAFIO DIÁRIO COM SEED (pedido do usuário 2026-07-09, "vamos fazer
+  tudo isso")**: o MESMO puzzle para todos a cada dia (seed = a data
+  'YYYY-MM-DD') nos 4 jogos seedáveis — Sudoku, Caça-palavras,
+  Cruzadinha e Mahjong — com UMA tentativa por dia e ranking próprio
+  do dia. Espelha o padrão da Palavra do Dia (Termo). **Backend**:
+  model `DesafioPlay` (@@id userId+gameSlug+date, migração
+  `20260709120000_desafio_diario`), rota `desafio.ts` (`GET
+  /api/desafio/hoje` = data + o que você já fez; `POST /start` abre e
+  crava o cronômetro do servisor em startedAt; `POST /finish` mede a
+  duração contra o `PLAUSIBILITY` — extraído p/ `lib/plausibility.ts`,
+  usado por solo E desafio —, recusa impossível SEM queimar a tentativa
+  e crava done+points; `GET /ranking/:slug` = top do dia sem
+  convidados). Config única em `shared/desafio.ts` (`DESAFIOS_DIARIOS`
+  com dificuldade FIXA por jogo p/ ranking justo: sudoku/mahjong médio).
+  **Frontend**: helper `soloBackend.ts` abstrai partida LIVRE
+  (/api/solo/*, seed aleatória, ranking 30d) × DIÁRIO (/api/desafio/*,
+  seed = data, ranking do dia) — as 4 páginas de puzzle ganharam prop
+  `daily?` (seed fixa, sem seletor de nível, selo "📅 desafio de hoje",
+  botões de recomeço escondidos). Hub `/desafio` (DesafioHub, cards com
+  ✓/pts feito) + despachante `/desafio/:slug` (DesafioJogo: se já jogou
+  hoje → portão "concluído" com ranking; senão abre o puzzle diário).
+  Banner na Mesa. 268 testes (4 novos: hoje autenticado, slug inválido,
+  finish sem start, fluxo completo com retroação de startedAt p/ não
+  esperar o minMs). Typecheck limpo nos 3 workspaces. **LIÇÃO**: os
+  jogos diários têm minMs longo (20–30s) — o teste retroage
+  `startedAt` no banco em vez de esperar. Demo real (Playwright, 2
+  usuários): hub "0/4 feitos", A e B abriram o Sudoku do dia e
+  receberam o MESMÍSSIMO tabuleiro (seed do dia confirmada), A resolveu
+  respeitando o minMs → "948 pts, 1º no ranking de hoje", e reabrir
+  caiu no portão "Desafio de hoje concluído!" com o placar do dia.
 - **EXPANSÃO DOS BANCOS DE QUIZ (pedido do usuário 2026-07-09)**: mais
   perguntas nos três bancos de trivia, sem duplicar as existentes e com
   a correta sempre em `alts[0]`/`alternativas[0]`. **Quiz Pop** ~48→64

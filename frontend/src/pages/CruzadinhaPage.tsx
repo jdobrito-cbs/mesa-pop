@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { gerarCruzadinha, type CruzPalavra, type CruzPuzzle } from '@mesapop/shared'
-import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
+import { makeSoloBackend } from '../lib/soloBackend'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
 
@@ -22,10 +22,14 @@ interface LeaderRow {
   points: number
 }
 
-export default function CruzadinhaPage() {
+export default function CruzadinhaPage({ daily }: { daily?: string } = {}) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isGuest = !!user?.isGuest
+  const backend = useMemo(
+    () => makeSoloBackend('cruzadinha', { guest: isGuest, daily }),
+    [isGuest, daily],
+  )
   const [puzzle, setPuzzle] = useState<CruzPuzzle | null>(null)
   const [certas, setCertas] = useState<Record<string, string>>({}) // "r-c" → letra
   const [ativa, setAtiva] = useState(0) // índice em puzzle.palavras
@@ -35,12 +39,12 @@ export default function CruzadinhaPage() {
   const [segundos, setSegundos] = useState(0)
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
-  const matchRef = useRef<string | null>(null)
+  const tokenRef = useRef<string>('')
   const fsRef = useRef<HTMLElement>(null)
-  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/cruzadinha')
+  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>(backend.leaderboard)
 
   const comeca = useCallback(() => {
-    const p = gerarCruzadinha(`${Date.now()}-${Math.random()}`)
+    const p = gerarCruzadinha(backend.nextSeed())
     setPuzzle(p)
     setCertas({})
     setAtiva(0)
@@ -49,13 +53,9 @@ export default function CruzadinhaPage() {
     setSegundos(0)
     setFim(null)
     startRef.current = Date.now()
-    matchRef.current = null
-    if (!isGuest) {
-      void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: 'cruzadinha' } })
-        .then((r) => (matchRef.current = r.matchId))
-        .catch(() => {})
-    }
-  }, [isGuest])
+    tokenRef.current = ''
+    void backend.start().then((t) => (tokenRef.current = t ?? ''))
+  }, [backend])
 
   useEffect(() => {
     comeca()
@@ -107,20 +107,15 @@ export default function CruzadinhaPage() {
         const letras = Object.keys(novas).length
         const pontos = Math.max(letras * 8 + 800 - secs * 3 - erros * 15, 150)
         setFim({ points: pontos })
-        const matchId = matchRef.current
-        if (matchId) {
-          void api<{ points: number; best: number; rank: number }>('/api/solo/finish', {
-            body: { matchId, points: pontos },
-          })
-            .then((res) => {
-              setFim({ points: res.points, rank: res.rank, best: res.best })
-              void reload()
-            })
-            .catch(() => {})
-        }
+        void backend.finish(tokenRef.current, pontos).then((res) => {
+          if (res) {
+            setFim({ points: res.points, rank: res.rank, best: res.best })
+            void reload()
+          }
+        })
       }
     },
-    [puzzle, fim, palavraAtiva, cursor, certas, erros, completa, reload],
+    [puzzle, fim, palavraAtiva, cursor, certas, erros, completa, reload, backend],
   )
 
   // teclado físico
@@ -178,15 +173,20 @@ export default function CruzadinhaPage() {
   return (
     <main ref={fsRef} className="game-fs mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold"><span aria-hidden="true">✏️</span> Cruzadinha</h1>
+        <h1 className="text-2xl font-extrabold">
+          <span aria-hidden="true">✏️</span> Cruzadinha
+          {backend.daily && <span className="ml-2 rounded-full bg-pop-yellow/20 px-2 py-0.5 align-middle text-xs font-bold text-pop-yellow">📅 desafio de hoje</span>}
+        </h1>
         <div className="flex items-center gap-2">
           <FullscreenButton targetRef={fsRef} />
           <span className="text-sm font-bold text-text-muted">⏱️ <span className="tabular-nums">{segundos}s</span> · ❌ {erros}</span>
-          <button onClick={comeca} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
-            Nova grade
-          </button>
-          <button onClick={() => navigate('/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-            Voltar à mesa
+          {!backend.daily && (
+            <button onClick={comeca} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
+              Nova grade
+            </button>
+          )}
+          <button onClick={() => navigate(backend.daily ? '/desafio' : '/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+            {backend.daily ? 'Voltar aos desafios' : 'Voltar à mesa'}
           </button>
         </div>
       </div>
@@ -258,11 +258,17 @@ export default function CruzadinhaPage() {
               <p className="text-5xl" aria-hidden="true">✏️</p>
               <p className="font-display text-3xl font-extrabold text-pop-green">Cruzadinha fechada!</p>
               <p className="font-display text-2xl font-extrabold text-pop-yellow">{fim.points} pts</p>
-              {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking</p>}
+              {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking{backend.daily ? ' de hoje' : ''}</p>}
               {isGuest && <p className="text-sm text-text-muted">Convidados não pontuam no ranking.</p>}
-              <button onClick={comeca} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
-                Outra grade
-              </button>
+              {backend.daily ? (
+                <button onClick={() => navigate('/desafio')} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                  Ver desafios de hoje
+                </button>
+              ) : (
+                <button onClick={comeca} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                  Outra grade
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -279,7 +285,7 @@ export default function CruzadinhaPage() {
             ))}
           </div>
           <div className="card p-4">
-            <p className="font-display text-sm font-bold">🏆 Ranking (30 dias)</p>
+            <p className="font-display text-sm font-bold">🏆 Ranking {backend.daily ? 'de hoje' : '(30 dias)'}</p>
             <div className="mt-3 flex flex-col gap-1.5">
               {!board?.rows.length && <p className="text-sm text-text-muted">Feche uma grade e abra o placar!</p>}
               {board?.rows.map((row) => (

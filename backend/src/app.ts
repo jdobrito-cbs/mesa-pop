@@ -14,6 +14,7 @@ import soloRoutes from './routes/solo'
 import farmRoutes from './routes/farm'
 import meRoutes from './routes/me'
 import termoRoutes from './routes/termo'
+import desafioRoutes from './routes/desafio'
 import adminRoutes from './routes/admin/index'
 import socketPlugin from './realtime/socket'
 import staticPlugin from './plugins/static'
@@ -68,6 +69,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(farmRoutes)
   await app.register(meRoutes)
   await app.register(termoRoutes)
+  await app.register(desafioRoutes)
   await app.register(adminRoutes)
   await app.register(socketPlugin)
   await app.register(staticPlugin)

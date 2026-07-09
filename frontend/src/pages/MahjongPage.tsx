@@ -11,11 +11,14 @@ import {
   type MahjongDificuldade,
   type MahjongTile,
 } from '@mesapop/shared'
-import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
+import { makeSoloBackend } from '../lib/soloBackend'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
+
+/** dificuldade fixa do desafio diário do Mahjong (casa com shared/desafio.ts) */
+const DIF_DIARIA: MahjongDificuldade = 'medio'
 
 /**
  * Mahjong Solitaire — combine pares de peças LIVRES até esvaziar a mesa. Cada
@@ -182,10 +185,14 @@ function Peca({ tile }: { tile: MahjongTile }) {
   )
 }
 
-export default function MahjongPage() {
+export default function MahjongPage({ daily }: { daily?: string } = {}) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isGuest = !!user?.isGuest
+  const backend = useMemo(
+    () => makeSoloBackend('mahjong', { guest: isGuest, daily }),
+    [isGuest, daily],
+  )
   const [deal, setDeal] = useState<MahjongDeal | null>(null)
   const [tiles, setTiles] = useState<MahjongTile[]>([])
   const [removidas, setRemovidas] = useState<Set<number>>(new Set())
@@ -197,13 +204,13 @@ export default function MahjongPage() {
   const [reembs, setReembs] = useState(0)
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
-  const matchRef = useRef<string | null>(null)
+  const tokenRef = useRef<string>('')
   const fsRef = useRef<HTMLElement>(null)
-  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/mahjong')
+  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>(backend.leaderboard)
 
   const comeca = useCallback(
     (dif: MahjongDificuldade) => {
-      const d = gerarMahjong(`${Date.now()}-${Math.random()}`, dif)
+      const d = gerarMahjong(backend.nextSeed(), dif)
       setDeal(d)
       setTiles(d.tiles)
       setRemovidas(new Set())
@@ -214,15 +221,16 @@ export default function MahjongPage() {
       setReembs(0)
       setFim(null)
       startRef.current = Date.now()
-      matchRef.current = null
-      if (!isGuest) {
-        void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: 'mahjong' } })
-          .then((r) => (matchRef.current = r.matchId))
-          .catch(() => {})
-      }
+      tokenRef.current = ''
+      void backend.start().then((t) => (tokenRef.current = t ?? ''))
     },
-    [isGuest],
+    [backend],
   )
+
+  // no desafio diário não há seletor: já começa no nível fixo do dia
+  useEffect(() => {
+    if (backend.daily && !deal) comeca(DIF_DIARIA)
+  }, [backend.daily, deal, comeca])
 
   const livres = useMemo(
     () => (deal ? new Set(slotsLivres(deal.slots, removidas)) : new Set<number>()),
@@ -234,16 +242,13 @@ export default function MahjongPage() {
     const secs = Math.floor((Date.now() - startRef.current) / 1000)
     const total = Math.max(MAHJONG_BASE_PONTOS[deal.dificuldade] - secs * 2 - dicasUsadas * 40 - reembs * 120, 100)
     setFim({ points: total })
-    const matchId = matchRef.current
-    if (matchId) {
-      void api<{ points: number; best: number; rank: number }>('/api/solo/finish', { body: { matchId, points: total } })
-        .then((r) => {
-          setFim({ points: r.points, rank: r.rank, best: r.best })
-          void reload()
-        })
-        .catch(() => {})
-    }
-  }, [deal, dicasUsadas, reembs, reload])
+    void backend.finish(tokenRef.current, total).then((r) => {
+      if (r) {
+        setFim({ points: r.points, rank: r.rank, best: r.best })
+        void reload()
+      }
+    })
+  }, [deal, dicasUsadas, reembs, reload, backend])
 
   const removerPar = useCallback(
     (a: number, b: number) => {
@@ -313,6 +318,15 @@ export default function MahjongPage() {
   }, [deal, fim])
 
   if (!deal) {
+    // no diário não há seletor — o efeito acima já dispara o empilhamento do dia
+    if (backend.daily) {
+      return (
+        <main className="mx-auto max-w-3xl px-4 py-16 text-center text-text-muted">
+          <p className="text-4xl" aria-hidden="true">🀄</p>
+          <p className="mt-3">Montando o desafio de hoje…</p>
+        </main>
+      )
+    }
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="text-3xl font-extrabold"><span aria-hidden="true">🀄</span> Mahjong</h1>
@@ -348,6 +362,7 @@ export default function MahjongPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🀄</span> Mahjong · {DIFS.find((d) => d.id === deal.dificuldade)?.nome}
+          {backend.daily && <span className="ml-2 rounded-full bg-pop-yellow/20 px-2 py-0.5 align-middle text-xs font-bold text-pop-yellow">📅 desafio de hoje</span>}
         </h1>
         <div className="flex flex-wrap gap-2">
           <FullscreenButton targetRef={fsRef} />
@@ -357,11 +372,13 @@ export default function MahjongPage() {
           <button onClick={embaralha} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
             🔀 Reembaralhar
           </button>
-          <button onClick={() => setDeal(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-purple">
-            Trocar nível
-          </button>
-          <button onClick={() => navigate('/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-            Voltar à mesa
+          {!backend.daily && (
+            <button onClick={() => setDeal(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-purple">
+              Trocar nível
+            </button>
+          )}
+          <button onClick={() => navigate(backend.daily ? '/desafio' : '/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+            {backend.daily ? 'Voltar aos desafios' : 'Voltar à mesa'}
           </button>
         </div>
       </div>
@@ -424,11 +441,17 @@ export default function MahjongPage() {
                 <p className="text-5xl" aria-hidden="true">🀄</p>
                 <p className="font-display text-3xl font-extrabold text-pop-green">Mesa limpa!</p>
                 <p className="font-display text-2xl font-extrabold text-pop-yellow">{fim.points} pts</p>
-                {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking</p>}
+                {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking{backend.daily ? ' de hoje' : ''}</p>}
                 {isGuest && <p className="text-sm text-text-muted">Convidados não pontuam no ranking.</p>}
-                <button onClick={() => setDeal(null)} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
-                  Jogar outro
-                </button>
+                {backend.daily ? (
+                  <button onClick={() => navigate('/desafio')} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                    Ver desafios de hoje
+                  </button>
+                ) : (
+                  <button onClick={() => setDeal(null)} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                    Jogar outro
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -438,7 +461,7 @@ export default function MahjongPage() {
         </div>
 
         <div className="card p-4">
-          <p className="font-display text-sm font-bold">🏆 Ranking (30 dias)</p>
+          <p className="font-display text-sm font-bold">🏆 Ranking {backend.daily ? 'de hoje' : '(30 dias)'}</p>
           <div className="mt-3 flex flex-col gap-1.5">
             {!board?.rows.length && <p className="text-sm text-text-muted">Limpe uma mesa e abra o placar!</p>}
             {board?.rows.map((row) => (

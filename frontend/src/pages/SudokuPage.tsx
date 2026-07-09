@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   gerarSudoku,
@@ -6,11 +6,14 @@ import {
   type SudokuDificuldade,
   type SudokuPuzzle,
 } from '@mesapop/shared'
-import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
+import { makeSoloBackend } from '../lib/soloBackend'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
+
+/** dificuldade fixa do desafio diário do Sudoku (casa com shared/desafio.ts) */
+const DIF_DIARIA: SudokuDificuldade = 'medio'
 
 /**
  * Sudoku — puzzle gerado por seed com solução única. Feedback imediato:
@@ -31,10 +34,14 @@ interface LeaderRow {
   points: number
 }
 
-export default function SudokuPage() {
+export default function SudokuPage({ daily }: { daily?: string } = {}) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isGuest = !!user?.isGuest
+  const backend = useMemo(
+    () => makeSoloBackend('sudoku', { guest: isGuest, daily }),
+    [isGuest, daily],
+  )
   const [puzzle, setPuzzle] = useState<SudokuPuzzle | null>(null)
   const [grade, setGrade] = useState<number[]>([])
   const [notas, setNotas] = useState<Record<number, number[]>>({})
@@ -45,13 +52,13 @@ export default function SudokuPage() {
   const [segundos, setSegundos] = useState(0)
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
-  const matchRef = useRef<string | null>(null)
+  const tokenRef = useRef<string>('')
   const fsRef = useRef<HTMLElement>(null)
-  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/sudoku')
+  const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>(backend.leaderboard)
 
   const comeca = useCallback(
     (dif: SudokuDificuldade) => {
-      const p = gerarSudoku(`${Date.now()}-${Math.random()}`, dif)
+      const p = gerarSudoku(backend.nextSeed(), dif)
       setPuzzle(p)
       setGrade([...p.puzzle])
       setNotas({})
@@ -60,15 +67,16 @@ export default function SudokuPage() {
       setSegundos(0)
       setFim(null)
       startRef.current = Date.now()
-      matchRef.current = null
-      if (!isGuest) {
-        void api<{ matchId: string }>('/api/solo/start', { body: { gameSlug: 'sudoku' } })
-          .then((r) => (matchRef.current = r.matchId))
-          .catch(() => {})
-      }
+      tokenRef.current = ''
+      void backend.start().then((t) => (tokenRef.current = t ?? ''))
     },
-    [isGuest],
+    [backend],
   )
+
+  // no desafio diário não há seletor: já começa no nível fixo do dia
+  useEffect(() => {
+    if (backend.daily && !puzzle) comeca(DIF_DIARIA)
+  }, [backend.daily, puzzle, comeca])
 
   // hook de dev para a demo automatizada (fora do build de produção)
   useEffect(() => {
@@ -113,23 +121,27 @@ export default function SudokuPage() {
     const secs = Math.floor((Date.now() - startRef.current) / 1000)
     const total = Math.max(SUDOKU_BASE_PONTOS[puzzle.dificuldade] - secs * 2 - erros * 30, 100)
     setFim({ points: total })
-    const matchId = matchRef.current
-    if (matchId) {
-      void api<{ points: number; best: number; rank: number }>('/api/solo/finish', {
-        body: { matchId, points: total },
-      })
-        .then((r) => {
-          setFim({ points: r.points, rank: r.rank, best: r.best })
-          void reload()
-        })
-        .catch(() => {})
-    }
+    void backend.finish(tokenRef.current, total).then((r) => {
+      if (r) {
+        setFim({ points: r.points, rank: r.rank, best: r.best })
+        void reload()
+      }
+    })
   }
 
   const contagem = new Map<number, number>()
   for (const v of grade) if (v) contagem.set(v, (contagem.get(v) ?? 0) + 1)
 
   if (!puzzle) {
+    // no diário não há seletor — o efeito acima já dispara o puzzle do dia
+    if (backend.daily) {
+      return (
+        <main className="mx-auto max-w-3xl px-4 py-16 text-center text-text-muted">
+          <p className="text-4xl" aria-hidden="true">🔢</p>
+          <p className="mt-3">Montando o desafio de hoje…</p>
+        </main>
+      )
+    }
     return (
       <main className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="text-3xl font-extrabold"><span aria-hidden="true">🔢</span> Sudoku</h1>
@@ -161,14 +173,17 @@ export default function SudokuPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🔢</span> Sudoku · {DIFS.find((d) => d.id === puzzle.dificuldade)?.nome}
+          {backend.daily && <span className="ml-2 rounded-full bg-pop-yellow/20 px-2 py-0.5 align-middle text-xs font-bold text-pop-yellow">📅 desafio de hoje</span>}
         </h1>
         <div className="flex gap-2">
           <FullscreenButton targetRef={fsRef} />
-          <button onClick={() => setPuzzle(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
-            Trocar nível
-          </button>
-          <button onClick={() => navigate('/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-            Voltar à mesa
+          {!backend.daily && (
+            <button onClick={() => setPuzzle(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
+              Trocar nível
+            </button>
+          )}
+          <button onClick={() => navigate(backend.daily ? '/desafio' : '/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+            {backend.daily ? 'Voltar aos desafios' : 'Voltar à mesa'}
           </button>
         </div>
       </div>
@@ -260,17 +275,23 @@ export default function SudokuPage() {
               <p className="text-5xl" aria-hidden="true">🔢</p>
               <p className="font-display text-3xl font-extrabold text-pop-green">Sudoku fechado!</p>
               <p className="font-display text-2xl font-extrabold text-pop-yellow">{fim.points} pts</p>
-              {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking</p>}
+              {fim.rank && <p className="text-sm text-text-muted">posição {fim.rank}º no ranking{backend.daily ? ' de hoje' : ''}</p>}
               {isGuest && <p className="text-sm text-text-muted">Convidados não pontuam no ranking.</p>}
-              <button onClick={() => setPuzzle(null)} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
-                Jogar outro
-              </button>
+              {backend.daily ? (
+                <button onClick={() => navigate('/desafio')} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                  Ver desafios de hoje
+                </button>
+              ) : (
+                <button onClick={() => setPuzzle(null)} className="btn-pop mt-2 bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3 text-white">
+                  Jogar outro
+                </button>
+              )}
             </div>
           )}
         </div>
 
         <div className="card p-4">
-          <p className="font-display text-sm font-bold">🏆 Ranking (30 dias)</p>
+          <p className="font-display text-sm font-bold">🏆 Ranking {backend.daily ? 'de hoje' : '(30 dias)'}</p>
           <div className="mt-3 flex flex-col gap-1.5">
             {!board?.rows.length && <p className="text-sm text-text-muted">Feche um sudoku e abra o placar!</p>}
             {board?.rows.map((row) => (

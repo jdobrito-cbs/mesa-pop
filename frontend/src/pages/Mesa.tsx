@@ -161,6 +161,23 @@ export default function Mesa() {
         </div>
       )}
 
+      {/* desafio diário — o mesmo puzzle para todos, com ranking do dia */}
+      <Link
+        to="/desafio"
+        className="card mt-6 flex items-center gap-4 border-l-4 border-l-pop-yellow p-5 transition hover:-translate-y-0.5 hover:ring-pop-yellow/50"
+      >
+        <span className="text-3xl" aria-hidden="true">📅</span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg font-bold">Desafio Diário</p>
+          <p className="text-sm text-text-muted">
+            Sudoku, Caça-palavras, Cruzadinha e Mahjong — o mesmo tabuleiro para toda a mesa hoje. Ranking do dia!
+          </p>
+        </div>
+        <span className="hidden shrink-0 rounded-full px-3 py-1 text-sm font-bold text-pop-yellow ring-1 ring-pop-yellow/40 sm:block">
+          Jogar →
+        </span>
+      </Link>
+
       {/* jogos na mesa */}
       <h2 className="mt-10 text-2xl font-extrabold">Na mesa agora</h2>
       {loadingGames && <p className="mt-3 text-text-muted">Preparando a mesa…</p>}

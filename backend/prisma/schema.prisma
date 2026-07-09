@@ -68,6 +68,7 @@ model User {
   farm          Farm?
   favorites     FavoriteRoom[]
   termoPlays    TermoPlay[]
+  desafioPlays  DesafioPlay[]
 }
 
 model RefreshToken {
@@ -151,6 +152,25 @@ model TermoPlay {
 
   @@id([userId, date])
   @@index([date, won])
+}
+
+/// Desafio Diário — o MESMO puzzle para todos (seed = a data). Uma
+/// tentativa por jogo por dia; ranking próprio do dia. O servidor mede
+/// a duração (anti-trapaça) a partir de startedAt.
+model DesafioPlay {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameSlug  String
+  date      String // 'YYYY-MM-DD' — também é a seed do puzzle do dia
+  points    Int      @default(0)
+  done      Boolean  @default(false)
+  startedAt DateTime @default(now())
+  elapsedMs Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, gameSlug, date])
+  @@index([gameSlug, date, done])
 }
 
 /// sala pública favoritada por um usuário (fixa no topo do lobby dele)
