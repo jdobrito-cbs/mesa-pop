@@ -21,6 +21,30 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **NOVO JOGO — MAGNATA (clone do Monopoly, tema Brasil; pedido do
+  usuário 2026-07-09)**: jogo de tabuleiro de imóveis, 2–6 jogadores +
+  "🤖 Jogar contra o robô". **CARTÃO DE CRÉDITO (requisito do usuário)**:
+  além do caixa, cada jogador tem um cartão cujo LIMITE sobe com os
+  recebimentos (`+50%` do valor) e cai com os pagamentos (`−50%`, piso
+  200); quando o caixa zera, o cartão banca o pagamento (vira `usado`,
+  quitado automaticamente ao receber). `shared/magnata.ts`: tabuleiro de
+  40 casas com ruas/praias/aeroportos do Brasil (nomes próprios — marca
+  evitada), 8 grupos coloridos + 4 aeroportos + 2 serviços, helpers de
+  aluguel (`aluguelPropriedade/Estacao/Servico`, monopólio dobra), custo
+  de casa por grupo. `backend/games/magnata.ts`: turnos (rolar→
+  comprar/passar→construir→encerrar; duplas jogam de novo, 3 duplas =
+  prisão), aluguel, cartas Sorte/Cofre (8 cada, baralho embaralhado),
+  prisão (dupla/fiança/3 turnos), IMPOSTOS, falência (imóveis voltam ao
+  banco/credor; último de pé vence; trava de 400 turnos → mais rico) e
+  BOTS heurísticos (compram com colchão de caixa, constroem em
+  monopólios, pagam fiança). `MagnataBoard.tsx`: tabuleiro quadrado
+  (perímetro 11×11) com cor do grupo/preço/dono/casas, peões, dados no
+  centro, painel com o CARTÃO (caixa + crédito livre + limite/usado),
+  ações, lista de jogadores e log. Registrado; RoomPage; catálogo 37
+  jogos. 253 testes (7 novos: init, cartão paga/recebe nas 2 direções,
+  falência→vencedor, comprar, rolar+encerrar, bot/currentSeat). Demo
+  real: humano × Robô, 14 imóveis comprados, aluguel/Sorte no log e o
+  limite do cartão variando com pagamentos (caiu ao piso 200).
 - **NOVO JOGO — COBRA ARENA (clone do slither.io; pedido do usuário
   2026-07-09)**: multiplayer em TEMPO REAL, mundo simulado no SERVIDOR
   (reaproveita a infra realtime do co-op: `realtime {tickMs45,
@@ -1123,33 +1147,17 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **FILA DE JOGOS NOVOS APROVADOS (2026-07-09)**:
-  1. **"Magnata" — clone do Monopoly, tema Brasil** (aprovado para fazer
-     DEPOIS da Corrida do Ganso, POR LOTES). Nome/arte genéricos (Monopoly
-     e "Banco Imobiliário" são marcas); ruas/cidades reais do Brasil OK.
-     Lotes previstos: 1 tabuleiro+dados+comprar/aluguel+dinheiro+Início/
-     Prisão; 2 casas/hotéis+cartas Sorte/Cofre+impostos; 3 negociação+
-     leilão+hipoteca; 4 bots com estratégia; 5 capricho visual.
-     **REQUISITO do usuário (2026-07-09): CARTÃO DE CRÉDITO** — cada
-     jogador tem um cartão com LIMITE inicial que AUMENTA conforme os
-     recebimentos e DIMINUI conforme os pagamentos (linha de crédito
-     dinâmica, além do dinheiro em caixa).
-  2. **Clone do slither.io** (pedido 2026-07-09) — MULTIPLAYER em TEMPO
-     REAL (usar a infra realtime: tickMs/broadcast, snapshot único como
-     o co-op/corrida). Toque/clique para direcionar a cobra; toque/
-     clique LONGO para acelerar (gasta massa). Comer pontos cresce;
-     bater na cobra do outro morre e vira comida. Aguardando plano/OK.
-  3. **TELA CHEIA em todos os jogos** (pedido 2026-07-09) — botão para
-     entrar/sair de fullscreen (Fullscreen API: requestFullscreen/
-     exitFullscreen) no PC, celular e tablet; na tela cheia manter o
-     CHAT ao lado. Aplicar no RoomPage e nas páginas solo. Feature
-     transversal (não é jogo). Aguardando entrar na fila.
-  - **Gira Gênio (clone do Perguntados)** já ENTREGUE (ver acima).
+- **FILA DE JOGOS NOVOS (2026-07-09) — TODA ENTREGUE ✅** (o usuário
+  pediu "continue sem parar, escolha as recomendações"; feito de forma
+  autônoma, cada um com testes + demo + pacotes + push):
+  Mahjong ✅, Corrida do Ganso ✅, Gira Gênio (Perguntados) ✅, Tela cheia
+  (todos os jogos) ✅, Cobra Arena (slither) ✅, **Magnata (Monopoly BR
+  com cartão de crédito) ✅** — todos descritos acima. **37 jogos** no
+  catálogo do seed (+ treino solo da memória e rotas dedicadas).
 - **Próximo passo**: INICIATIVA "Bots nos jogos de turno" segue aberta
   (Lotes 1 Damas+Xadrez e 2 Dominó/One/Pife ✅; faltam Lote 3
-  Truco/Memória/Forca e Lote 4 Quiz). Jogos novos entregues fora da
-  iniciativa: Mahjong e Corrida do Ganso. Fila aprovada acima (Magnata,
-  Perguntados). Perguntar ao usuário a prioridade do próximo. Ideias aguardando priorização futura: Modo Conforto 60+
+  Truco/Memória/Forca e Lote 4 Quiz). A fila de jogos novos de 2026-07-09
+  está 100% entregue. Ideias aguardando priorização futura: Modo Conforto 60+
   (lote opcional sugerido: fontes/cartas maiores, alto contraste,
   timers relaxados, prefers-reduced-motion); desafio diário com seed
   (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de

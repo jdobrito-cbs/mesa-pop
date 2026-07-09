@@ -75,4 +75,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'ganso', name: 'Corrida do Ganso', description: 'Trilha clássica com dados — casas especiais e sorte. Até 4, ou contra o robô.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-yellow', icon: '🦢', phase: 9, enabled: true },
   { slug: 'gira-genio', name: 'Gira Gênio', description: 'Roleta de 6 categorias — acerte e junte as coroas. Até 6, ou contra o robô.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-purple', icon: '🎡', phase: 9, enabled: true },
   { slug: 'cobra-arena', name: 'Cobra Arena', description: 'Cresça comendo, corte os rivais e seja a maior cobra da arena. Tempo real!', family: 'ACTION', minPlayers: 1, maxPlayers: 6, color: 'pop-green', icon: '🐍', phase: 9, enabled: true },
+  { slug: 'magnata', name: 'Magnata', description: 'Compre ruas do Brasil, cobre aluguel e quebre os rivais — com cartão de crédito! Até 6 ou contra o robô.', family: 'TURN', minPlayers: 2, maxPlayers: 6, color: 'pop-green', icon: '🏙️', phase: 9, enabled: true },
 ]

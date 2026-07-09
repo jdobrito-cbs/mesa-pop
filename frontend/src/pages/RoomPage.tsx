@@ -15,6 +15,7 @@ import type {
   GansoState,
   GGView,
   CobraSnapshot,
+  MagnataView,
   MemoriaView,
   OneAction,
   OneView,
@@ -33,6 +34,7 @@ import ChessBoard from '../components/ChessBoard'
 import GansoBoard from '../components/GansoBoard'
 import GiraGenioGame from '../components/GiraGenioGame'
 import SlitherGame from '../components/SlitherGame'
+import MagnataBoard from '../components/MagnataBoard'
 import DesenhaGame from '../components/DesenhaGame'
 import DueloGame from '../components/DueloGame'
 import StopGame from '../components/StopGame'
@@ -354,6 +356,14 @@ export default function RoomPage() {
                   snapshot={game.state as CobraSnapshot}
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
+                />
+              )}
+              {room.gameSlug === 'magnata' && (
+                <MagnataBoard
+                  view={game.state as MagnataView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onAction={(a) => void sendAction(a)}
                 />
               )}
               {room.gameSlug === 'domino' && (
