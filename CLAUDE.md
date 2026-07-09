@@ -21,6 +21,20 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **FIX partidas/salas "travadas" na Visão geral (pedido do usuário
+  2026-07-09)**: a Visão geral mostrava "Sendo jogados agora" (ex.:
+  Cardume/Sudoku) e "Salas abertas" mesmo sem ninguém online — eram
+  partidas SOLO IN_PROGRESS que ficavam para sempre quando o jogador
+  fechava a aba (jogos solo são REST puro, sem socket p/ detectar a
+  saída) e salas WAITING órfãs (o RoomManager é EM MEMÓRIA e some no
+  restart, mas as linhas do banco ficavam). `lib/matches.ts`:
+  `abandonarPartidasOrfas` + `fecharSalasOrfas` rodam NO BOOT (após um
+  restart nada está vivo → toda partida IN_PROGRESS vira ABANDONED e
+  toda sala WAITING/PLAYING vira CLOSED) e `reapSoloParadas` roda a cada
+  10min (solo IN_PROGRESS parado >30min → ABANDONED). Chamados no
+  `server.ts`. Assim a Visão geral só conta o que está REALMENTE ativo.
+  258→261 testes (3 novos). Demo: antes "3 partidas / 10 salas", depois
+  do boot "Partidas agora 0 / Salas abertas 0" e histórico intacto (172).
 - **BOTS · LOTE 3 entregue — Truco, Memória e Forca (2026-07-09)**:
   fecha a cobertura de bots dos jogos de turno. `memoriaBot.ts` (memória
   JUSTA: só usa o mapa PÚBLICO `vistas` de cartas já reveladas — novo
