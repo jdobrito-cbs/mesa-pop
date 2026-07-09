@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
+import FullscreenButton from '../components/FullscreenButton'
 
 /**
  * Palavra do Dia — a MESMA palavra de 5 letras para todo mundo, trocada
@@ -43,6 +44,7 @@ const cellColor = (f: string) =>
 
 export default function TermoPage() {
   const navigate = useNavigate()
+  const fsRef = useRef<HTMLElement>(null)
   const { user } = useAuth()
   const [hoje, setHoje] = useState<Hoje | null>(null)
   const [atual, setAtual] = useState('')
@@ -126,14 +128,17 @@ export default function TermoPage() {
   })
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main ref={fsRef} className="game-fs mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🔤</span> Palavra do Dia
         </h1>
-        <button onClick={() => navigate('/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-          Voltar à mesa
-        </button>
+        <div className="flex gap-2">
+          <FullscreenButton targetRef={fsRef} />
+          <button onClick={() => navigate('/mesa')} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+            Voltar à mesa
+          </button>
+        </div>
       </div>
       <p className="mt-1 text-sm text-text-muted">
         Uma palavra por dia, a mesma para todo mundo. Verde = letra no lugar; amarelo = letra existe em outra casa.

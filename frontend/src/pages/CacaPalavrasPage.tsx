@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
+import FullscreenButton from '../components/FullscreenButton'
 
 /**
  * Caça-palavras — sopa 12×12 por tema, gerada por seed. Arraste o dedo
@@ -44,6 +45,7 @@ export default function CacaPalavrasPage() {
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
   const matchRef = useRef<string | null>(null)
+  const fsRef = useRef<HTMLElement>(null)
   const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/caca-palavras')
 
   const comeca = useCallback(() => {
@@ -122,12 +124,13 @@ export default function CacaPalavrasPage() {
   if (!puzzle) return null
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main ref={fsRef} className="game-fs mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🔍</span> Caça-palavras · <span className="text-pop-cyan">{puzzle.tema}</span>
         </h1>
         <div className="flex gap-2">
+          <FullscreenButton targetRef={fsRef} />
           <button onClick={comeca} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
             Nova sopa
           </button>

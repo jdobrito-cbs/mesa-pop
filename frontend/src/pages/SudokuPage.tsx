@@ -10,6 +10,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
+import FullscreenButton from '../components/FullscreenButton'
 
 /**
  * Sudoku — puzzle gerado por seed com solução única. Feedback imediato:
@@ -45,6 +46,7 @@ export default function SudokuPage() {
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
   const matchRef = useRef<string | null>(null)
+  const fsRef = useRef<HTMLElement>(null)
   const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/sudoku')
 
   const comeca = useCallback(
@@ -155,12 +157,13 @@ export default function SudokuPage() {
   const selBloco = sel >= 0 ? Math.floor(selLinha / 3) * 3 + Math.floor(selCol / 3) : -1
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main ref={fsRef} className="game-fs mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🔢</span> Sudoku · {DIFS.find((d) => d.id === puzzle.dificuldade)?.nome}
         </h1>
         <div className="flex gap-2">
+          <FullscreenButton targetRef={fsRef} />
           <button onClick={() => setPuzzle(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
             Trocar nível
           </button>

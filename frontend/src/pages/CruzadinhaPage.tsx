@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
+import FullscreenButton from '../components/FullscreenButton'
 
 /**
  * Cruzadinha estilo Coquetel — toque numa casa, leia a dica e digite
@@ -35,6 +36,7 @@ export default function CruzadinhaPage() {
   const [fim, setFim] = useState<{ points: number; rank?: number; best?: number } | null>(null)
   const startRef = useRef(Date.now())
   const matchRef = useRef<string | null>(null)
+  const fsRef = useRef<HTMLElement>(null)
   const { data: board, reload } = useFetch<{ rows: LeaderRow[] }>('/api/leaderboards/cruzadinha')
 
   const comeca = useCallback(() => {
@@ -174,10 +176,11 @@ export default function CruzadinhaPage() {
   )
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
+    <main ref={fsRef} className="game-fs mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold"><span aria-hidden="true">✏️</span> Cruzadinha</h1>
         <div className="flex items-center gap-2">
+          <FullscreenButton targetRef={fsRef} />
           <span className="text-sm font-bold text-text-muted">⏱️ <span className="tabular-nums">{segundos}s</span> · ❌ {erros}</span>
           <button onClick={comeca} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
             Nova grade

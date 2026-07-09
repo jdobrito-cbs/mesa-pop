@@ -33,10 +33,11 @@ Base sólida primeiro; os jogos plugam nela.
   coluna do chat leva `max-lg:portrait:hidden` (em retrato abaixo de lg,
   some; paisagem/desktop aparece). Verificado por demo: a Fullscreen API
   real escondeu o header deixando tabuleiro+chat; retrato de celular
-  ocultou o chat (display none) e paisagem mostrou. **PENDÊNCIA (lote
-  2)**: as páginas solo DEDICADAS (Sudoku, Mahjong, Caça-palavras,
-  Cruzadinha, Paciência, Memória solo, Palavra do Dia, Fazenda) ainda
-  não têm o botão — próximo micro-lote.
+  ocultou o chat (display none) e paisagem mostrou. **LOTE 2 concluído**:
+  botão reutilizável `components/FullscreenButton.tsx` aplicado às 8
+  páginas solo dedicadas (Sudoku, Mahjong, Caça-palavras, Cruzadinha,
+  Paciência, Memória solo, Palavra do Dia, Fazenda) — tela cheia agora
+  em TODOS os jogos. Typecheck limpo.
 - **NOVO JOGO — GIRA GÊNIO (clone do Perguntados; pedido do usuário
   2026-07-09, nome e escopo aprovados: jogo completo de uma vez)**:
   trivia com ROLETA de 6 categorias (🌎 Geografia · 📜 História · 🔬

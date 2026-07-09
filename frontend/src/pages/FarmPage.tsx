@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import FullscreenButton from '../components/FullscreenButton'
 
 /**
  * Fazenda Pop — uma CENA viva: canteiros de terra onde a planta cresce
@@ -110,6 +111,7 @@ export default function FarmPage() {
 
 function FarmInner() {
   const navigate = useNavigate()
+  const fsRef = useRef<HTMLElement>(null)
   const [farm, setFarm] = useState<FarmView | null>(null)
   const [picker, setPicker] = useState<number | null>(null)
   const [animalOpen, setAnimalOpen] = useState<number | null>(null)
@@ -153,12 +155,13 @@ function FarmInner() {
   const openAnimal = farm?.animals.find((a) => a.id === animalOpen) ?? null
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main ref={fsRef} className="game-fs mx-auto max-w-5xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
           <span aria-hidden="true">🌾</span> Fazenda Pop
         </h1>
         <div className="flex items-center gap-3">
+          <FullscreenButton targetRef={fsRef} />
           <span className="rounded-full bg-pop-yellow/15 px-4 py-1.5 font-display text-lg font-extrabold text-pop-yellow tabular-nums">
             🪙 {farm?.coins ?? '…'}
           </span>
