@@ -1,5 +1,9 @@
+import { useEffect } from 'react'
 import type { AdminStats, GameActivityRow, GamesActivity } from '@mesapop/shared'
 import { useFetch } from '../../lib/useFetch'
+
+/** ritmo do refresh em tempo real da Visão geral */
+const REFRESH_MS = 4000
 
 const CARDS: Array<{ key: keyof AdminStats; label: string; color: string; hint?: string }> = [
   { key: 'totalUsers', label: 'Usuários', color: 'text-pop-purple' },
@@ -67,13 +71,30 @@ function GameActivityList({
 }
 
 export default function Dashboard() {
-  const { data, loading, error } = useFetch<AdminStats>('/api/admin/stats')
-  const act = useFetch<GamesActivity>('/api/admin/games-activity')
+  const { data, loading, error, reload } = useFetch<AdminStats>('/api/admin/stats')
+  const { data: actData, loading: actLoading, reload: reloadAct } =
+    useFetch<GamesActivity>('/api/admin/games-activity')
+  const act = { data: actData, loading: actLoading }
+
+  // tempo real: atualiza tudo a cada poucos segundos, SEM piscar a tela
+  useEffect(() => {
+    const id = setInterval(() => {
+      void reload({ silent: true })
+      void reloadAct({ silent: true })
+    }, REFRESH_MS)
+    return () => clearInterval(id)
+  }, [reload, reloadAct])
 
   return (
     <section>
-      <h1 className="text-3xl font-extrabold">Visão geral</h1>
-      <p className="mt-1 text-text-muted">O pulso da mesa, em tempo real.</p>
+      <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-extrabold">Visão geral</h1>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-pop-green/15 px-2.5 py-1 text-xs font-bold text-pop-green">
+          <span className="size-2 animate-pulse rounded-full bg-pop-green" aria-hidden="true" />
+          ao vivo
+        </span>
+      </div>
+      <p className="mt-1 text-text-muted">O pulso da mesa, atualizando sozinho.</p>
 
       {error && <p className="mt-6 text-pop-orange">{error}</p>}
 

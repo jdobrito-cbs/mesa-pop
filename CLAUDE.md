@@ -89,8 +89,13 @@ Base sólida primeiro; os jogos plugam nela.
   por gameId: IN_PROGRESS = agora, todos = histórico) alimenta dois
   painéis no Dashboard — "🎮 Sendo jogados agora" e "🏆 Já jogados no
   sistema" — cada um com o total no topo e a listagem por jogo
-  (ícone/cor/nome + contagem). Tipos `GuestView`/`GuestsOverview`/
-  `GameActivityRow`/`GamesActivity` no `shared/admin.ts`. 207 testes (4
+  (ícone/cor/nome + contagem). **EM TEMPO REAL (pedido do usuário
+  2026-07-09)**: o Dashboard faz polling silencioso a cada 4s
+  (`useFetch` ganhou modo `{silent}` que atualiza sem voltar ao estado
+  de carregamento — não pisca "…"), recarregando stats + games-activity
+  sozinho; selo "● ao vivo" pulsando no título. Tipos `GuestView`/
+  `GuestsOverview`/`GameActivityRow`/`GamesActivity` no `shared/admin.ts`.
+  207 testes (4
   novos de convidados: cria+registra visita+recusa nome repetido; some
   da lista de contas mas aparece na área; sair apaga mas mantém a
   contagem mensal e libera o nome; /guest/leave apaga). Typecheck limpo
