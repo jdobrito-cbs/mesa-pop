@@ -43,6 +43,12 @@ export interface GameModule<S = unknown, A = unknown> {
    * a própria mão. null = sem jogada possível.
    */
   bot?(state: S, seat: number): A | null
+  /**
+   * IA para jogos REALTIME (opcional): chamado a cada tick com os assentos
+   * controlados por robô — o módulo age por eles direto no estado (ex.: o
+   * quiz responde as perguntas pelos bots).
+   */
+  botTick?(state: S, botSeats: number[], dt: number): void
   /** pontuação final por assento (gravada em MatchPlayer.score) */
   scoresFor?(state: S): number[]
   /** resultado atual da partida (winnerSeats > 1 em jogos de dupla) */

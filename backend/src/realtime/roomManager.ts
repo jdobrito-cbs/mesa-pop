@@ -411,7 +411,9 @@ export class RoomManager {
   ) {
     const module = getGameModule(gameSlug)
     if (!module) throw new Error('Jogo indisponível')
-    if (!module.bot || !module.currentSeat) throw new Error('Este jogo ainda não joga contra o robô')
+    const temBotTurno = !!(module.bot && module.currentSeat)
+    const temBotRealtime = !!(module.realtime && module.botTick)
+    if (!temBotTurno && !temBotRealtime) throw new Error('Este jogo ainda não joga contra o robô')
 
     // começar contra o robô é um ato explícito: sai de qualquer sala anterior
     // (inclusive uma partida em andamento — abandona para começar fresco)
@@ -529,8 +531,11 @@ export class RoomManager {
     const { tickMs, broadcastEvery } = room.module.realtime!
     let count = 0
     let finishing = false
+    const botSeats = [...room.players.values()].filter((p) => p.isBot && p.seat !== null).map((p) => p.seat!)
     room.tickTimer = setInterval(() => {
       if (room.status !== 'PLAYING' || room.state === null || finishing) return
+      // robôs de jogos realtime agem antes do tick (ex.: quiz responde)
+      if (botSeats.length) room.module.botTick?.(room.state, botSeats, tickMs / 1000)
       room.module.tick?.(room.state, tickMs / 1000)
       count++
       if (count % broadcastEvery === 0) this.sendState(room)

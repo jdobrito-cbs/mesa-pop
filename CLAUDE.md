@@ -21,6 +21,20 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **BOTS · LOTE 4 entregue — Quiz Pop e Quiz Nostalgia (realtime)
+  (2026-07-09)**: fecha a iniciativa de bots. Como o quiz é REALTIME
+  (não turn-based), criei um hook genérico `GameModule.botTick(state,
+  botSeats, dt)` chamado pelo `RoomManager.startTicking` a cada tick com
+  os assentos de robô (`isBot`). `createVsBot` passou a aceitar jogos
+  realtime com `botTick` (além dos de turno com `bot`+`currentSeat`).
+  `botTickQuiz`: cada bot responde com um tempinho de "pensar"
+  (probabilístico por tick) e ~70% de acerto (erra numa alternativa
+  aleatória); responde antes de o tempo esgotar. Botão do lobby
+  estendido a quiz-pop/quiz-nostalgia. 264 testes (3 novos: bot responde
+  índice válido, todos-bots revela a rodada, ~70% de acerto). Demo real:
+  Quiz Pop 1×robô — Robô Zé acertou "1822" e fez +143; a revelação
+  mostrou verde/vermelho. **Bots agora em 13 jogos** (só faltam os que
+  não fazem sentido: puzzles solo, party de desenho/palavra).
 - **FIX partidas/salas "travadas" na Visão geral (pedido do usuário
   2026-07-09)**: a Visão geral mostrava "Sendo jogados agora" (ex.:
   Cardume/Sudoku) e "Salas abertas" mesmo sem ninguém online — eram

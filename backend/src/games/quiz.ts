@@ -104,6 +104,24 @@ export function tickQuiz(s: QuizState, dt: number) {
   }
 }
 
+/** robôs respondem: ~70% de acerto, com um tempinho de "pensar" (probabilístico) */
+export function botTickQuiz(s: QuizState, botSeats: number[]) {
+  if (s.fase !== 'pergunta') return
+  const pergunta = s.perguntas[s.rodada]!
+  for (const seat of botSeats) {
+    if (seat < 0 || seat >= s.players || s.respostas[seat] !== null) continue
+    const forcar = s.tempo <= 1.2 // responde antes de esgotar o tempo
+    if (!forcar && crypto.randomInt(100) >= 12) continue // ainda "pensando"
+    let idx = pergunta.correta
+    if (crypto.randomInt(100) >= 70) {
+      const erradas = pergunta.ops.map((_, i) => i).filter((i) => i !== pergunta.correta)
+      idx = erradas[crypto.randomInt(erradas.length)]!
+    }
+    s.respostas[seat] = idx
+    s.registro[seat] = Math.max(0, s.tempo)
+  }
+}
+
 export function aplicaQuizAction(
   s: QuizState,
   seat: number,
@@ -156,6 +174,10 @@ export function makeQuizModule(slug: string, banco: QuizPergunta[]): GameModule<
 
     tick(state, dt) {
       tickQuiz(state, dt)
+    },
+
+    botTick(state, botSeats) {
+      botTickQuiz(state, botSeats)
     },
 
     play(state, seat, action) {

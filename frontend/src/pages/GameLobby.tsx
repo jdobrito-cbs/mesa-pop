@@ -63,7 +63,7 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   // jogos que já jogam contra o robô (cresce a cada lote)
   const hasBot = [
     'damas', 'xadrez', 'domino', 'one', 'pife', 'ganso', 'gira-genio', 'magnata',
-    'truco', 'memoria', 'forca',
+    'truco', 'memoria', 'forca', 'quiz-pop', 'quiz-nostalgia',
   ].includes(slug ?? '')
 
   async function playVsBot() {
