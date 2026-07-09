@@ -57,7 +57,14 @@ Base sólida primeiro; os jogos plugam nela.
     primeiro à casa 63 no centro, exato ou ricocheteia), **legenda "O
     que cada casa faz"** (ganso/ponte/estalagem/poço/labirinto/caveira/
     chegada) e **dados ROLANDO ~2s** (disparado pela mudança de
-    `state.lastMove`, já que cada snapshot é uma rolagem).
+    `state.lastMove`, já que cada snapshot é uma rolagem). **Tabuleiro
+    REFEITO no estilo clássico (referência do usuário 2026-07-09)**:
+    trilha de tiles de MADEIRA em espiral RETANGULAR sobre a grama,
+    moldura de madeira e **MEDALHÃO central "Corrida do Ganso" com o
+    miolo ABERTO** — `espiralRect(9×8)` gera 72 slots, o jogo usa os 64
+    primeiros (casas 0–63) e o restante vira o medalhão do centro;
+    casas especiais com borda/ícone coloridos por tipo. Substitui a
+    grade 8×8 cheia anterior.
   - 275 testes seguem verdes; typecheck limpo nos 3 workspaces. Demos
     reais (Playwright): Magnata (tabuleiro grande, fichas, dados
     "rolando os dados…", molduras coloridas, dica de grupo), Gira Gênio

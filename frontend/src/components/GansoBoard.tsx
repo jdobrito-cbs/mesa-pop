@@ -2,34 +2,41 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { casaInfo, GANSO_FIM, type GansoState } from '@mesapop/shared'
 
 /**
- * Corrida do Ganso — trilha em espiral 8×8. Estado vem do servidor; os dados
- * são sorteados lá. Peões deslizam de casa em casa; casas especiais destacadas.
+ * Corrida do Ganso — trilha em espiral que coila de fora para dentro (estilo
+ * clássico do Jogo do Ganso), com o MIOLO ABERTO no centro (medalhão). Estado
+ * vem do servidor; os dados são sorteados lá. Peões pulam de casa em casa.
  */
 
-const CELL = 52
-const N = 8
+const COLS = 9
+const ROWS = 8
+const CELL = 58
 
 const CORES = ['bg-pop-magenta', 'bg-pop-cyan', 'bg-pop-yellow', 'bg-pop-green']
 const CORES_HEX = ['#ff3ea5', '#22d3ee', '#facc15', '#34d399']
 
-/** coordenadas [col,row] das casas 0..63 numa espiral que entra para o centro */
-function espiral(n: number): Array<[number, number]> {
+/** espiral retangular: perímetro → anéis internos. Devolve TODOS os slots; o
+ * jogo usa os 64 primeiros e o resto (miolo) vira o medalhão central. */
+function espiralRect(cols: number, rows: number): Array<[number, number]> {
   const out: Array<[number, number]> = []
   let top = 0
-  let bottom = n - 1
+  let bottom = rows - 1
   let left = 0
-  let right = n - 1
-  while (out.length < n * n) {
+  let right = cols - 1
+  while (out.length < cols * rows) {
     for (let c = left; c <= right; c++) out.push([c, top])
     top++
     for (let r = top; r <= bottom; r++) out.push([right, r])
     right--
-    for (let c = right; c >= left; c--) out.push([c, bottom])
-    bottom--
-    for (let r = bottom; r >= top; r--) out.push([left, r])
-    left++
+    if (top <= bottom) {
+      for (let c = right; c >= left; c--) out.push([c, bottom])
+      bottom--
+    }
+    if (left <= right) {
+      for (let r = bottom; r >= top; r--) out.push([left, r])
+      left++
+    }
   }
-  return out.slice(0, n * n)
+  return out
 }
 
 const ICONE: Record<string, string> = {
@@ -73,9 +80,23 @@ export default function GansoBoard({
   players: { name: string; seat: number; connected: boolean }[]
   onRoll: () => void
 }) {
-  const coords = useMemo(() => espiral(N), [])
+  const raw = useMemo(() => espiralRect(COLS, ROWS), [])
+  const coords = raw.slice(0, GANSO_FIM + 1) // casas 0..63
   const suaVez = state.turn === yourSeat && state.winner === null
-  const boardPx = N * CELL
+  const boardW = COLS * CELL
+  const boardH = ROWS * CELL
+  // miolo (slots não usados) → onde fica o medalhão central
+  const miolo = raw.slice(GANSO_FIM + 1)
+  const cCols = miolo.map((c) => c[0])
+  const cRows = miolo.map((c) => c[1])
+  const medalhao = miolo.length
+    ? {
+        left: Math.min(...cCols) * CELL + 6,
+        top: Math.min(...cRows) * CELL + 6,
+        width: (Math.max(...cCols) - Math.min(...cCols) + 1) * CELL - 12,
+        height: (Math.max(...cRows) - Math.min(...cRows) + 1) * CELL - 12,
+      }
+    : null
 
   // dados rolando ~2s a cada novo lance (o backend só age no 'roll', então
   // cada snapshot é uma rolagem — lastMove muda de referência a cada uma)
@@ -158,53 +179,114 @@ export default function GansoBoard({
       </div>
 
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-center">
-        {/* tabuleiro */}
-        <div className="overflow-auto rounded-card bg-gradient-to-br from-[#3f8f4f] to-[#2c6b3c] p-3 ring-2 ring-ink-700">
-          <div className="relative" style={{ width: boardPx, height: boardPx }}>
+        {/* tabuleiro — trilha de madeira em espiral sobre a grama */}
+        <div
+          className="overflow-auto rounded-[20px] p-3"
+          style={{
+            background: 'radial-gradient(circle at 50% 40%, #5aa85e, #3c7a44 70%, #2c5e37)',
+            border: '10px solid #7a5a34',
+            boxShadow: 'inset 0 0 0 3px #9c7846, inset 0 0 22px rgba(0,0,0,.35), 0 8px 20px rgba(0,0,0,.45)',
+          }}
+        >
+          <div className="relative" style={{ width: boardW, height: boardH }}>
             {coords.map(([col, row], pos) => {
               const info = casaInfo(pos)
               const icone = ICONE[info.tipo]
-              const especial = info.tipo !== 'normal'
+              const inicio = pos === 0
               const cor =
                 info.tipo === 'fim'
-                  ? 'bg-pop-yellow/30 ring-pop-yellow'
+                  ? '#f4d03f'
                   : info.tipo === 'ganso'
-                    ? 'bg-pop-green/25 ring-pop-green/50'
+                    ? '#34d399'
                     : info.tipo === 'caveira'
-                      ? 'bg-pop-magenta/20 ring-pop-magenta/50'
-                      : especial
-                        ? 'bg-pop-cyan/15 ring-pop-cyan/40'
-                        : 'bg-[#c9a06b]/90 ring-black/10'
+                      ? '#ff3ea5'
+                      : info.tipo === 'labirinto'
+                        ? '#a855f7'
+                        : info.tipo === 'poco'
+                          ? '#64748b'
+                          : info.tipo === 'estalagem'
+                            ? '#fb923c'
+                            : info.tipo === 'ponte'
+                              ? '#22d3ee'
+                              : null
               return (
                 <div
                   key={pos}
-                  className={`absolute flex flex-col items-center justify-center rounded-lg ring-1 ${cor}`}
-                  style={{ left: col * CELL + 2, top: row * CELL + 2, width: CELL - 4, height: CELL - 4 }}
+                  className="absolute flex flex-col items-center justify-center"
+                  style={{
+                    left: col * CELL + 3,
+                    top: row * CELL + 3,
+                    width: CELL - 6,
+                    height: CELL - 6,
+                    borderRadius: 10,
+                    background: inicio
+                      ? 'linear-gradient(155deg,#8fd694,#4f9e57)'
+                      : 'linear-gradient(155deg,#e2b878,#b17f47)',
+                    border: `2px solid ${cor ?? '#6f4d29'}`,
+                    boxShadow: cor
+                      ? `inset 0 1px 0 rgba(255,255,255,.4), 0 0 8px ${cor}88`
+                      : 'inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.22)',
+                  }}
+                  title={`casa ${pos}`}
                 >
-                  <span className="text-[10px] leading-none font-bold text-ink-950/70">
-                    {pos === 0 ? '▶' : pos}
+                  {/* número no cantinho */}
+                  <span
+                    className="absolute left-1 top-0.5 text-[10px] font-extrabold leading-none"
+                    style={{ color: cor ?? '#4a3218' }}
+                  >
+                    {inicio ? '▶' : pos}
                   </span>
-                  {icone && <span className="text-base leading-none">{icone}</span>}
+                  {icone ? (
+                    <span className="mt-1.5 text-xl leading-none drop-shadow">{icone}</span>
+                  ) : (
+                    <span className="text-base font-extrabold" style={{ color: '#4a3218' }}>
+                      {pos}
+                    </span>
+                  )}
                 </div>
               )
             })}
+
+            {/* medalhão central */}
+            {medalhao && (
+              <div
+                className="pointer-events-none absolute grid place-items-center rounded-full text-center"
+                style={{
+                  left: medalhao.left,
+                  top: medalhao.top,
+                  width: medalhao.width,
+                  height: medalhao.height,
+                  background: 'radial-gradient(circle at 40% 32%, #f6d98d, #cda15a 62%, #a97d3f)',
+                  border: '3px solid #7a5a34',
+                  boxShadow: 'inset 0 2px 5px rgba(255,255,255,.5), 0 4px 12px rgba(0,0,0,.45)',
+                }}
+              >
+                <div>
+                  <div className="text-3xl leading-none">🪿</div>
+                  <div className="font-display text-[11px] font-extrabold tracking-wide text-[#5a3d1e]">
+                    CORRIDA DO GANSO
+                  </div>
+                  <div className="text-[10px] font-bold text-[#7a5320]">chegue na casa 63</div>
+                </div>
+              </div>
+            )}
 
             {/* peões */}
             {state.positions.map((pos, seat) => {
               const [col, row] = coords[pos]!
               const grupo = porCasa.get(pos) ?? [seat]
               const idx = grupo.indexOf(seat)
-              const ox = (idx % 2) * 15 + 5
-              const oy = Math.floor(idx / 2) * 15 + 4
+              const ox = (idx % 2) * 16 + 6
+              const oy = Math.floor(idx / 2) * 16 + 8
               return (
                 <div
                   key={seat}
-                  className="pointer-events-none absolute grid place-items-center rounded-full text-[11px] font-extrabold text-white shadow-lg ring-2 ring-white/70 transition-all duration-300"
+                  className="pointer-events-none absolute grid place-items-center rounded-full text-[12px] shadow-lg ring-2 ring-white/80 transition-all duration-300"
                   style={{
                     left: col * CELL + ox,
                     top: row * CELL + oy,
-                    width: 20,
-                    height: 20,
+                    width: 22,
+                    height: 22,
                     backgroundColor: CORES_HEX[seat],
                     zIndex: 100 + seat,
                   }}
