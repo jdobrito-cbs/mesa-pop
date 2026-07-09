@@ -110,6 +110,19 @@ export default fp(async (app) => {
       )(ack)
     })
 
+    socket.on('room:createVsBot', (input, ack) => {
+      let options: Record<string, unknown> | null = null
+      if (input?.options && typeof input.options === 'object' && !Array.isArray(input.options)) {
+        options = {}
+        for (const [k, v] of Object.entries(input.options as Record<string, unknown>).slice(0, 8)) {
+          if (['string', 'number', 'boolean'].includes(typeof v)) options[k] = v
+        }
+      }
+      void withAck(() =>
+        rooms.createVsBot(user, socket.id, String(input?.gameSlug ?? ''), options),
+      )(ack)
+    })
+
     socket.on('room:join', (input, ack) => {
       void withAck(() => rooms.join(user, socket.id, String(input?.code ?? '')))(ack)
     })

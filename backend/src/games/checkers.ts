@@ -5,6 +5,7 @@ import {
   type CheckersState,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseCheckersMove } from './checkersBot'
 
 interface CheckersAction {
   from: number
@@ -41,6 +42,14 @@ export const checkersModule: GameModule<CheckersState, CheckersAction> = {
   // damas é 100% visível: mesma visão para os dois
   getStateFor(state) {
     return state
+  },
+
+  currentSeat(state) {
+    return state.winner !== null || state.draw ? null : state.turn
+  },
+
+  bot(state, seat) {
+    return chooseCheckersMove(state, seat)
   },
 
   result(state) {

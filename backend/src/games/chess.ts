@@ -5,6 +5,7 @@ import {
   type ChessState,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseChessMove } from './chessBot'
 
 interface ChessAction {
   from: number
@@ -49,6 +50,14 @@ export const chessModule: GameModule<ChessState, ChessAction> = {
   // xadrez é 100% visível: mesma visão para jogadores e espectadores
   getStateFor(state) {
     return state
+  },
+
+  currentSeat(state) {
+    return chessStatus(state).kind === 'playing' ? state.turn : null
+  },
+
+  bot(state, seat) {
+    return chooseChessMove(state, seat)
   },
 
   result(state) {

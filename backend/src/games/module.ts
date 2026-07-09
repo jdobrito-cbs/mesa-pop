@@ -31,6 +31,18 @@ export interface GameModule<S = unknown, A = unknown> {
   getStateFor(state: S, seat: number): unknown
   /** avança a simulação (apenas jogos realtime) */
   tick?(state: S, dt: number): void
+  /**
+   * IA (opcional): assento cujo é a vez AGORA (jogos de turno). null = fim
+   * ou nenhum assento específico. O manager usa isto para saber se o próximo
+   * a jogar é um robô. Ausente = jogo sem suporte a bot.
+   */
+  currentSeat?(state: S): number | null
+  /**
+   * IA (opcional): a ação que o robô joga no seu assento. Recebe o estado
+   * COMPLETO (roda no servidor); jogos de mão escondida devem olhar apenas
+   * a própria mão. null = sem jogada possível.
+   */
+  bot?(state: S, seat: number): A | null
   /** pontuação final por assento (gravada em MatchPlayer.score) */
   scoresFor?(state: S): number[]
   /** resultado atual da partida (winnerSeats > 1 em jogos de dupla) */

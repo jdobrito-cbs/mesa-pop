@@ -6,6 +6,8 @@ export interface RoomPlayerView {
   isConnected: boolean
   /** posição na partida (0 = primeiro a jogar) — definida no início */
   seat: number | null
+  /** jogador controlado pelo computador (robô) */
+  isBot?: boolean
 }
 
 export type RoomStatusView = 'WAITING' | 'PLAYING' | 'FINISHED' | 'CLOSED'
@@ -69,6 +71,11 @@ export interface Ack<T = unknown> {
 export interface ClientEvents {
   'room:create': (
     input: { gameSlug: string; isPrivate: boolean; options?: Record<string, unknown> },
+    ack: (res: Ack<RoomView>) => void,
+  ) => void
+  /** cria uma sala privada já com robô(s) sentado(s) e começa a partida */
+  'room:createVsBot': (
+    input: { gameSlug: string; options?: Record<string, unknown> },
     ack: (res: Ack<RoomView>) => void,
   ) => void
   'room:join': (input: { code: string }, ack: (res: Ack<RoomView>) => void) => void

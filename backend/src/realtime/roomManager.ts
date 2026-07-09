@@ -14,6 +14,10 @@ const SPECTATOR_LIMIT = 20
 const CHAT_HISTORY_LIMIT = 100
 const CHAT_MAX_LENGTH = 300
 const CHAT_MIN_INTERVAL_MS = 500
+/** Pausa antes de o robô jogar — parece humano, não instantâneo. */
+const BOT_THINK_MS = 700
+/** Nomes dos robôs (jogos contra o computador). */
+const BOT_NAMES = ['🤖 Robô Zé', '🤖 Robô Nina', '🤖 Robô Téo', '🤖 Robô Lia']
 
 export interface RoomUser {
   id: string
@@ -28,6 +32,8 @@ interface LivePlayer {
   socketId: string | null
   seat: number | null
   isGuest?: boolean
+  /** jogador controlado pelo servidor (robô) — sem socket, fora do banco */
+  isBot?: boolean
 }
 
 interface LiveSpectator {
@@ -60,6 +66,8 @@ export interface LiveRoom {
   options: Record<string, unknown> | null
   /** loop de simulação de jogos realtime */
   tickTimer: NodeJS.Timeout | null
+  /** timer da jogada do robô (jogos de turno contra o computador) */
+  botTimer: NodeJS.Timeout | null
 }
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -91,8 +99,9 @@ export class RoomManager {
       players: [...room.players.values()].map((p) => ({
         userId: p.userId,
         displayName: p.displayName,
-        isConnected: p.socketId !== null,
+        isConnected: p.isBot ? true : p.socketId !== null,
         seat: p.seat,
+        isBot: p.isBot,
       })),
       spectators: [...room.spectators.values()].map((s) => ({
         userId: s.userId,
@@ -218,6 +227,7 @@ export class RoomManager {
       lastChatAt: new Map(),
       options,
       tickTimer: null,
+      botTimer: null,
     }
     this.roomsByCode.set(code, room)
     this.roomCodeByUser.set(user.id, code)
@@ -384,7 +394,58 @@ export class RoomManager {
     if (room.module.validPlayerCounts && !room.module.validPlayerCounts.includes(room.players.size)) {
       throw new Error(`Este jogo aceita ${room.module.validPlayerCounts.join(' ou ')} jogadores`)
     }
+    await this.beginMatch(room)
+  }
 
+  /**
+   * Cria uma sala privada JÁ com robô(s) sentado(s) e começa na hora
+   * ("Jogar contra o bot" do lobby). O humano fica no assento 0 (joga
+   * primeiro); os robôs preenchem os demais até a menor contagem válida.
+   */
+  async createVsBot(
+    user: RoomUser,
+    socketId: string,
+    gameSlug: string,
+    options: Record<string, unknown> | null = null,
+  ) {
+    const module = getGameModule(gameSlug)
+    if (!module) throw new Error('Jogo indisponível')
+    if (!module.bot || !module.currentSeat) throw new Error('Este jogo ainda não joga contra o robô')
+
+    // começar contra o robô é um ato explícito: sai de qualquer sala anterior
+    // (inclusive uma partida em andamento — abandona para começar fresco)
+    if (this.roomOf(user.id)) await this.leave(user.id)
+
+    // sempre privada (não polui a lista pública)
+    await this.create(user, socketId, gameSlug, true, options)
+    const room = this.roomOf(user.id)
+    if (!room) throw new Error('Não deu para criar a sala')
+
+    const target = module.validPlayerCounts?.length
+      ? Math.min(...module.validPlayerCounts)
+      : module.minPlayers
+
+    // humano no assento 0; robôs preenchem o resto
+    room.players.get(user.id)!.seat = 0
+    let n = 0
+    while (room.players.size < target) {
+      const botId = `bot:${crypto.randomUUID()}`
+      room.players.set(botId, {
+        userId: botId,
+        displayName: BOT_NAMES[n % BOT_NAMES.length]!,
+        socketId: null,
+        seat: null,
+        isBot: true,
+      })
+      n++
+    }
+
+    await this.beginMatch(room)
+    return this.toView(room)
+  }
+
+  /** inicia a partida de uma sala já validada (assentos, estado, Match). */
+  private async beginMatch(room: LiveRoom) {
     // assentos: respeita os escolhidos; sorteia os demais nas vagas livres
     const chosen = new Set(
       [...room.players.values()].filter((p) => p.seat !== null).map((p) => p.seat!),
@@ -401,13 +462,13 @@ export class RoomManager {
     room.state = room.module.init(room.players.size, room.options ?? undefined)
     room.status = 'PLAYING'
 
+    // robôs não existem no banco (sem FK de User) — só jogadores reais entram
+    const humans = [...room.players.values()].filter((p) => !p.isBot)
     const match = await this.prisma.match.create({
       data: {
         gameId: room.gameId,
         roomId: room.id,
-        players: {
-          create: [...room.players.values()].map((p) => ({ userId: p.userId })),
-        },
+        players: { create: humans.map((p) => ({ userId: p.userId })) },
       },
     })
     room.matchId = match.id
@@ -418,6 +479,49 @@ export class RoomManager {
 
     // jogos realtime: o servidor roda a simulação e transmite snapshots
     if (room.module.realtime) this.startTicking(room)
+    // jogos de turno com robô: se o primeiro a jogar for um bot, ele joga
+    else this.scheduleBotTurn(room)
+  }
+
+  /** agenda a jogada do robô se for a vez de um assento controlado por bot */
+  private scheduleBotTurn(room: LiveRoom) {
+    if (room.status !== 'PLAYING' || room.state === null) return
+    if (room.module.realtime || !room.module.bot || !room.module.currentSeat) return
+    const seat = room.module.currentSeat(room.state)
+    if (seat === null || seat === undefined) return
+    const bot = [...room.players.values()].find((p) => p.seat === seat && p.isBot)
+    if (!bot) return
+    if (room.botTimer) clearTimeout(room.botTimer)
+    room.botTimer = setTimeout(() => void this.runBotMove(room, seat), BOT_THINK_MS)
+  }
+
+  private async runBotMove(room: LiveRoom, seat: number) {
+    room.botTimer = null
+    if (room.status !== 'PLAYING' || room.state === null) return
+    if (room.module.currentSeat?.(room.state) !== seat) return
+
+    let action: unknown = null
+    try {
+      action = room.module.bot!(room.state, seat)
+    } catch {
+      action = null
+    }
+    if (action === null || action === undefined) return
+
+    const outcome = room.module.play(room.state, seat, action)
+    if ('error' in outcome) return // defensivo: o bot não deve gerar lance ilegal
+    room.state = outcome.state
+
+    const result = room.module.result(room.state)
+    this.sendState(room)
+    if (result.finished) {
+      const winnerIds = [...room.players.values()]
+        .filter((p) => p.seat !== null && result.winnerSeats.includes(p.seat))
+        .map((p) => p.userId)
+      await this.finish(room, winnerIds, result.draw, 'normal')
+    } else {
+      this.scheduleBotTurn(room) // encadeia se o próximo também for robô
+    }
   }
 
   private startTicking(room: LiveRoom) {
@@ -471,6 +575,9 @@ export class RoomManager {
         .filter((p) => p.seat !== null && result.winnerSeats.includes(p.seat))
         .map((p) => p.userId)
       await this.finish(room, winnerIds, result.draw, 'normal')
+    } else {
+      // se agora for a vez de um robô, ele joga sozinho
+      this.scheduleBotTurn(room)
     }
   }
 
@@ -592,6 +699,8 @@ export class RoomManager {
   private async closeRoom(room: LiveRoom) {
     room.status = 'CLOSED'
     this.stopTicking(room)
+    if (room.botTimer) clearTimeout(room.botTimer)
+    room.botTimer = null
     for (const t of room.disconnectTimers.values()) clearTimeout(t)
     this.roomsByCode.delete(room.code)
     await this.prisma.room.update({
@@ -607,6 +716,8 @@ export class RoomManager {
     reason: GameEndView['reason'],
   ) {
     this.stopTicking(room)
+    if (room.botTimer) clearTimeout(room.botTimer)
+    room.botTimer = null
     for (const t of room.disconnectTimers.values()) clearTimeout(t)
     room.disconnectTimers.clear()
 

@@ -316,6 +316,15 @@ function applyRaw(s: ChessState, move: ChessMove): ChessState {
   return next
 }
 
+/**
+ * Aplica um lance pseudo-legal SEM validar nem atualizar a contagem de
+ * posições — exposto para a busca da IA (bot), que precisa simular muitos
+ * lances rápido. Não usar para aplicar o lance oficial (use applyChessMove).
+ */
+export function applyChessRaw(s: ChessState, move: ChessMove): ChessState {
+  return applyRaw(s, move)
+}
+
 /** lances LEGAIS da peça (rei não pode ficar em xeque) */
 export function legalChessMoves(s: ChessState, from: number): ChessMove[] {
   const piece = s.board[from]

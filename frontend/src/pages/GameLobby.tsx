@@ -58,6 +58,17 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const rooms = (roomsData?.rooms ?? []).filter((r) => r.game.slug === slug)
   const isCoop = slug === 'esquadrao-coop'
   const isRace = slug === 'corrida'
+  // jogos que já jogam contra o robô (cresce a cada lote)
+  const hasBot = slug === 'damas' || slug === 'xadrez'
+
+  async function playVsBot() {
+    setBusy(true)
+    setError('')
+    const res = await emitAck<RoomView>('room:createVsBot', { gameSlug: slug })
+    setBusy(false)
+    if (!res.ok) return setError(res.error ?? 'Não deu para chamar o robô')
+    navigate(`/sala/${res.data!.code}`)
+  }
 
   async function createRoom(isPrivate: boolean) {
     setBusy(true)
@@ -180,7 +191,26 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
         </div>
       )}
 
-      <div className={`${isCoop || isRace ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
+      {/* jogar contra o computador — começa na hora, sem esperar ninguém */}
+      {hasBot && (
+        <button
+          onClick={() => void playVsBot()}
+          disabled={busy}
+          className="card mt-8 flex w-full items-center gap-4 p-5 text-left transition hover:-translate-y-1 hover:ring-pop-green/60 disabled:opacity-60"
+        >
+          <span className="text-3xl" aria-hidden="true">🤖</span>
+          <span>
+            <span className="block font-display text-lg font-bold text-pop-green">
+              Jogar contra o robô
+            </span>
+            <span className="block text-sm text-text-muted">
+              Comece agora mesmo, sem esperar outra pessoa — um adversário do seu tamanho.
+            </span>
+          </span>
+        </button>
+      )}
+
+      <div className={`${isCoop || isRace || hasBot ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
         <button
           onClick={() => void createRoom(false)}
           disabled={busy}

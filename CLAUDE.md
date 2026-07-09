@@ -20,7 +20,34 @@ Base sólida primeiro; os jogos plugam nela.
   (Modo Conforto 60+: fontes grandes, alto contraste, timers
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
-- **Última atualização**: 2026-07-08
+- **Última atualização**: 2026-07-09
+- **BOTS NOS JOGOS DE TURNO — LOTE 1 entregue (Damas e Xadrez)
+  (iniciativa aprovada pelo usuário 2026-07-09)**: opção "🤖 Jogar
+  contra o robô" no lobby (cresce lote a lote; escopo combinado: máximo
+  de jogos de turno; nível ÚNICO equilibrado; aciona por botão no
+  lobby que cria sala privada com o robô já sentado e começa na hora).
+  **Infra genérica reutilizável** no esqueleto: `GameModule.currentSeat`
+  (de quem é a vez) + `GameModule.bot(state, seat)` (jogada da IA);
+  `RoomManager` ganhou assento VIRTUAL de bot (`isBot`, sem socket,
+  FORA do banco — sem FK de User: matchPlayer só p/ humanos),
+  `createVsBot` (abandona sala anterior, senta humano no assento 0,
+  preenche o resto com robôs até a menor contagem válida, `beginMatch`
+  compartilhado com o `start`), e o loop de turno `scheduleBotTurn`/
+  `runBotMove` (think-delay de 700ms → parece humano; encadeia se o
+  próximo também for robô; limpa o timer em finish/close). Evento
+  socket `room:createVsBot`; `RoomPlayerView.isBot`. **Bots**:
+  `checkersBot.ts` (minimax alfa-beta prof. 6 sobre as regras de
+  `/shared`; avaliação material + avanço) e `chessBot.ts` (negamax
+  alfa-beta prof. 3 + quiescência de capturas p/ não pendurar peça;
+  material + centro + avanço; `applyChessRaw` exportado do shared p/ a
+  busca). Nomes 🤖 Robô Zé/Nina/Téo/Lia; entre lances quase iguais
+  sorteia (partidas variadas). 214 testes (7 novos: lance sempre legal,
+  24 meios-lances sem ilegalidade, captura dama pendurada, mate de
+  corredor em 1, currentSeat). Typecheck limpo nos 3 workspaces. Demo
+  real (Playwright): humano venceu a interação — em Damas fez o lance e
+  o Robô Zé respondeu (vez voltou); em Xadrez jogou e2-e4 e o robô
+  respondeu. Próximos lotes: 2 = Dominó/One/Pife (mão escondida), 3 =
+  Truco/Memória/Forca, 4 = Quiz Pop/Nostalgia.
 - **CONVIDADOS TEMPORÁRIOS + ÁREA EXCLUSIVA NO ADMIN (pedido do
   usuário 2026-07-08)**: os "jogar sem conta" agora são TEMPORÁRIOS —
   somem ao SAIR (logout apaga a conta-sombra) e ao FECHAR o navegador
@@ -920,9 +947,12 @@ Base sólida primeiro; os jogos plugam nela.
   visualmente mesmo após a repaginação em cena — deixada assim POR ORA a
   pedido dele. Melhorias futuras: sprites/arte de verdade em vez de emoji,
   isometria leve, mais densidade de decoração.
-- **Próximo passo**: NENHUM em andamento — o usuário encerrou os
-  trabalhos aqui (2026-07-05) com a FASE 9 completa (9/9 jogos, 32 no
-  catálogo). Ideias aguardando priorização futura: Modo Conforto 60+
+- **Próximo passo**: INICIATIVA "Bots nos jogos de turno" EM ANDAMENTO
+  (aprovada 2026-07-09). Lote 1 (Damas + Xadrez) ✅. **Próximo: Lote 2 —
+  Dominó, One e Pife** (bots de mão escondida: o bot só olha a própria
+  mão + estado público). Depois Lote 3 (Truco/Memória/Forca) e Lote 4
+  (Quiz Pop/Nostalgia). Cada lote fecha com testes + demo + pacotes +
+  push. Ideias aguardando priorização futura: Modo Conforto 60+
   (lote opcional sugerido: fontes/cartas maiores, alto contraste,
   timers relaxados, prefers-reduced-motion); desafio diário com seed
   (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de
