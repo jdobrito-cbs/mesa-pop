@@ -11,6 +11,7 @@ import {
   type MemoriaView,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseMemoriaMove } from './memoriaBot'
 
 export interface MemoriaState {
   players: number
@@ -20,6 +21,8 @@ export interface MemoriaState {
   donos: number[]
   /** posições viradas na jogada atual (0..2) */
   viradas: number[]
+  /** memória PÚBLICA: valor de cada posição já revelada (posição → valor) */
+  vistas: Record<number, number>
   turno: number
   pares: number[]
   ultimaJogada: MemoriaView['ultimaJogada']
@@ -40,6 +43,7 @@ export function initialMemoriaState(players: number): MemoriaState {
     valores,
     donos: Array.from({ length: total }, () => -1),
     viradas: [],
+    vistas: {},
     turno: 0,
     pares: Array.from({ length: players }, () => 0),
     ultimaJogada: null,
@@ -62,11 +66,13 @@ export function aplicaMemoriaAction(
 
   if (s.viradas.length === 0) {
     s.viradas = [i]
+    s.vistas[i] = s.valores[i]! // memória pública: a carta foi revelada
     s.ultimaJogada = null
     return { state: s }
   }
 
   // segunda carta da jogada
+  s.vistas[i] = s.valores[i]! // também revelada publicamente
   const a = s.viradas[0]!
   const acertou = s.valores[a] === s.valores[i]
   s.ultimaJogada = { a, b: i, va: s.valores[a]!, vb: s.valores[i]!, acertou }
@@ -123,6 +129,14 @@ export const memoriaModule: GameModule<MemoriaState, MemoriaAction> = {
   // o segredo é o tabuleiro: espectador e jogador recebem a MESMA visão filtrada
   getStateFor(state) {
     return memoriaViewFor(state)
+  },
+
+  currentSeat(state) {
+    return state.fim ? null : state.turno
+  },
+
+  bot(state, seat) {
+    return chooseMemoriaMove(state, seat)
   },
 
   result(state) {

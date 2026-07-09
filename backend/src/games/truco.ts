@@ -17,6 +17,7 @@ import {
   type TrucoView,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseTrucoMove } from './trucoBot'
 
 export interface TrucoState {
   players: number
@@ -39,7 +40,7 @@ export interface TrucoState {
   vencedores: number[]
 }
 
-type TrucoAction =
+export type TrucoAction =
   | { type: 'carta'; index: number }
   | { type: 'truco' }
   | { type: 'aceitar' }
@@ -240,6 +241,21 @@ export const trucoModule: GameModule<TrucoState, TrucoAction> = {
 
   getStateFor(state, seat) {
     return trucoViewFor(state, seat)
+  },
+
+  currentSeat(state) {
+    if (state.fase === 'fim') return null
+    if (state.fase === 'respondendo' && state.pendente) {
+      const alvo = state.pendente.paraTeam
+      if (teamOf(state.turnoAntes) === alvo) return state.turnoAntes
+      for (let i = 0; i < state.players; i++) if (teamOf(i) === alvo) return i
+      return state.turnoAntes
+    }
+    return state.turno
+  },
+
+  bot(state, seat) {
+    return chooseTrucoMove(state, seat)
   },
 
   result(state) {

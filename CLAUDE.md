@@ -21,6 +21,23 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **BOTS · LOTE 3 entregue — Truco, Memória e Forca (2026-07-09)**:
+  fecha a cobertura de bots dos jogos de turno. `memoriaBot.ts` (memória
+  JUSTA: só usa o mapa PÚBLICO `vistas` de cartas já reveladas — novo
+  campo no MemoriaState, atualizado a cada virada — com ~82% de acerto,
+  às vezes "esquece"), `forcaBot.ts` (escolhedor sorteia palavra de um
+  banco; adivinhador chuta por FREQUÊNCIA de letras pt-BR, sem espiar) e
+  `trucoBot.ts` (avalia a própria mão: manilhas+cartas altas → pede/
+  aceita/aumenta/corre; joga a menor carta que vence ou descarta; deixa
+  o parceiro ganhar). `currentSeat`/`bot` nos 3 módulos; `currentSeat` do
+  truco resolve o RESPONDENTE certo na fase 'respondendo' e o da forca
+  troca entre 'escolhendo'(escolhedor) e 'jogando'(turno). Botão do
+  lobby estendido a truco/memoria/forca. 258 testes (5 novos: bot da
+  memória mira par conhecido; bot×bot limpa a memória, fecha a forca e
+  joga o truco até 12 tentos — tudo legal). Typecheck limpo. **Bots
+  agora em 11 jogos** (Damas, Xadrez, Dominó, One, Pife, Gira Gênio,
+  Magnata, Truco, Memória, Forca, Corrida do Ganso). Falta o Lote 4
+  (Quiz, que é realtime).
 - **NOVO JOGO — MAGNATA (clone do Monopoly, tema Brasil; pedido do
   usuário 2026-07-09)**: jogo de tabuleiro de imóveis, 2–6 jogadores +
   "🤖 Jogar contra o robô". **CARTÃO DE CRÉDITO (requisito do usuário)**:

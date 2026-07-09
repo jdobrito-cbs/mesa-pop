@@ -12,6 +12,7 @@ import {
   type ForcaView,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
+import { chooseForcaMove } from './forcaBot'
 
 export interface ForcaState {
   players: number
@@ -217,6 +218,15 @@ export const forcaModule: GameModule<ForcaState, ForcaAction> = {
   // A PALAVRA NUNCA VAZA: quem adivinha recebe null nas letras ocultas.
   getStateFor(state, seat) {
     return forcaViewFor(state, seat)
+  },
+
+  currentSeat(state) {
+    if (state.fase === 'fim') return null
+    return state.fase === 'escolhendo' ? state.escolhedor : state.turno
+  },
+
+  bot(state, seat) {
+    return chooseForcaMove(state, seat)
   },
 
   scoresFor(state) {
