@@ -14,6 +14,7 @@ import type {
   GameEndView,
   GansoState,
   GGView,
+  CobraSnapshot,
   MemoriaView,
   OneAction,
   OneView,
@@ -31,6 +32,7 @@ import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
 import GansoBoard from '../components/GansoBoard'
 import GiraGenioGame from '../components/GiraGenioGame'
+import SlitherGame from '../components/SlitherGame'
 import DesenhaGame from '../components/DesenhaGame'
 import DueloGame from '../components/DueloGame'
 import StopGame from '../components/StopGame'
@@ -299,10 +301,10 @@ export default function RoomPage() {
               {isHost ? (
                 <button
                   onClick={() => void start()}
-                  disabled={room.players.length < room.maxPlayers && room.players.length < 2}
+                  disabled={room.players.length < room.minPlayers}
                   className="btn-pop mt-8 bg-gradient-to-br from-pop-purple to-pop-magenta px-8 py-3.5 text-white shadow-lg shadow-pop-purple/25 disabled:opacity-50"
                 >
-                  {room.players.length < 2 ? 'Esperando gente sentar…' : 'Começar partida!'}
+                  {room.players.length < room.minPlayers ? 'Esperando gente sentar…' : 'Começar partida!'}
                 </button>
               ) : (
                 <p className="mt-8 text-sm text-text-muted">Esperando o anfitrião começar…</p>
@@ -345,6 +347,13 @@ export default function RoomPage() {
                   players={seatedPlayers}
                   onGirar={() => void sendAction({ type: 'girar' })}
                   onResponder={(opcao) => void sendAction({ type: 'responder', opcao })}
+                />
+              )}
+              {room.gameSlug === 'cobra-arena' && (
+                <SlitherGame
+                  snapshot={game.state as CobraSnapshot}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
                 />
               )}
               {room.gameSlug === 'domino' && (

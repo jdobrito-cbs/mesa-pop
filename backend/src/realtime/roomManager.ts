@@ -95,6 +95,7 @@ export class RoomManager {
       isPrivate: room.isPrivate,
       status: room.status,
       hostId: room.hostId,
+      minPlayers: room.module.minPlayers,
       maxPlayers: room.maxPlayers,
       players: [...room.players.values()].map((p) => ({
         userId: p.userId,

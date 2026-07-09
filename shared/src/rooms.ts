@@ -35,6 +35,7 @@ export interface RoomView {
   isPrivate: boolean
   status: RoomStatusView
   hostId: string
+  minPlayers: number
   maxPlayers: number
   players: RoomPlayerView[]
   /** fila de espera / espectadores, em ordem de chegada */

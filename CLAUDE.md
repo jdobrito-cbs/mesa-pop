@@ -21,6 +21,28 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **NOVO JOGO — COBRA ARENA (clone do slither.io; pedido do usuário
+  2026-07-09)**: multiplayer em TEMPO REAL, mundo simulado no SERVIDOR
+  (reaproveita a infra realtime do co-op: `realtime {tickMs45,
+  broadcastEvery2}` + tick + snapshot único). `shared/slither.ts`
+  (tipos + constantes: raio da arena 1150, duração 150s, seg 8).
+  `backend/games/slither.ts`: cobras com trilha de pontos (cabeça
+  primeiro, aparada pelo tamanho-alvo), vira em direção à mira com taxa
+  limitada, come comida e cresce, BOOST gasta massa (larga comida),
+  borda circular mata, colisão cabeça×corpo alheio mata (vira comida),
+  RESPAWN em 2s. **Arena povoada por cobras da IA** (steer p/ comida,
+  foge da borda, desvia) → dá para jogar SOZINHO (minPlayers=1) ou com
+  até 6. Fim por tempo → vence o MAIOR tamanho (best por assento em
+  scoresFor). `SlitherGame.tsx`: canvas com INTERPOLAÇÃO entre snapshots,
+  câmera seguindo a cabeça, grade/borda/comida com glow, corpo como
+  traço grosso + olhos, HUD (tamanho, tempo, placar). Entrada: mover
+  dedo/mouse = mira; toque/clique LONGO (segurar) = boost
+  (`emitAck('game:action')` throttled). **RoomView ganhou `minPlayers`**
+  e o botão "Começar" do RoomPage passou a usá-lo (permite começar solo).
+  Registrado no socket; RoomPage; catálogo 36 jogos. 246 testes (6
+  novos: arena povoada, mira/boost+tick move, comer cresce, borda mata,
+  snapshot, fim por tempo+vencedor). Demo real: sala solo, 6 cobras +
+  273 comidas, a cobra pilotada se moveu e o boost drenou massa (15→9).
 - **TELA CHEIA nos jogos (pedido do usuário 2026-07-09)**: botão
   "⛶ Tela cheia / ⤢ Sair da tela cheia" que usa a Fullscreen API (PC e
   Android) com FALLBACK CSS para iOS (classe `mp-fs--fake` fixa cobrindo
