@@ -21,6 +21,43 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **MAGNATA · NEGOCIAÇÃO + LEILÃO + HIPOTECA (pedido do usuário
+  2026-07-09, fecha a leva "vamos fazer tudo isso")**: as três mecânicas
+  clássicas que faltavam ao Magnata, servidor autoritativo.
+  **Hipoteca** (`hipotecar`/`resgatar` + `venderCasa`): hipotecar rende
+  metade do preço (`valorHipoteca`) e a propriedade para de render
+  aluguel (resolveCasa e a contagem de aeroporto/serviço passam a
+  ignorar hipotecadas); resgatar custa metade + 10% (`custoResgate`);
+  não dá para construir num grupo hipotecado nem hipotecar com casas
+  (vender antes, reembolso pela metade). **Leilão** (`lance`/`desistir`,
+  nova fase `'leilao'` + estado `MagnataLeilao`): recusar a compra
+  (`passar`) leva a propriedade a leilão entre TODOS os solventes; sobe
+  por lances (round-robin pulando o líder), arremata quem sobra e paga o
+  lance; ninguém dá lance → fica com o banco. **Negociação**
+  (`propor`/`aceitarTroca`/`recusarTroca` + estado `MagnataProposta`):
+  o jogador da vez oferece imóveis+dinheiro por imóveis+dinheiro de
+  outro; o alvo aceita/recusa (hipoteca acompanha o imóvel; sem casas).
+  **Infra reutilizada**: `currentSeat` passou a apontar o
+  `leilao.vez`/`proposta.para` (não só o turno) e o `aplica` libera
+  essas ações FORA do turno (o `RoomManager` já dirige o ator real e
+  encadeia os bots) — o `play(state, seat, ...)` recebe o assento de
+  quem agiu. **Bot** estendido: dá lances até ~60% do preço (só com
+  caixa) e responde trocas aceitando só quando ganha valor. UI
+  (`MagnataBoard`): painel de leilão (lance + Dar lance/Desistir),
+  resposta de troca (Aceitar/Recusar/Cancelar), construtor de proposta
+  (alvo + chips de imóveis dos dois lados + dinheiro) e "Gerir imóveis"
+  (hipotecar/resgatar/vender casa) + selo "🏦 HIP" nas casas
+  hipotecadas. 275 testes (8 novos de Magnata: hipoteca rende/resgata,
+  bloqueia construir no grupo hipotecado, exige vender casas, leilão
+  arremata/sem-lance, troca transfere+trava o turno, recusar limpa).
+  Typecheck limpo nos 3 workspaces. **LIÇÃO**: ações fora do turno
+  (lance/aceitar) precisam ser tratadas ANTES do guard `turno!==seat`;
+  e `currentSeat` deve apontar o próximo a agir (leilão/proposta) para
+  os bots serem acionados. Demo real (Playwright, humano × robô): passei
+  numa compra → **leilão** de Av. Sete de Setembro (painel + lance);
+  **hipotequei** Av. Goethe (+120, selo HIP, botão resgatar −132); e
+  **propus** Av. Goethe por Ladeira da Misericórdia ao robô, que aceitou
+  ("Troca fechada") — os imóveis trocaram de dono.
 - **DESAFIO DIÁRIO COM SEED (pedido do usuário 2026-07-09, "vamos fazer
   tudo isso")**: o MESMO puzzle para todos a cada dia (seed = a data
   'YYYY-MM-DD') nos 4 jogos seedáveis — Sudoku, Caça-palavras,
@@ -1242,16 +1279,18 @@ Base sólida primeiro; os jogos plugam nela.
   (todos os jogos) ✅, Cobra Arena (slither) ✅, **Magnata (Monopoly BR
   com cartão de crédito) ✅** — todos descritos acima. **37 jogos** no
   catálogo do seed (+ treino solo da memória e rotas dedicadas).
-- **Próximo passo**: INICIATIVA "Bots nos jogos de turno" segue aberta
-  (Lotes 1 Damas+Xadrez e 2 Dominó/One/Pife ✅; faltam Lote 3
-  Truco/Memória/Forca e Lote 4 Quiz). A fila de jogos novos de 2026-07-09
-  está 100% entregue. Ideias aguardando priorização futura: Modo Conforto 60+
+- **Próximo passo**: leva "vamos fazer tudo isso" (2026-07-09) 100%
+  ENTREGUE — Bots Lote 3 (Truco/Memória/Forca) ✅, Lote 4 (Quiz) ✅
+  (iniciativa de bots de turno FECHADA: 13 jogos com robô), fix das
+  partidas/salas travadas ✅, expansão dos bancos de quiz ✅, Desafio
+  Diário com seed ✅ e Magnata negociação/leilão/hipoteca ✅. Sem
+  pendência do usuário no momento — aguardando o próximo pedido. Ideias
+  aguardando priorização futura: Modo Conforto 60+
   (lote opcional sugerido: fontes/cartas maiores, alto contraste,
-  timers relaxados, prefers-reduced-motion); desafio diário com seed
-  (Sudoku/Caça/Cruzadinha já são seedáveis); expansão dos bancos de
-  quiz; mão de onze/ferro no Truco; dicionário no termo/duelo; votação
-  no Stop; moderação de chat no admin; arte da fazenda; extração do
-  esqArt do co-op.
+  timers relaxados, prefers-reduced-motion); expandir os bancos de quiz
+  ainda mais; mão de onze/ferro no Truco; dicionário no termo/duelo;
+  votação no Stop; moderação de chat no admin; arte da fazenda; extração
+  do esqArt do co-op; estender o Desafio Diário a mais jogos seedáveis.
   Backlog antigo segue anotado: mão de onze/ferro no Truco; dicionário
   de palavras aceitas no termo/duelo; votação de respostas no Stop;
   moderação de chat no admin; arte da fazenda (pendência abaixo);

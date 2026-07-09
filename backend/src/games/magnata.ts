@@ -3,6 +3,7 @@ import {
   aluguelEstacao,
   aluguelPropriedade,
   aluguelServico,
+  custoResgate,
   CUSTO_CASA,
   grupoDe,
   MAGNATA_CARTAO_INICIAL,
@@ -10,10 +11,13 @@ import {
   MAGNATA_DINHEIRO_INICIAL,
   MAGNATA_FIANCA,
   MAGNATA_INICIO_BONUS,
+  valorHipoteca,
   type MagnataAction,
   type MagnataFase,
   type MagnataGrupo,
   type MagnataJogador,
+  type MagnataLeilao,
+  type MagnataProposta,
   type MagnataView,
 } from '@mesapop/shared'
 import type { GameModule } from './module'
@@ -44,6 +48,8 @@ export interface MagState {
   log: string[]
   aviso: string | null
   compravel: number | null
+  leilao: MagnataLeilao | null
+  proposta: MagnataProposta | null
   doubles: number
   sorte: number[]
   cofre: number[]
@@ -114,15 +120,24 @@ function falir(s: MagState, seat: number, credor: number | null) {
   const j = s.jogadores[seat]!
   j.falido = true
   logar(s, `💥 ${j.nome} faliu!`)
-  // imóveis voltam ao banco (ou ao credor, se houver)
+  // imóveis voltam ao banco (ou ao credor, se houver) — hipotecas acompanham
   for (const p of j.props) {
     s.donoDe[p] = credor
-    if (credor !== null) s.jogadores[credor]!.props.push(p)
+    if (credor !== null) {
+      s.jogadores[credor]!.props.push(p)
+      if (j.hipotecadas.includes(p)) s.jogadores[credor]!.hipotecadas.push(p)
+    }
   }
   j.props = []
   j.casas = {}
+  j.hipotecadas = []
   j.dinheiro = 0
   j.cartaoUsado = 0
+  // um leilão/proposta que envolva o falido morre junto
+  if (s.leilao && (s.leilao.lider === seat || s.leilao.ativos.includes(seat))) {
+    s.leilao.ativos = s.leilao.ativos.filter((x) => x !== seat)
+  }
+  if (s.proposta && (s.proposta.de === seat || s.proposta.para === seat)) s.proposta = null
   verificaFim(s)
 }
 
@@ -132,7 +147,9 @@ function donoTemGrupo(s: MagState, seat: number, grupo: MagnataGrupo): boolean {
   return grupoDe(grupo).every((i) => s.donoDe[i] === seat)
 }
 function qtdTipoDoDono(s: MagState, dono: number, tipo: 'estacao' | 'servico'): number {
-  return MAGNATA_CASAS.filter((c) => c.tipo === tipo && s.donoDe[c.i] === dono).length
+  // uma propriedade hipotecada não conta para o aluguel
+  const hip = s.jogadores[dono]!.hipotecadas
+  return MAGNATA_CASAS.filter((c) => c.tipo === tipo && s.donoDe[c.i] === dono && !hip.includes(c.i)).length
 }
 
 // —— cartas ——
@@ -213,6 +230,9 @@ function resolveCasa(s: MagState, seat: number) {
     const dono = s.donoDe[j.pos]
     if (dono === null || dono === undefined) {
       s.compravel = j.pos
+    } else if (dono !== seat && !s.jogadores[dono]!.falido && s.jogadores[dono]!.hipotecadas.includes(j.pos)) {
+      // propriedade hipotecada não rende aluguel
+      logar(s, `🏚️ ${casa.nome} está hipotecada — ${j.nome} não paga aluguel.`)
     } else if (dono !== seat && !s.jogadores[dono]!.falido) {
       let aluguel = 0
       if (casa.tipo === 'propriedade') {
@@ -250,7 +270,8 @@ function patrimonio(s: MagState, j: MagnataJogador): number {
   let v = j.dinheiro - j.cartaoUsado
   for (const p of j.props) {
     const c = MAGNATA_CASAS[p]!
-    v += c.preco ?? 0
+    // hipotecada vale só o valor de resgate (metade); senão, preço cheio + casas
+    v += j.hipotecadas.includes(p) ? valorHipoteca(c.preco ?? 0) : c.preco ?? 0
     v += (j.casas[p] ?? 0) * (CUSTO_CASA[c.grupo ?? ''] ?? 100)
   }
   return v
@@ -288,6 +309,7 @@ export function initialMagnataState(playerCount: number): MagState {
     cartaoUsado: 0,
     props: [],
     casas: {},
+    hipotecadas: [],
     preso: false,
     turnosPreso: 0,
     falido: false,
@@ -302,6 +324,8 @@ export function initialMagnataState(playerCount: number): MagState {
     log: ['🏙️ A cidade está à venda — boa sorte, magnatas!'],
     aviso: null,
     compravel: null,
+    leilao: null,
+    proposta: null,
     doubles: 0,
     sorte: embaralha(SORTE.length),
     cofre: embaralha(COFRE.length),
@@ -314,13 +338,145 @@ export function initialMagnataState(playerCount: number): MagState {
   }
 }
 
+// —— leilão + negociação ——
+
+function grupoTemCasa(s: MagState, seat: number, grupo: MagnataGrupo): boolean {
+  const casas = s.jogadores[seat]!.casas
+  return grupoDe(grupo).some((i) => (casas[i] ?? 0) > 0)
+}
+function grupoTemHipoteca(s: MagState, seat: number, grupo: MagnataGrupo): boolean {
+  const hip = s.jogadores[seat]!.hipotecadas
+  return grupoDe(grupo).some((i) => hip.includes(i))
+}
+
+/** próximo assento ATIVO no leilão que não seja o líder (senão o líder arremata) */
+function proxLance(s: MagState): void {
+  const l = s.leilao!
+  for (let k = 1; k <= s.jogadores.length; k++) {
+    const cand = (l.vez + k) % s.jogadores.length
+    if (l.ativos.includes(cand) && cand !== l.lider) {
+      l.vez = cand
+      return
+    }
+  }
+}
+
+function iniciaLeilao(s: MagState, casa: number): void {
+  const ativos = s.jogadores.filter((j) => !j.falido).map((j) => j.seat)
+  s.compravel = null
+  if (ativos.length < 2) {
+    s.fase = 'agir'
+    logar(s, `🔨 ${MAGNATA_CASAS[casa]!.nome} ficou sem comprador.`)
+    return
+  }
+  s.leilao = { casa, lance: 0, lider: null, ativos, vez: s.turno }
+  s.fase = 'leilao'
+  proxLance(s) // começa por quem está depois do jogador da vez
+  logar(s, `🔨 Leilão de ${MAGNATA_CASAS[casa]!.nome}! Deem seus lances.`)
+}
+
+function encerraLeilao(s: MagState): void {
+  const l = s.leilao!
+  const casa = MAGNATA_CASAS[l.casa]!
+  if (l.lider !== null && l.lance > 0) {
+    const dono = s.jogadores[l.lider]!
+    pagar(s, l.lider, l.lance, null)
+    s.donoDe[l.casa] = l.lider
+    dono.props.push(l.casa)
+    logar(s, `🔨 ${dono.nome} arrematou ${casa.nome} por ${l.lance}!`)
+  } else {
+    logar(s, `🔨 Ninguém quis ${casa.nome} — segue com o banco.`)
+  }
+  s.leilao = null
+  s.fase = 'agir'
+}
+
+/** após um lance/desistência: se só sobrou o líder, arremata; senão passa a vez */
+function avancaLeilao(s: MagState): void {
+  const l = s.leilao!
+  const outros = l.ativos.filter((x) => x !== l.lider)
+  if (outros.length === 0) {
+    encerraLeilao(s)
+    return
+  }
+  proxLance(s)
+}
+
+function transfereProp(s: MagState, i: number, de: number, para: number): void {
+  s.donoDe[i] = para
+  const dj = s.jogadores[de]!
+  const pj = s.jogadores[para]!
+  dj.props = dj.props.filter((x) => x !== i)
+  if (!pj.props.includes(i)) pj.props.push(i)
+  if (dj.hipotecadas.includes(i)) {
+    dj.hipotecadas = dj.hipotecadas.filter((x) => x !== i)
+    if (!pj.hipotecadas.includes(i)) pj.hipotecadas.push(i)
+  }
+}
+
+function executaTroca(s: MagState): boolean {
+  const p = s.proposta!
+  const de = s.jogadores[p.de]!
+  const para = s.jogadores[p.para]!
+  const okDe = p.ofereceProps.every((i) => s.donoDe[i] === p.de && (de.casas[i] ?? 0) === 0)
+  const okPara = p.pedeProps.every((i) => s.donoDe[i] === p.para && (para.casas[i] ?? 0) === 0)
+  if (!okDe || !okPara) return false
+  if (!podePagar(de, p.ofereceDinheiro) || !podePagar(para, p.pedeDinheiro)) return false
+  if (p.ofereceDinheiro > 0) pagar(s, p.de, p.ofereceDinheiro, p.para)
+  if (p.pedeDinheiro > 0) pagar(s, p.para, p.pedeDinheiro, p.de)
+  for (const i of p.ofereceProps) transfereProp(s, i, p.de, p.para)
+  for (const i of p.pedeProps) transfereProp(s, i, p.para, p.de)
+  logar(s, `🤝 Troca fechada entre ${de.nome} e ${para.nome}.`)
+  return true
+}
+
 // —— ações ——
 
 function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } | { state: MagState } {
   if (s.finished) return { error: 'A partida já terminou' }
-  if (s.turno !== seat) return { error: 'Não é a sua vez' }
   const j = s.jogadores[seat]!
   if (j.falido) return { error: 'Você está fora do jogo' }
+
+  // —— ações FORA do turno: lances de leilão e resposta de troca ——
+  if (a.type === 'lance' || a.type === 'desistir') {
+    if (!s.leilao) return { error: 'Nenhum leilão em andamento' }
+    if (s.leilao.vez !== seat) return { error: 'Não é a sua vez de dar lance' }
+    if (a.type === 'lance') {
+      const valor = Math.floor(a.valor)
+      if (!Number.isFinite(valor) || valor <= s.leilao.lance) return { error: 'O lance precisa superar o atual' }
+      if (!podePagar(j, valor)) return { error: 'Você não pode cobrir esse lance' }
+      s.leilao.lance = valor
+      s.leilao.lider = seat
+      logar(s, `🔨 ${j.nome} deu lance de ${valor} em ${MAGNATA_CASAS[s.leilao.casa]!.nome}.`)
+    } else {
+      logar(s, `🔨 ${j.nome} saiu do leilão.`)
+      s.leilao.ativos = s.leilao.ativos.filter((x) => x !== seat)
+    }
+    avancaLeilao(s)
+    return { state: s }
+  }
+
+  if (a.type === 'aceitarTroca' || a.type === 'recusarTroca') {
+    if (!s.proposta) return { error: 'Nenhuma proposta pendente' }
+    if (a.type === 'recusarTroca') {
+      if (seat !== s.proposta.de && seat !== s.proposta.para) return { error: 'Essa proposta não é sua' }
+      logar(s, `🚫 Troca entre ${nome(s, s.proposta.de)} e ${nome(s, s.proposta.para)} recusada.`)
+      s.proposta = null
+      return { state: s }
+    }
+    if (seat !== s.proposta.para) return { error: 'Só quem recebeu a proposta pode aceitar' }
+    if (!executaTroca(s)) {
+      s.proposta = null
+      return { error: 'Troca ficou inviável (posse ou dinheiro mudou)' }
+    }
+    s.proposta = null
+    return { state: s }
+  }
+
+  // —— demais ações exigem ser o jogador da vez ——
+  if (s.turno !== seat) return { error: 'Não é a sua vez' }
+  if (s.leilao) return { error: 'Aguarde o fim do leilão' }
+  if (s.proposta) return { error: 'Aguarde a resposta da sua proposta' }
 
   if (a.type === 'rolar') {
     if (s.fase !== 'rolar') return { error: 'Você já rolou os dados' }
@@ -378,9 +534,9 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
   }
 
   if (a.type === 'passar') {
-    if (s.fase !== 'comprar') return { error: 'Nada para recusar' }
-    s.compravel = null
-    s.fase = 'agir'
+    if (s.fase !== 'comprar' || s.compravel === null) return { error: 'Nada para recusar' }
+    // recusou a compra → a propriedade vai a LEILÃO entre os solventes
+    iniciaLeilao(s, s.compravel)
     return { state: s }
   }
 
@@ -389,6 +545,7 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
     const casa = MAGNATA_CASAS[a.casa]
     if (!casa || casa.tipo !== 'propriedade' || s.donoDe[a.casa] !== seat) return { error: 'Imóvel inválido' }
     if (!donoTemGrupo(s, seat, casa.grupo!)) return { error: 'Você precisa do grupo completo' }
+    if (grupoTemHipoteca(s, seat, casa.grupo!)) return { error: 'Resgate a hipoteca do grupo antes de construir' }
     const nivel = j.casas[a.casa] ?? 0
     if (nivel >= 5) return { error: 'Já tem hotel' }
     const custo = CUSTO_CASA[casa.grupo!] ?? 100
@@ -396,6 +553,70 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
     pagar(s, seat, custo, null)
     j.casas[a.casa] = nivel + 1
     logar(s, `🏗️ ${j.nome} construiu em ${casa.nome} (${nivel + 1 === 5 ? 'hotel' : nivel + 1 + ' casa(s)'}).`)
+    return { state: s }
+  }
+
+  if (a.type === 'venderCasa') {
+    if (s.fase === 'fim' || s.fase === 'leilao') return { error: 'Não dá para vender casas agora' }
+    const casa = MAGNATA_CASAS[a.casa]
+    if (!casa || casa.tipo !== 'propriedade' || s.donoDe[a.casa] !== seat) return { error: 'Imóvel inválido' }
+    const nivel = j.casas[a.casa] ?? 0
+    if (nivel <= 0) return { error: 'Não há casas para vender' }
+    const reembolso = Math.round((CUSTO_CASA[casa.grupo!] ?? 100) / 2)
+    j.casas[a.casa] = nivel - 1
+    receber(j, reembolso)
+    logar(s, `🏚️ ${j.nome} vendeu uma casa de ${casa.nome} por ${reembolso}.`)
+    return { state: s }
+  }
+
+  if (a.type === 'hipotecar') {
+    if (s.fase === 'fim' || s.fase === 'leilao') return { error: 'Não dá para hipotecar agora' }
+    const casa = MAGNATA_CASAS[a.casa]
+    if (!casa || s.donoDe[a.casa] !== seat || casa.preco === undefined) return { error: 'Imóvel inválido' }
+    if (j.hipotecadas.includes(a.casa)) return { error: 'Já está hipotecada' }
+    if ((j.casas[a.casa] ?? 0) > 0) return { error: 'Venda as casas antes de hipotecar' }
+    if (casa.tipo === 'propriedade' && grupoTemCasa(s, seat, casa.grupo!)) {
+      return { error: 'Venda as casas do grupo antes de hipotecar' }
+    }
+    const valor = valorHipoteca(casa.preco)
+    j.hipotecadas.push(a.casa)
+    receber(j, valor)
+    logar(s, `🏦 ${j.nome} hipotecou ${casa.nome} e recebeu ${valor}.`)
+    return { state: s }
+  }
+
+  if (a.type === 'resgatar') {
+    if (s.fase === 'fim' || s.fase === 'leilao') return { error: 'Não dá para resgatar agora' }
+    const casa = MAGNATA_CASAS[a.casa]
+    if (!casa || s.donoDe[a.casa] !== seat || casa.preco === undefined) return { error: 'Imóvel inválido' }
+    if (!j.hipotecadas.includes(a.casa)) return { error: 'Essa não está hipotecada' }
+    const custo = custoResgate(casa.preco)
+    if (!podePagar(j, custo)) return { error: 'Sem dinheiro para resgatar' }
+    pagar(s, seat, custo, null)
+    j.hipotecadas = j.hipotecadas.filter((x) => x !== a.casa)
+    logar(s, `🏦 ${j.nome} resgatou ${casa.nome} por ${custo}.`)
+    return { state: s }
+  }
+
+  if (a.type === 'propor') {
+    if (s.fase !== 'agir' && s.fase !== 'comprar') return { error: 'Proponha na sua vez de agir' }
+    const alvo = a.para
+    if (!Number.isInteger(alvo) || alvo < 0 || alvo >= s.jogadores.length || alvo === seat) return { error: 'Alvo inválido' }
+    if (s.jogadores[alvo]!.falido) return { error: 'Esse jogador está fora do jogo' }
+    const ofP = [...new Set(a.ofereceProps ?? [])]
+    const peP = [...new Set(a.pedeProps ?? [])]
+    const ofD = Math.max(0, Math.floor(a.ofereceDinheiro ?? 0))
+    const peD = Math.max(0, Math.floor(a.pedeDinheiro ?? 0))
+    if (!ofP.every((i) => s.donoDe[i] === seat && (j.casas[i] ?? 0) === 0)) {
+      return { error: 'Você só cede imóveis seus e sem casas' }
+    }
+    if (!peP.every((i) => s.donoDe[i] === alvo && (s.jogadores[alvo]!.casas[i] ?? 0) === 0)) {
+      return { error: 'O alvo precisa ter esses imóveis, sem casas' }
+    }
+    if (ofP.length + peP.length + (ofD > 0 ? 1 : 0) + (peD > 0 ? 1 : 0) === 0) return { error: 'Proposta vazia' }
+    if (!podePagar(j, ofD)) return { error: 'Você não tem esse dinheiro para oferecer' }
+    s.proposta = { de: seat, para: alvo, ofereceProps: ofP, ofereceDinheiro: ofD, pedeProps: peP, pedeDinheiro: peD }
+    logar(s, `🤝 ${j.nome} propôs uma troca a ${nome(s, alvo)}.`)
     return { state: s }
   }
 
@@ -427,9 +648,42 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
 
 // —— bot ——
 
+/** valor de mercado de uma lista de imóveis (metade se hipotecado) */
+function valorProps(s: MagState, ids: number[]): number {
+  let v = 0
+  for (const i of ids) {
+    const c = MAGNATA_CASAS[i]!
+    const dono = s.donoDe[i]
+    const hip = dono !== null && dono !== undefined && s.jogadores[dono]!.hipotecadas.includes(i)
+    v += hip ? valorHipoteca(c.preco ?? 0) : c.preco ?? 0
+  }
+  return v
+}
+
 function botAction(s: MagState, seat: number): MagnataAction | null {
-  if (s.finished || s.turno !== seat) return null
+  if (s.finished) return null
   const j = s.jogadores[seat]!
+  if (j.falido) return null
+
+  // leilão: sobe até ~60% do preço, só com dinheiro em caixa
+  if (s.leilao && s.leilao.vez === seat) {
+    const preco = MAGNATA_CASAS[s.leilao.casa]!.preco!
+    const teto = Math.round(preco * 0.6)
+    const inc = Math.max(10, Math.round(preco * 0.1))
+    const prox = s.leilao.lance + inc
+    return prox <= teto && j.dinheiro >= prox ? { type: 'lance', valor: prox } : { type: 'desistir' }
+  }
+
+  // resposta de troca: aceita só se ganhar valor e puder pagar o que foi pedido
+  if (s.proposta && s.proposta.para === seat) {
+    const p = s.proposta
+    const ganha = valorProps(s, p.ofereceProps) + p.ofereceDinheiro
+    const perde = valorProps(s, p.pedeProps) + p.pedeDinheiro
+    return ganha >= perde && j.dinheiro >= p.pedeDinheiro ? { type: 'aceitarTroca' } : { type: 'recusarTroca' }
+  }
+
+  // fora disso, o robô só age no próprio turno (e sem leilão/proposta pendente)
+  if (s.turno !== seat || s.leilao || s.proposta) return null
 
   if (s.fase === 'rolar') {
     if (j.preso && j.turnosPreso >= 1 && podePagar(j, MAGNATA_FIANCA) && j.dinheiro > 300) {
@@ -472,6 +726,8 @@ function view(s: MagState): MagnataView {
     log: s.log,
     aviso: s.aviso,
     compravel: s.compravel,
+    leilao: s.leilao,
+    proposta: s.proposta,
     winnerSeats: s.winnerSeats,
     vencedor: s.vencedor,
   }
@@ -496,7 +752,12 @@ export const magnataModule: GameModule<MagState, MagnataAction> = {
   },
 
   currentSeat(state) {
-    return state.finished ? null : state.turno
+    if (state.finished) return null
+    // durante um leilão, quem age é o próximo a dar lance; durante uma
+    // proposta, quem age é o alvo (precisa aceitar/recusar); senão, o turno
+    if (state.leilao) return state.leilao.vez
+    if (state.proposta) return state.proposta.para
+    return state.turno
   },
 
   bot(state, seat) {

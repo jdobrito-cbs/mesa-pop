@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { MAGNATA_CARTAO_INICIAL, MAGNATA_DINHEIRO_INICIAL } from '@mesapop/shared'
+import {
+  custoResgate,
+  grupoDe,
+  MAGNATA_CARTAO_INICIAL,
+  MAGNATA_CASAS,
+  MAGNATA_DINHEIRO_INICIAL,
+  valorHipoteca,
+} from '@mesapop/shared'
 import { initialMagnataState, magnataModule, pagar, receber } from '../src/games/magnata'
 
 describe('Magnata', () => {
@@ -79,5 +86,136 @@ describe('Magnata', () => {
     expect(magnataModule.currentSeat!(s)).toBe(0)
     const a = magnataModule.bot!(s, 0)
     expect(a).toEqual({ type: 'rolar' })
+  })
+
+  it('HIPOTECA: rende metade do preço; resgatar cobra o valor + juros', () => {
+    const s = initialMagnataState(2)
+    s.donoDe[1] = 0
+    s.jogadores[0]!.props.push(1)
+    const preco = MAGNATA_CASAS[1]!.preco!
+    const caixa = s.jogadores[0]!.dinheiro
+    const r = magnataModule.play(s, 0, { type: 'hipotecar', casa: 1 })
+    expect('state' in r).toBe(true)
+    expect(s.jogadores[0]!.hipotecadas).toContain(1)
+    expect(s.jogadores[0]!.dinheiro).toBe(caixa + valorHipoteca(preco))
+    const caixa2 = s.jogadores[0]!.dinheiro
+    magnataModule.play(s, 0, { type: 'resgatar', casa: 1 })
+    expect(s.jogadores[0]!.hipotecadas).not.toContain(1)
+    expect(s.jogadores[0]!.dinheiro).toBe(caixa2 - custoResgate(preco))
+  })
+
+  it('HIPOTECA: bloqueia construir no grupo hipotecado', () => {
+    const s = initialMagnataState(2)
+    const grupo = grupoDe('marrom')
+    for (const i of grupo) {
+      s.donoDe[i] = 0
+      s.jogadores[0]!.props.push(i)
+    }
+    s.fase = 'agir'
+    s.jogadores[0]!.dinheiro = 2000
+    magnataModule.play(s, 0, { type: 'hipotecar', casa: grupo[0]! })
+    const r = magnataModule.play(s, 0, { type: 'construir', casa: grupo[1]! })
+    expect('error' in r).toBe(true)
+  })
+
+  it('HIPOTECA: exige vender as casas antes; venderCasa reembolsa metade', () => {
+    const s = initialMagnataState(2)
+    const grupo = grupoDe('marrom')
+    for (const i of grupo) {
+      s.donoDe[i] = 0
+      s.jogadores[0]!.props.push(i)
+    }
+    s.fase = 'agir'
+    s.jogadores[0]!.dinheiro = 2000
+    magnataModule.play(s, 0, { type: 'construir', casa: grupo[0]! })
+    expect(s.jogadores[0]!.casas[grupo[0]!]).toBe(1)
+    const bloq = magnataModule.play(s, 0, { type: 'hipotecar', casa: grupo[0]! })
+    expect('error' in bloq).toBe(true)
+    magnataModule.play(s, 0, { type: 'venderCasa', casa: grupo[0]! })
+    expect(s.jogadores[0]!.casas[grupo[0]!]).toBe(0)
+    const ok = magnataModule.play(s, 0, { type: 'hipotecar', casa: grupo[0]! })
+    expect('state' in ok).toBe(true)
+  })
+
+  it('LEILÃO: recusar a compra leva a leilão e o arremate cobra o lance', () => {
+    const s = initialMagnataState(3)
+    s.fase = 'comprar'
+    s.compravel = 1
+    magnataModule.play(s, 0, { type: 'passar' })
+    expect(s.fase).toBe('leilao')
+    expect(s.leilao!.vez).toBe(1)
+    expect(magnataModule.currentSeat!(s)).toBe(1)
+    magnataModule.play(s, 1, { type: 'lance', valor: 30 })
+    expect(s.leilao!.lider).toBe(1)
+    magnataModule.play(s, 2, { type: 'desistir' })
+    const antes = s.jogadores[1]!.dinheiro
+    magnataModule.play(s, 0, { type: 'desistir' })
+    expect(s.leilao).toBeNull()
+    expect(s.donoDe[1]).toBe(1)
+    expect(s.jogadores[1]!.props).toContain(1)
+    expect(s.jogadores[1]!.dinheiro).toBe(antes - 30)
+    expect(s.fase).toBe('agir')
+  })
+
+  it('LEILÃO: se ninguém dá lance, a propriedade fica com o banco', () => {
+    const s = initialMagnataState(2)
+    s.fase = 'comprar'
+    s.compravel = 1
+    magnataModule.play(s, 0, { type: 'passar' })
+    magnataModule.play(s, 1, { type: 'desistir' })
+    magnataModule.play(s, 0, { type: 'desistir' })
+    expect(s.leilao).toBeNull()
+    expect(s.donoDe[1]).toBeNull()
+    expect(s.fase).toBe('agir')
+  })
+
+  it('NEGOCIAÇÃO: propor trava o turno, o alvo decide e aceitar transfere props + dinheiro', () => {
+    const s = initialMagnataState(2)
+    s.donoDe[1] = 0
+    s.jogadores[0]!.props.push(1)
+    s.donoDe[3] = 1
+    s.jogadores[1]!.props.push(3)
+    s.fase = 'agir'
+    const caixa0 = s.jogadores[0]!.dinheiro
+    const caixa1 = s.jogadores[1]!.dinheiro
+    const r = magnataModule.play(s, 0, {
+      type: 'propor',
+      para: 1,
+      ofereceProps: [1],
+      ofereceDinheiro: 50,
+      pedeProps: [3],
+      pedeDinheiro: 0,
+    })
+    expect('state' in r).toBe(true)
+    expect(s.proposta).not.toBeNull()
+    expect(magnataModule.currentSeat!(s)).toBe(1) // agora quem decide é o alvo
+    const bloq = magnataModule.play(s, 0, { type: 'rolar' }) // proponente travado
+    expect('error' in bloq).toBe(true)
+    magnataModule.play(s, 1, { type: 'aceitarTroca' })
+    expect(s.proposta).toBeNull()
+    expect(s.donoDe[1]).toBe(1)
+    expect(s.donoDe[3]).toBe(0)
+    expect(s.jogadores[0]!.dinheiro).toBe(caixa0 - 50)
+    expect(s.jogadores[1]!.dinheiro).toBe(caixa1 + 50)
+    expect(magnataModule.currentSeat!(s)).toBe(0) // turno volta ao proponente
+  })
+
+  it('NEGOCIAÇÃO: recusar limpa a proposta sem mover nada', () => {
+    const s = initialMagnataState(2)
+    s.donoDe[1] = 0
+    s.jogadores[0]!.props.push(1)
+    s.fase = 'agir'
+    magnataModule.play(s, 0, {
+      type: 'propor',
+      para: 1,
+      ofereceProps: [1],
+      ofereceDinheiro: 0,
+      pedeProps: [],
+      pedeDinheiro: 20,
+    })
+    expect(s.proposta).not.toBeNull()
+    magnataModule.play(s, 1, { type: 'recusarTroca' })
+    expect(s.proposta).toBeNull()
+    expect(s.donoDe[1]).toBe(0)
   })
 })

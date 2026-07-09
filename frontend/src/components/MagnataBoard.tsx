@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import {
   CORES_GRUPO,
+  custoResgate,
   CUSTO_CASA,
   grupoDe,
   MAGNATA_CASAS,
   MAGNATA_FIANCA,
+  valorHipoteca,
   type MagnataAction,
   type MagnataGrupo,
   type MagnataView,
@@ -67,6 +70,45 @@ export default function MagnataBoard({
     }
   }
 
+  // estado da UI: lance do leilão + construtor de proposta + painel de imóveis
+  const [lance, setLance] = useState('')
+  const [negociar, setNegociar] = useState(false)
+  const [gerir, setGerir] = useState(false)
+  const [alvo, setAlvo] = useState<number | null>(null)
+  const [ofP, setOfP] = useState<number[]>([])
+  const [peP, setPeP] = useState<number[]>([])
+  const [ofD, setOfD] = useState('')
+  const [peD, setPeD] = useState('')
+
+  const podeGerir = suaVez && (view.fase === 'rolar' || view.fase === 'agir' || view.fase === 'comprar')
+  const meusImoveis = eu ? eu.props.slice().sort((a, b) => a - b) : []
+  const nomeProps = (ids: number[]) => (ids.length ? ids.map((i) => MAGNATA_CASAS[i]!.nome).join(', ') : '—')
+  const toggle = (arr: number[], set: (v: number[]) => void, i: number) =>
+    set(arr.includes(i) ? arr.filter((x) => x !== i) : [...arr, i])
+  const outros = view.jogadores.filter((j) => j.seat !== yourSeat && !j.falido)
+  const alvoJog = alvo !== null ? view.jogadores.find((j) => j.seat === alvo) : undefined
+  // imóveis negociáveis (sem casas) meus e do alvo
+  const negMeus = meusImoveis.filter((i) => (eu?.casas[i] ?? 0) === 0)
+  const negAlvo = (alvoJog?.props ?? []).filter((i) => (alvoJog?.casas[i] ?? 0) === 0)
+
+  function enviaProposta() {
+    if (alvo === null) return
+    onAction({
+      type: 'propor',
+      para: alvo,
+      ofereceProps: ofP,
+      ofereceDinheiro: parseInt(ofD || '0', 10) || 0,
+      pedeProps: peP,
+      pedeDinheiro: parseInt(peD || '0', 10) || 0,
+    })
+    setNegociar(false)
+    setAlvo(null)
+    setOfP([])
+    setPeP([])
+    setOfD('')
+    setPeD('')
+  }
+
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       {/* TABULEIRO */}
@@ -80,6 +122,7 @@ export default function MagnataBoard({
           const donoCor = dono !== null && dono !== undefined ? view.jogadores[dono]?.cor : undefined
           const grupoCor = c.grupo ? CORES_GRUPO[c.grupo] : undefined
           const nCasas = dono !== null && dono !== undefined ? (view.jogadores[dono]?.casas[c.i] ?? 0) : 0
+          const hipotecada = dono !== null && dono !== undefined && !!view.jogadores[dono]?.hipotecadas.includes(c.i)
           return (
             <div
               key={c.i}
@@ -98,6 +141,9 @@ export default function MagnataBoard({
               {c.tipo === 'inicio' && <div className="grid flex-1 place-items-center text-base">🏁</div>}
               {nCasas > 0 && (
                 <div className="absolute right-0.5 bottom-0.5 text-[7px]">{nCasas >= 5 ? '🏨' : '🏠'.repeat(nCasas)}</div>
+              )}
+              {hipotecada && (
+                <div className="absolute inset-0 grid place-items-center bg-ink-950/55 text-[7px] font-bold text-pop-yellow">🏦 HIP</div>
               )}
               {/* peões */}
               <div className="absolute inset-x-0 top-2 flex flex-wrap justify-center gap-px">
@@ -170,6 +216,81 @@ export default function MagnataBoard({
         <div className="card flex flex-col gap-2 p-3">
           {view.vencedor !== null ? (
             <p className="text-center text-sm font-bold text-pop-green">Fim de jogo!</p>
+          ) : view.leilao ? (
+            /* LEILÃO em andamento */
+            <>
+              <p className="text-center text-sm font-extrabold text-pop-orange">🔨 Leilão: {MAGNATA_CASAS[view.leilao.casa]!.nome}</p>
+              <p className="text-center text-xs text-text-muted">
+                Lance atual:{' '}
+                {view.leilao.lance > 0 ? (
+                  <span className="font-bold text-pop-yellow">{reais(view.leilao.lance)} · {nomeSeat(view.leilao.lider!)}</span>
+                ) : (
+                  'nenhum ainda'
+                )}
+              </p>
+              {view.leilao.vez === yourSeat ? (
+                <>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={lance}
+                    onChange={(e) => setLance(e.target.value)}
+                    placeholder={`maior que ${view.leilao.lance}`}
+                    className="field text-sm"
+                    aria-label="Seu lance"
+                  />
+                  <button
+                    onClick={() => {
+                      const v = parseInt(lance || '0', 10)
+                      if (v > view.leilao!.lance) {
+                        onAction({ type: 'lance', valor: v })
+                        setLance('')
+                      }
+                    }}
+                    className="btn-pop bg-gradient-to-br from-pop-green to-pop-cyan px-4 py-2 text-sm font-bold text-white"
+                  >
+                    Dar lance
+                  </button>
+                  <button onClick={() => onAction({ type: 'desistir' })} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+                    Desistir
+                  </button>
+                </>
+              ) : (
+                <p className="text-center text-xs text-text-muted">Vez de {nomeSeat(view.leilao.vez)} dar o lance…</p>
+              )}
+            </>
+          ) : view.proposta ? (
+            /* PROPOSTA de troca pendente */
+            <>
+              <p className="text-center text-sm font-extrabold text-pop-cyan">🤝 Proposta de troca</p>
+              <p className="text-xs text-text-muted">
+                <b className="text-cream">{nomeSeat(view.proposta.de)}</b> dá: {nomeProps(view.proposta.ofereceProps)}
+                {view.proposta.ofereceDinheiro > 0 ? ` + ${reais(view.proposta.ofereceDinheiro)}` : ''}
+              </p>
+              <p className="text-xs text-text-muted">
+                e quer: {nomeProps(view.proposta.pedeProps)}
+                {view.proposta.pedeDinheiro > 0 ? ` + ${reais(view.proposta.pedeDinheiro)}` : ''}
+              </p>
+              {view.proposta.para === yourSeat ? (
+                <>
+                  <button onClick={() => onAction({ type: 'aceitarTroca' })} className="btn-pop bg-gradient-to-br from-pop-green to-pop-cyan px-4 py-2 text-sm font-bold text-white">
+                    ✅ Aceitar
+                  </button>
+                  <button onClick={() => onAction({ type: 'recusarTroca' })} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
+                    Recusar
+                  </button>
+                </>
+              ) : view.proposta.de === yourSeat ? (
+                <>
+                  <p className="text-center text-xs text-text-muted">Aguardando {nomeSeat(view.proposta.para)}…</p>
+                  <button onClick={() => onAction({ type: 'recusarTroca' })} className="btn-pop px-4 py-1.5 text-xs ring-1 ring-ink-700">
+                    Cancelar proposta
+                  </button>
+                </>
+              ) : (
+                <p className="text-center text-xs text-text-muted">{nomeSeat(view.proposta.de)} e {nomeSeat(view.proposta.para)} negociam…</p>
+              )}
+            </>
           ) : !suaVez ? (
             <p className="text-center text-sm text-text-muted">Aguarde: vez de {nomeSeat(view.turno)}…</p>
           ) : (
@@ -192,7 +313,7 @@ export default function MagnataBoard({
                     🏠 Comprar {MAGNATA_CASAS[view.compravel]!.nome} ({reais(MAGNATA_CASAS[view.compravel]!.preco!)})
                   </button>
                   <button onClick={() => onAction({ type: 'passar' })} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange">
-                    Passar
+                    Passar (vai a leilão)
                   </button>
                 </>
               )}
@@ -210,6 +331,94 @@ export default function MagnataBoard({
                   🏗️ Construir em {MAGNATA_CASAS[i]!.nome} ({reais(CUSTO_CASA[MAGNATA_CASAS[i]!.grupo as MagnataGrupo] ?? 100)})
                 </button>
               ))}
+
+              {/* negociar + gerir imóveis (hipoteca/venda) */}
+              {podeGerir && (view.fase === 'agir' || view.fase === 'comprar') && outros.length > 0 && (
+                <button onClick={() => setNegociar((v) => !v)} className="btn-pop px-3 py-1.5 text-xs ring-1 ring-pop-cyan/50 hover:ring-pop-cyan">
+                  🤝 {negociar ? 'Fechar negociação' : 'Negociar com alguém'}
+                </button>
+              )}
+              {podeGerir && meusImoveis.length > 0 && (
+                <button onClick={() => setGerir((v) => !v)} className="btn-pop px-3 py-1.5 text-xs ring-1 ring-pop-orange/50 hover:ring-pop-orange">
+                  🏦 {gerir ? 'Fechar imóveis' : 'Gerir imóveis (hipoteca)'}
+                </button>
+              )}
+
+              {/* construtor de proposta */}
+              {negociar && (
+                <div className="mt-1 flex flex-col gap-2 rounded-field bg-ink-950/50 p-2 ring-1 ring-ink-700">
+                  <p className="text-[11px] font-bold text-text-muted">Trocar com:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {outros.map((o) => (
+                      <button
+                        key={o.seat}
+                        onClick={() => { setAlvo(o.seat); setPeP([]) }}
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ${alvo === o.seat ? 'bg-pop-cyan/25 ring-pop-cyan' : 'ring-ink-700'}`}
+                      >
+                        {o.nome}
+                      </button>
+                    ))}
+                  </div>
+                  {alvo !== null && (
+                    <>
+                      <p className="text-[11px] font-bold text-text-muted">Você oferece:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {negMeus.length === 0 && <span className="text-[11px] text-text-muted">nenhum imóvel livre</span>}
+                        {negMeus.map((i) => (
+                          <button key={i} onClick={() => toggle(ofP, setOfP, i)} className={`rounded px-1.5 py-0.5 text-[10px] ring-1 ${ofP.includes(i) ? 'bg-pop-green/25 ring-pop-green' : 'ring-ink-700'}`}>
+                            {MAGNATA_CASAS[i]!.nome}
+                          </button>
+                        ))}
+                      </div>
+                      <input type="number" inputMode="numeric" value={ofD} onChange={(e) => setOfD(e.target.value)} placeholder="+ dinheiro (opcional)" className="field text-xs" aria-label="Dinheiro que você oferece" />
+                      <p className="text-[11px] font-bold text-text-muted">Você pede de {nomeSeat(alvo)}:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {negAlvo.length === 0 && <span className="text-[11px] text-text-muted">nenhum imóvel livre</span>}
+                        {negAlvo.map((i) => (
+                          <button key={i} onClick={() => toggle(peP, setPeP, i)} className={`rounded px-1.5 py-0.5 text-[10px] ring-1 ${peP.includes(i) ? 'bg-pop-magenta/25 ring-pop-magenta' : 'ring-ink-700'}`}>
+                            {MAGNATA_CASAS[i]!.nome}
+                          </button>
+                        ))}
+                      </div>
+                      <input type="number" inputMode="numeric" value={peD} onChange={(e) => setPeD(e.target.value)} placeholder="+ dinheiro pedido (opcional)" className="field text-xs" aria-label="Dinheiro que você pede" />
+                      <button onClick={enviaProposta} className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-3 py-1.5 text-xs font-bold text-white">
+                        Enviar proposta
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* gestão de imóveis: hipotecar / resgatar / vender casa */}
+              {gerir && (
+                <div className="mt-1 flex flex-col gap-1.5 rounded-field bg-ink-950/50 p-2 ring-1 ring-ink-700">
+                  {meusImoveis.map((i) => {
+                    const c = MAGNATA_CASAS[i]!
+                    const hipotecada = eu!.hipotecadas.includes(i)
+                    const casas = eu!.casas[i] ?? 0
+                    return (
+                      <div key={i} className="flex items-center gap-1 text-[11px]">
+                        <span className={`min-w-0 flex-1 truncate ${hipotecada ? 'text-text-muted line-through' : ''}`}>{c.nome}</span>
+                        {casas > 0 && (
+                          <button onClick={() => onAction({ type: 'venderCasa', casa: i })} className="rounded px-1.5 py-0.5 ring-1 ring-ink-600 hover:ring-pop-orange">
+                            vender casa +{Math.round((CUSTO_CASA[c.grupo as MagnataGrupo] ?? 100) / 2)}
+                          </button>
+                        )}
+                        {!hipotecada && casas === 0 && c.preco !== undefined && (
+                          <button onClick={() => onAction({ type: 'hipotecar', casa: i })} className="rounded px-1.5 py-0.5 text-pop-yellow ring-1 ring-ink-600 hover:ring-pop-yellow">
+                            hipotecar +{valorHipoteca(c.preco)}
+                          </button>
+                        )}
+                        {hipotecada && c.preco !== undefined && (
+                          <button onClick={() => onAction({ type: 'resgatar', casa: i })} className="rounded px-1.5 py-0.5 text-pop-green ring-1 ring-ink-600 hover:ring-pop-green">
+                            resgatar −{custoResgate(c.preco)}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>

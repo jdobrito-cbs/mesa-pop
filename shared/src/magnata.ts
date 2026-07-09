@@ -116,6 +116,16 @@ export function aluguelServico(dados: number, ambos: boolean): number {
   return dados * (ambos ? 10 : 4)
 }
 
+/** valor que o banco paga ao hipotecar uma propriedade (metade do preço) */
+export function valorHipoteca(preco: number): number {
+  return Math.round(preco / 2)
+}
+
+/** custo para resgatar uma hipoteca (valor + 10% de juros) */
+export function custoResgate(preco: number): number {
+  return Math.round(valorHipoteca(preco) * 1.1)
+}
+
 // —— tipos de estado/visão/ação (compartilhados com o cliente) ——
 
 export interface MagnataJogador {
@@ -130,13 +140,36 @@ export interface MagnataJogador {
   props: number[]
   /** casas por propriedade (índice → 0..5) */
   casas: Record<number, number>
+  /** propriedades hipotecadas (não rendem aluguel até o resgate) */
+  hipotecadas: number[]
   preso: boolean
   turnosPreso: number
   falido: boolean
   isBot?: boolean
 }
 
-export type MagnataFase = 'rolar' | 'comprar' | 'agir' | 'fim'
+export type MagnataFase = 'rolar' | 'comprar' | 'agir' | 'leilao' | 'fim'
+
+/** leilão de uma propriedade recusada — todos os solventes disputam por lances */
+export interface MagnataLeilao {
+  casa: number
+  lance: number
+  lider: number | null
+  /** assentos ainda na disputa */
+  ativos: number[]
+  /** de quem é a vez de dar lance ou desistir */
+  vez: number
+}
+
+/** proposta de troca entre dois jogadores (props + dinheiro dos dois lados) */
+export interface MagnataProposta {
+  de: number
+  para: number
+  ofereceProps: number[]
+  ofereceDinheiro: number
+  pedeProps: number[]
+  pedeDinheiro: number
+}
 
 export interface MagnataView {
   jogadores: MagnataJogador[]
@@ -148,6 +181,10 @@ export interface MagnataView {
   aviso: string | null
   /** índice da propriedade que o jogador da vez pode comprar agora (ou null) */
   compravel: number | null
+  /** leilão em andamento (ou null) */
+  leilao: MagnataLeilao | null
+  /** proposta de troca pendente (ou null) */
+  proposta: MagnataProposta | null
   winnerSeats: number[]
   vencedor: number | null
 }
@@ -157,5 +194,15 @@ export type MagnataAction =
   | { type: 'comprar' }
   | { type: 'passar' }
   | { type: 'construir'; casa: number }
+  | { type: 'venderCasa'; casa: number }
+  | { type: 'hipotecar'; casa: number }
+  | { type: 'resgatar'; casa: number }
   | { type: 'fianca' }
   | { type: 'encerrar' }
+  // leilão da propriedade recusada
+  | { type: 'lance'; valor: number }
+  | { type: 'desistir' }
+  // negociação entre jogadores
+  | { type: 'propor'; para: number; ofereceProps: number[]; ofereceDinheiro: number; pedeProps: number[]; pedeDinheiro: number }
+  | { type: 'aceitarTroca' }
+  | { type: 'recusarTroca' }
