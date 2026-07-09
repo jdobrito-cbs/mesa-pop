@@ -21,6 +21,32 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **NOVO JOGO — MAHJONG SOLITAIRE (pedido do usuário 2026-07-09)**:
+  paciência de mahjong (combinar pares de peças LIVRES até esvaziar a
+  mesa), SOLO com ranking, 3 níveis (fácil 2 camadas ~68, médio 3 ~122,
+  difícil 4 ~140) e **deal novo e SEMPRE RESOLVÍVEL a cada partida**.
+  `shared/mahjong.ts`: coordenadas em MEIAS-CÉLULAS (peça 2×2; camadas
+  altas entram com staddle de 1 meia-célula = visual clássico);
+  `montaLayout` (pirâmide por nível, contagem sempre PAR); `slotLivre`/
+  `slotsLivres` (sem peça em cima + um lado aberto); geração por
+  REVERSE-SOLVE (`gerarMahjong`: esvazia tirando pares de peças livres e
+  atribui peças que casam do saco de 72 pares embaralhado → a ordem de
+  saída vira a `solucao` garantida); `movimentosPossiveis` (dica/
+  travamento) e `reembaralhar` (redistribui as peças restantes de forma
+  resolvível quando trava). Flores casam com qualquer flor; estações com
+  estações. `MahjongPage.tsx`: peças SVG realistas 3D (marfim + lábia de
+  espessura), PONTOS e BAMBUS desenhados, caracteres 萬 + numeral,
+  ventos 東南西北, dragões 中(v)/發(v)/白(moldura), flores/estações
+  coloridas (glifos CJK usam o fallback do navegador do cliente).
+  Peça LIVRE clicável e destacada; não-livre escurecida e sem clique
+  (pointer-events none → o clique atinge a de cima); dica (anel ciano),
+  reembaralhar, timer, "restam N". Pontos base 1200/2000/3000 − tempo −
+  dicas − reembaralhos (mín 100); PLAUSIBILITY 'mahjong' {40/s, 20s,
+  5000}. Catálogo: 33 jogos. 226 testes (7 novos: contagem par,
+  resolvível seguindo a solução em 10 seeds × 3 níveis, ≤4 cópias por
+  peça, determinismo por seed, sempre há par livre no início, cobertura/
+  casamento). Typecheck limpo. Demo real: médio 122 peças resolvido →
+  "Mesa limpa! 1954 pts" no ranking. Hook dev `window.__mahjong`.
 - **QUEM ESTÁ ONLINE AGORA na Visão geral (pedido do usuário
   2026-07-09)**: dois boxes novos no Dashboard — "🎟️ Convidados online"
   e "🟢 Usuários online" — cada pessoa conectada com um selo do JOGO em
