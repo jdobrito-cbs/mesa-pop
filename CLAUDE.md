@@ -21,6 +21,19 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **EXPANSÃO DOS BANCOS DE QUIZ (pedido do usuário 2026-07-09)**: mais
+  perguntas nos três bancos de trivia, sem duplicar as existentes e com
+  a correta sempre em `alts[0]`/`alternativas[0]`. **Quiz Pop** ~48→64
+  (`backend/lib/quizPerguntas.ts`), **Quiz Nostalgia** ~41→56 (idem) e
+  **Gira Gênio** 72→96 (`backend/lib/giraGenioPerguntas.ts`, +4 por
+  categoria: geo/hist/cien/esp/arte/ent = 16 cada). Só dados — nenhuma
+  mudança de engine. Typecheck limpo; 264 testes verdes (os testes de
+  sanidade dos bancos garantem 4 alternativas únicas e sem vazio; a
+  suíte só passa em série — `--no-file-parallelism` — porque os testes
+  de integração dividem um Postgres e brigam em paralelo). Segue a
+  "expansão dos bancos de quiz" da lista do usuário ("vamos fazer tudo
+  isso"). Próximos da mesma leva: desafio diário com seed e o Magnata
+  (negociação/leilão/hipoteca).
 - **BOTS · LOTE 4 entregue — Quiz Pop e Quiz Nostalgia (realtime)
   (2026-07-09)**: fecha a iniciativa de bots. Como o quiz é REALTIME
   (não turn-based), criei um hook genérico `GameModule.botTick(state,
