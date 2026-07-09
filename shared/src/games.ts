@@ -73,4 +73,5 @@ export const GAME_CATALOG: GameDef[] = [
   { slug: 'cruzadinha', name: 'Cruzadinha', description: 'Palavras-cruzadas de dicas curtas, geradas na hora.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-green', icon: '✏️', phase: 9, enabled: true },
   { slug: 'mahjong', name: 'Mahjong', description: 'Combine pares de peças livres até esvaziar a mesa — 3 níveis.', family: 'PUZZLE', minPlayers: 1, maxPlayers: 1, color: 'pop-orange', icon: '🀄', phase: 9, enabled: true },
   { slug: 'ganso', name: 'Corrida do Ganso', description: 'Trilha clássica com dados — casas especiais e sorte. Até 4, ou contra o robô.', family: 'TURN', minPlayers: 2, maxPlayers: 4, color: 'pop-yellow', icon: '🦢', phase: 9, enabled: true },
+  { slug: 'gira-genio', name: 'Gira Gênio', description: 'Roleta de 6 categorias — acerte e junte as coroas. Até 6, ou contra o robô.', family: 'PARTY', minPlayers: 2, maxPlayers: 6, color: 'pop-purple', icon: '🎡', phase: 9, enabled: true },
 ]

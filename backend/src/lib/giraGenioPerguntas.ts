@@ -1,0 +1,99 @@
+import type { GGCategoria } from '@mesapop/shared'
+
+/**
+ * Banco de perguntas do Gira Gênio (fica NO SERVIDOR — a resposta certa nunca
+ * vai para o cliente). `alternativas[0]` é sempre a CORRETA; o servidor
+ * embaralha as opções por pergunta. Expandir o banco = melhoria contínua.
+ */
+export interface GGPergunta {
+  pergunta: string
+  /** [correta, ...distratores] */
+  alternativas: string[]
+}
+
+export const GIRA_GENIO_BANCO: Record<GGCategoria, GGPergunta[]> = {
+  geo: [
+    { pergunta: 'Qual é a capital da Austrália?', alternativas: ['Camberra', 'Sydney', 'Melbourne', 'Brisbane'] },
+    { pergunta: 'Qual é o maior oceano do planeta?', alternativas: ['Pacífico', 'Atlântico', 'Índico', 'Ártico'] },
+    { pergunta: 'Qual rio corta o Egito?', alternativas: ['Nilo', 'Amazonas', 'Congo', 'Tigre'] },
+    { pergunta: 'Qual é o maior país do mundo em área?', alternativas: ['Rússia', 'Canadá', 'China', 'Estados Unidos'] },
+    { pergunta: 'Qual é a capital do Japão?', alternativas: ['Tóquio', 'Osaka', 'Quioto', 'Nagoia'] },
+    { pergunta: 'Em que estado brasileiro fica a cidade de Salvador?', alternativas: ['Bahia', 'Sergipe', 'Pernambuco', 'Ceará'] },
+    { pergunta: 'Qual é o menor país do mundo?', alternativas: ['Vaticano', 'Mônaco', 'Nauru', 'San Marino'] },
+    { pergunta: 'Qual país tem o formato parecido com uma bota?', alternativas: ['Itália', 'Grécia', 'Portugal', 'Espanha'] },
+    { pergunta: 'Qual é o maior deserto quente do mundo?', alternativas: ['Saara', 'Gobi', 'Atacama', 'Kalahari'] },
+    { pergunta: 'Em que continente fica o Egito?', alternativas: ['África', 'Ásia', 'Europa', 'Oceania'] },
+    { pergunta: 'Qual é a capital da Argentina?', alternativas: ['Buenos Aires', 'Córdoba', 'Rosário', 'Mendoza'] },
+    { pergunta: 'Qual é o rio mais extenso do Brasil?', alternativas: ['Amazonas', 'São Francisco', 'Paraná', 'Tocantins'] },
+  ],
+  hist: [
+    { pergunta: 'Em que ano o Brasil se tornou independente?', alternativas: ['1822', '1500', '1889', '1808'] },
+    { pergunta: 'Quem comandou a frota que chegou ao Brasil em 1500?', alternativas: ['Pedro Álvares Cabral', 'Cristóvão Colombo', 'Vasco da Gama', 'Américo Vespúcio'] },
+    { pergunta: 'Quem foi o primeiro presidente do Brasil?', alternativas: ['Deodoro da Fonseca', 'Getúlio Vargas', 'Prudente de Morais', 'Floriano Peixoto'] },
+    { pergunta: 'Em que ano terminou a Segunda Guerra Mundial?', alternativas: ['1945', '1939', '1918', '1950'] },
+    { pergunta: 'Qual lei aboliu a escravidão no Brasil?', alternativas: ['Lei Áurea', 'Lei do Ventre Livre', 'Lei Eusébio de Queirós', 'Lei Saraiva'] },
+    { pergunta: 'Qual civilização construiu as pirâmides de Gizé?', alternativas: ['Egípcios', 'Maias', 'Astecas', 'Romanos'] },
+    { pergunta: 'Em que ano começou a Revolução Francesa?', alternativas: ['1789', '1822', '1917', '1750'] },
+    { pergunta: 'Quem liderou a primeira expedição a dar a volta ao mundo?', alternativas: ['Fernão de Magalhães', 'Cristóvão Colombo', 'Vasco da Gama', 'Pedro Álvares Cabral'] },
+    { pergunta: 'Quem descobriu o caminho marítimo para as Índias?', alternativas: ['Vasco da Gama', 'Colombo', 'Cabral', 'Magalhães'] },
+    { pergunta: 'Em que ano foi proclamada a República no Brasil?', alternativas: ['1889', '1822', '1888', '1900'] },
+    { pergunta: 'Quem proclamou a independência do Brasil?', alternativas: ['Dom Pedro I', 'Dom Pedro II', 'Dom João VI', 'Tiradentes'] },
+    { pergunta: 'Qual líder comandou a Alemanha na Segunda Guerra?', alternativas: ['Adolf Hitler', 'Otto von Bismarck', 'Kaiser Guilherme', 'Rommel'] },
+  ],
+  cien: [
+    { pergunta: 'Qual planeta é conhecido como Planeta Vermelho?', alternativas: ['Marte', 'Júpiter', 'Vênus', 'Saturno'] },
+    { pergunta: 'Qual é o símbolo químico do ouro?', alternativas: ['Au', 'Ag', 'Fe', 'O'] },
+    { pergunta: 'Quantos ossos tem o corpo humano adulto?', alternativas: ['206', '180', '250', '300'] },
+    { pergunta: 'Qual gás as plantas absorvem na fotossíntese?', alternativas: ['Gás carbônico', 'Oxigênio', 'Nitrogênio', 'Hidrogênio'] },
+    { pergunta: 'Qual é o maior planeta do Sistema Solar?', alternativas: ['Júpiter', 'Saturno', 'Terra', 'Netuno'] },
+    { pergunta: 'A água é formada por hidrogênio e qual outro elemento?', alternativas: ['Oxigênio', 'Carbono', 'Nitrogênio', 'Hélio'] },
+    { pergunta: 'Quem propôs a Teoria da Relatividade?', alternativas: ['Albert Einstein', 'Isaac Newton', 'Galileu', 'Charles Darwin'] },
+    { pergunta: 'Qual órgão bombeia o sangue pelo corpo?', alternativas: ['Coração', 'Pulmão', 'Fígado', 'Rim'] },
+    { pergunta: 'Qual é o maior animal do mundo?', alternativas: ['Baleia-azul', 'Elefante', 'Tubarão-baleia', 'Girafa'] },
+    { pergunta: 'Qual vitamina o corpo produz com a luz do sol?', alternativas: ['Vitamina D', 'Vitamina C', 'Vitamina A', 'Vitamina K'] },
+    { pergunta: 'Qual é a velocidade aproximada da luz?', alternativas: ['300 mil km/s', '30 mil km/s', '3 mil km/s', '3 milhões km/s'] },
+    { pergunta: 'Quantos planetas há no Sistema Solar?', alternativas: ['8', '9', '7', '10'] },
+  ],
+  esp: [
+    { pergunta: 'Quantos jogadores um time de futebol tem em campo?', alternativas: ['11', '10', '9', '12'] },
+    { pergunta: 'Quantas vezes o Brasil foi campeão mundial de futebol?', alternativas: ['5', '4', '3', '6'] },
+    { pergunta: 'Em qual esporte existem "saque" e "cortada"?', alternativas: ['Vôlei', 'Basquete', 'Tênis', 'Handebol'] },
+    { pergunta: 'Em que país acontece o torneio de tênis de Wimbledon?', alternativas: ['Inglaterra', 'França', 'Estados Unidos', 'Austrália'] },
+    { pergunta: 'Em qual esporte Ayrton Senna foi campeão mundial?', alternativas: ['Fórmula 1', 'Motovelocidade', 'Kart', 'Rali'] },
+    { pergunta: 'De quantos em quantos anos ocorrem os Jogos Olímpicos de verão?', alternativas: ['4 anos', '2 anos', '3 anos', '5 anos'] },
+    { pergunta: 'Qual atleta é chamado de "Rei do Futebol"?', alternativas: ['Pelé', 'Maradona', 'Zico', 'Garrincha'] },
+    { pergunta: 'Quantos pontos vale uma cesta de longa distância no basquete?', alternativas: ['3', '2', '1', '4'] },
+    { pergunta: 'Em que país nasceu o judô?', alternativas: ['Japão', 'China', 'Coreia do Sul', 'Brasil'] },
+    { pergunta: 'Quantos jogadores um time de basquete tem em quadra?', alternativas: ['5', '6', '7', '4'] },
+    { pergunta: 'Qual esporte é jogado com tacos num campo com "greens"?', alternativas: ['Golfe', 'Beisebol', 'Críquete', 'Hóquei'] },
+    { pergunta: 'Quantos sets, no máximo, tem uma partida de vôlei?', alternativas: ['5', '3', '4', '6'] },
+  ],
+  arte: [
+    { pergunta: 'Quem pintou a "Mona Lisa"?', alternativas: ['Leonardo da Vinci', 'Michelangelo', 'Van Gogh', 'Picasso'] },
+    { pergunta: 'Quem escreveu "Dom Casmurro"?', alternativas: ['Machado de Assis', 'José de Alencar', 'Jorge Amado', 'Clarice Lispector'] },
+    { pergunta: 'Quem pintou "A Noite Estrelada"?', alternativas: ['Van Gogh', 'Monet', 'Salvador Dalí', 'Picasso'] },
+    { pergunta: 'Quantas teclas tem um piano tradicional?', alternativas: ['88', '61', '76', '100'] },
+    { pergunta: 'Quem escreveu "Romeu e Julieta"?', alternativas: ['Shakespeare', 'Molière', 'Cervantes', 'Camões'] },
+    { pergunta: 'Qual pintor espanhol é o ícone do cubismo?', alternativas: ['Pablo Picasso', 'Francisco Goya', 'Diego Velázquez', 'Joan Miró'] },
+    { pergunta: 'Quem escreveu "Os Lusíadas"?', alternativas: ['Luís de Camões', 'Fernando Pessoa', 'Eça de Queirós', 'José Saramago'] },
+    { pergunta: 'Qual escultura de Michelangelo está em Florença?', alternativas: ['Davi', 'Pietà', 'O Pensador', 'Vênus de Milo'] },
+    { pergunta: 'Quem compôs a 9ª Sinfonia (Ode à Alegria)?', alternativas: ['Beethoven', 'Mozart', 'Bach', 'Chopin'] },
+    { pergunta: 'Qual movimento a pintora Tarsila do Amaral representa?', alternativas: ['Modernismo', 'Barroco', 'Romantismo', 'Realismo'] },
+    { pergunta: 'Quantas cordas tem um violão tradicional?', alternativas: ['6', '4', '5', '7'] },
+    { pergunta: 'Quem escreveu "Capitães da Areia"?', alternativas: ['Jorge Amado', 'Machado de Assis', 'Graciliano Ramos', 'Érico Veríssimo'] },
+  ],
+  ent: [
+    { pergunta: 'Qual desenho tem Homer, Marge, Bart e Lisa?', alternativas: ['Os Simpsons', 'Uma Família da Pesada', 'Futurama', 'South Park'] },
+    { pergunta: 'Qual é o nome civil do Homem-Aranha?', alternativas: ['Peter Parker', 'Bruce Wayne', 'Clark Kent', 'Tony Stark'] },
+    { pergunta: 'Qual dupla imortalizou o clássico "Evidências"?', alternativas: ['Chitãozinho & Xororó', 'Zezé Di Camargo & Luciano', 'Leandro & Leonardo', 'Bruno & Marrone'] },
+    { pergunta: 'Em qual jogo você constrói um mundo com blocos?', alternativas: ['Minecraft', 'Fortnite', 'Among Us', 'Valorant'] },
+    { pergunta: 'Qual novela teve a vilã "Odete Roitman"?', alternativas: ['Vale Tudo', 'Roque Santeiro', 'Avenida Brasil', 'Tieta'] },
+    { pergunta: 'Qual banda tinha John, Paul, George e Ringo?', alternativas: ['Beatles', 'Rolling Stones', 'Queen', 'Pink Floyd'] },
+    { pergunta: 'Qual animação tem o boneco Woody e o Buzz Lightyear?', alternativas: ['Toy Story', 'Shrek', 'Procurando Nemo', 'Divertida Mente'] },
+    { pergunta: 'Quem apresentava o "Programa do Chacrinha"?', alternativas: ['Chacrinha', 'Silvio Santos', 'Faustão', 'Bolinha'] },
+    { pergunta: 'Qual super-herói protege Gotham City?', alternativas: ['Batman', 'Superman', 'Flash', 'Homem de Ferro'] },
+    { pergunta: 'Qual apresentadora comandou o "Xou da Xuxa"?', alternativas: ['Xuxa', 'Angélica', 'Eliana', 'Mara Maravilha'] },
+    { pergunta: 'Qual app ficou famoso pelos vídeos curtos de dança?', alternativas: ['TikTok', 'Instagram', 'YouTube', 'Kwai'] },
+    { pergunta: 'Qual animação tem um ogro verde chamado Shrek?', alternativas: ['Shrek', 'Enrolados', 'Vida de Inseto', 'Madagascar'] },
+  ],
+}

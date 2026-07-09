@@ -13,6 +13,7 @@ import type {
   ForcaView,
   GameEndView,
   GansoState,
+  GGView,
   MemoriaView,
   OneAction,
   OneView,
@@ -28,6 +29,7 @@ import { useAuth } from '../lib/auth'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
 import GansoBoard from '../components/GansoBoard'
+import GiraGenioGame from '../components/GiraGenioGame'
 import DesenhaGame from '../components/DesenhaGame'
 import DueloGame from '../components/DueloGame'
 import StopGame from '../components/StopGame'
@@ -323,6 +325,15 @@ export default function RoomPage() {
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                   onRoll={() => void sendAction({ type: 'roll' })}
+                />
+              )}
+              {room.gameSlug === 'gira-genio' && (
+                <GiraGenioGame
+                  view={game.state as GGView}
+                  yourSeat={game.yourSeat}
+                  players={seatedPlayers}
+                  onGirar={() => void sendAction({ type: 'girar' })}
+                  onResponder={(opcao) => void sendAction({ type: 'responder', opcao })}
                 />
               )}
               {room.gameSlug === 'domino' && (

@@ -21,6 +21,34 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **NOVO JOGO — GIRA GÊNIO (clone do Perguntados; pedido do usuário
+  2026-07-09, nome e escopo aprovados: jogo completo de uma vez)**:
+  trivia com ROLETA de 6 categorias (🌎 Geografia · 📜 História · 🔬
+  Ciência · ⚽ Esportes · 🎭 Arte & Cultura · 🎬 Entretenimento). Turno:
+  gira → cai numa categoria → responde; ACERTOU numa categoria que não
+  tem → ganha a COROA e joga de novo; ERROU → passa a vez. Junta as 6
+  coroas e vence. 2–6 jogadores + "🤖 Jogar contra o robô" (bot ~72%
+  de acerto). `shared/giraGenio.ts` (tipos, GG_CATEGORIAS, GGView SEM a
+  resposta certa, GG_META=6). Banco NO SERVIDOR
+  (`backend/lib/giraGenioPerguntas.ts`, ~12/categoria, alts[0]=correta)
+  e `backend/games/giraGenio.ts` (módulo de turno: girar sorteia
+  categoria+pergunta e EMBARALHA as opções rastreando a correta;
+  responder valida; getStateFor NUNCA envia a correta; bot; recentes p/
+  evitar repetição). `GiraGenioGame.tsx`: roleta SVG de 6 setores que
+  GIRA até a categoria sorteada, card da pergunta com timer (cliente,
+  20s → auto-erro), 4 alternativas A–D, coroas por jogador, reveal do
+  último lance. Registrado no socket; RoomPage/GameLobby (hasBot);
+  catálogo 35 jogos. 240 testes (5 novos: girar sorteia, acerto=coroa+
+  joga de novo, erro passa a vez, resposta correta não vaza na view,
+  junta 6 e vence, bot gira/responde). Demo real: humano × Robô Zé, a
+  roleta parou em História ("Revolução Francesa?"), o robô juntou as 6
+  coroas e venceu.
+- **LANDING — botão trocado por chamada dos jogos (pedido do usuário
+  2026-07-09)**: removido o botão "🎟️ Jogar sem conta" e o texto abaixo
+  do hero; no lugar entrou "O que vai rolar na mesa / São N jogos na
+  mesa" (N = contagem DINÂMICA via /api/games, não fixa) e a grade de
+  jogos SUBIU (título duplicado do catálogo removido; espaçamento
+  comprimido). `Home.tsx` sem `Link`/`useAuth` (não mais usados).
 - **NOVO JOGO — CORRIDA DO GANSO (pedido do usuário 2026-07-09,
   aprovado com esse nome)**: jogo de trilha clássico (Jogo do Ganso,
   domínio público) — 2–4 jogadores + "🤖 Jogar contra o robô"
@@ -1067,10 +1095,17 @@ Base sólida primeiro; os jogos plugam nela.
      jogador tem um cartão com LIMITE inicial que AUMENTA conforme os
      recebimentos e DIMINUI conforme os pagamentos (linha de crédito
      dinâmica, além do dinheiro em caixa).
-  2. **Clone do "Perguntados"/Trivia** (roleta de categorias) — pedido
-     2026-07-09; aguardando plano/OK. Nome genérico; reaproveitar a
-     engine de quiz (`makeQuizModule`) + bancos. Mecânica-chave: roleta
-     de 6 categorias, coletar "coroas"/personagens, duelo 1×1.
+  2. **Clone do slither.io** (pedido 2026-07-09) — MULTIPLAYER em TEMPO
+     REAL (usar a infra realtime: tickMs/broadcast, snapshot único como
+     o co-op/corrida). Toque/clique para direcionar a cobra; toque/
+     clique LONGO para acelerar (gasta massa). Comer pontos cresce;
+     bater na cobra do outro morre e vira comida. Aguardando plano/OK.
+  3. **TELA CHEIA em todos os jogos** (pedido 2026-07-09) — botão para
+     entrar/sair de fullscreen (Fullscreen API: requestFullscreen/
+     exitFullscreen) no PC, celular e tablet; na tela cheia manter o
+     CHAT ao lado. Aplicar no RoomPage e nas páginas solo. Feature
+     transversal (não é jogo). Aguardando entrar na fila.
+  - **Gira Gênio (clone do Perguntados)** já ENTREGUE (ver acima).
 - **Próximo passo**: INICIATIVA "Bots nos jogos de turno" segue aberta
   (Lotes 1 Damas+Xadrez e 2 Dominó/One/Pife ✅; faltam Lote 3
   Truco/Memória/Forca e Lote 4 Quiz). Jogos novos entregues fora da

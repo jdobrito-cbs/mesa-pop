@@ -1,8 +1,6 @@
-import { Link } from 'react-router-dom'
 import type { GameDef } from '@mesapop/shared'
 import GameCard from '../components/GameCard'
 import { Chip, Spark } from '../components/Logo'
-import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 
 /** Fichas flutuantes do hero — a "mesa" vista de cima. */
@@ -15,11 +13,13 @@ const HERO_TOKENS = [
 ]
 
 export default function Home() {
-  const { user } = useAuth()
   // 3 mais jogados + 3 aleatórios (o sorteio muda a cada visita)
   const { data: destaque } = useFetch<{ maisJogados: GameDef[]; aleatorios: GameDef[] }>(
     '/api/games/destaque',
   )
+  // total de jogos disponíveis (contagem dinâmica — nunca desatualiza)
+  const { data: gamesData } = useFetch<{ games: GameDef[] }>('/api/games')
+  const totalJogos = gamesData?.games.length ?? 32
 
   return (
     <main>
@@ -40,28 +40,10 @@ export default function Home() {
             Cartas, corrida, naves e muito mais — com os amigos em salas
             privadas ou contra o mundo no ranking.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {user ? (
-              <Link
-                to="/mesa"
-                className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-7 py-3.5 text-white shadow-xl shadow-pop-purple/30"
-              >
-                Ir para minha mesa
-              </Link>
-            ) : (
-              <Link
-                to="/entrar"
-                className="btn-pop px-7 py-3.5 ring-2 ring-pop-cyan/50 hover:ring-pop-cyan"
-              >
-                🎟️ Jogar sem conta
-              </Link>
-            )}
+          <div className="mt-6">
+            <h2 className="font-display text-3xl font-extrabold md:text-4xl">O que vai rolar na mesa</h2>
+            <p className="mt-2 text-lg text-text-muted">São {totalJogos} jogos na mesa.</p>
           </div>
-          {!user && (
-            <p className="mt-3 max-w-md text-xs text-text-muted">
-              Sem conta você joga tudo — mas chat, fazenda, favoritos e ranking pedem cadastro.
-            </p>
-          )}
         </div>
 
         {/* a mesa: ficha central + fichas de jogos flutuando */}
@@ -82,10 +64,8 @@ export default function Home() {
       </section>
 
       {/* CATÁLOGO: fileira de cima = 3 mais jogados; de baixo = 3 sorteados por visita */}
-      <section className="mx-auto max-w-6xl px-4 py-6">
-        <h2 className="text-3xl font-extrabold md:text-4xl">O que vai rolar na mesa</h2>
-        <p className="mt-2 text-text-muted">São 32 jogos na mesa.</p>
-        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mx-auto max-w-6xl px-4 pt-0 pb-8">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[...(destaque?.maisJogados ?? []), ...(destaque?.aleatorios ?? [])].map((game) => (
             <GameCard key={game.slug} game={game} />
           ))}

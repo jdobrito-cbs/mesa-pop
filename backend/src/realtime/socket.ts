@@ -23,6 +23,7 @@ import { bingoModule } from '../games/bingo'
 import { makeQuizModule } from '../games/quiz'
 import { QUIZ_NOSTALGIA, QUIZ_POP } from '../lib/quizPerguntas'
 import { gansoModule } from '../games/ganso'
+import { giraGenioModule } from '../games/giraGenio'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -49,6 +50,7 @@ registerGame(bingoModule)
 registerGame(makeQuizModule('quiz-pop', QUIZ_POP))
 registerGame(makeQuizModule('quiz-nostalgia', QUIZ_NOSTALGIA))
 registerGame(gansoModule)
+registerGame(giraGenioModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {
