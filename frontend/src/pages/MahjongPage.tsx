@@ -198,6 +198,7 @@ export default function MahjongPage({ daily }: { daily?: string } = {}) {
   const [removidas, setRemovidas] = useState<Set<number>>(new Set())
   const [sel, setSel] = useState<number | null>(null)
   const [tremendo, setTremendo] = useState<number | null>(null)
+  const [travada, setTravada] = useState<number | null>(null)
   const [dica, setDica] = useState<[number, number] | null>(null)
   const [segundos, setSegundos] = useState(0)
   const [dicasUsadas, setDicasUsadas] = useState(0)
@@ -267,7 +268,13 @@ export default function MahjongPage({ daily }: { daily?: string } = {}) {
   )
 
   function clique(id: number) {
-    if (!deal || fim || removidas.has(id) || !livres.has(id)) return
+    if (!deal || fim || removidas.has(id)) return
+    if (!livres.has(id)) {
+      // peça PRESA (sem lado livre ou com peça em cima): pisca em vermelho
+      setTravada(id)
+      setTimeout(() => setTravada((t) => (t === id ? null : t)), 500)
+      return
+    }
     if (sel === id) return setSel(null)
     if (sel === null) return setSel(id)
     if (tilesMatch(tiles[sel]!, tiles[id]!)) {
@@ -369,9 +376,6 @@ export default function MahjongPage({ daily }: { daily?: string } = {}) {
           <button onClick={pedeDica} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-yellow">
             💡 Dica
           </button>
-          <button onClick={embaralha} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan">
-            🔀 Reembaralhar
-          </button>
           {!backend.daily && (
             <button onClick={() => setDeal(null)} className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-purple">
               Trocar nível
@@ -398,6 +402,7 @@ export default function MahjongPage({ daily }: { daily?: string } = {}) {
                 const livre = livres.has(s.id)
                 const isSel = sel === s.id
                 const isDica = dica?.[0] === s.id || dica?.[1] === s.id
+                const isTravada = travada === s.id
                 const left = maxLayer * LIFT + s.x * HUX - s.layer * LIFT
                 const top = maxLayer * LIFT + s.y * HUY - s.layer * LIFT
                 return (
@@ -405,19 +410,20 @@ export default function MahjongPage({ daily }: { daily?: string } = {}) {
                     key={s.id}
                     onClick={() => clique(s.id)}
                     aria-label={`peça ${s.id}`}
-                    className={`absolute rounded-[7px] transition ${tremendo === s.id ? 'animate-pulse' : ''} ${
-                      livre ? 'cursor-pointer hover:brightness-105' : 'brightness-[0.72] saturate-[0.85]'
-                    }`}
+                    // peças LIVRES claras, presas escurecidas; clicar numa presa
+                    // faz ela piscar em vermelho (todas continuam clicáveis)
+                    className={`absolute cursor-pointer rounded-[7px] transition hover:brightness-105 ${tremendo === s.id || isTravada ? 'animate-pulse' : ''} ${livre ? '' : 'brightness-[0.72] saturate-[0.85]'}`}
                     style={{
                       left,
                       top,
                       zIndex: s.layer * 10000 + s.y * 100 + s.x,
-                      pointerEvents: livre ? 'auto' : 'none',
-                      boxShadow: isSel
-                        ? '0 0 0 3px #f4d03f, 0 3px 6px rgba(0,0,0,.4)'
-                        : isDica
-                          ? '0 0 0 3px #2fd0c8, 0 3px 6px rgba(0,0,0,.4)'
-                          : '0 2px 4px rgba(0,0,0,.35)',
+                      boxShadow: isTravada
+                        ? '0 0 0 3px #ff3b57, 0 0 10px 2px rgba(255,59,87,.7)'
+                        : isSel
+                          ? '0 0 0 3px #f4d03f, 0 3px 6px rgba(0,0,0,.4)'
+                          : isDica
+                            ? '0 0 0 3px #2fd0c8, 0 3px 6px rgba(0,0,0,.4)'
+                            : '0 2px 4px rgba(0,0,0,.35)',
                     }}
                   >
                     <Peca tile={tiles[s.id]!} />

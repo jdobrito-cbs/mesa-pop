@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { casaInfo, GANSO_FIM, type GansoState } from '@mesapop/shared'
 
 /**
@@ -77,6 +77,29 @@ export default function GansoBoard({
   const suaVez = state.turn === yourSeat && state.winner === null
   const boardPx = N * CELL
 
+  // dados rolando ~2s a cada novo lance (o backend só age no 'roll', então
+  // cada snapshot é uma rolagem — lastMove muda de referência a cada uma)
+  const [rolando, setRolando] = useState(false)
+  const [faces, setFaces] = useState<[number, number]>([1, 1])
+  const primeiro = useRef(true)
+  useEffect(() => {
+    if (!state.lastMove) return
+    if (primeiro.current) {
+      primeiro.current = false
+      return
+    }
+    setRolando(true)
+    const spin = setInterval(() => setFaces([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]), 90)
+    const stop = setTimeout(() => {
+      clearInterval(spin)
+      setRolando(false)
+    }, 2000)
+    return () => {
+      clearInterval(spin)
+      clearTimeout(stop)
+    }
+  }, [state.lastMove])
+
   // agrupa peões por casa para posicionar sem sobrepor
   const porCasa = new Map<number, number[]>()
   state.positions.forEach((pos, seat) => {
@@ -104,6 +127,12 @@ export default function GansoBoard({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
+      {/* objetivo em destaque */}
+      <div className="mb-3 rounded-field bg-pop-yellow/10 px-4 py-2 text-center text-sm font-bold text-cream ring-1 ring-pop-yellow/30">
+        🏁 Corra pela espiral e seja o <span className="text-pop-yellow">primeiro a chegar na casa 63</span> (no centro).
+        Precisa cair EXATO — se passar, ricocheteia de volta.
+      </div>
+
       {/* placar dos jogadores */}
       <div className="mb-3 flex flex-wrap justify-center gap-2">
         {players
@@ -190,10 +219,11 @@ export default function GansoBoard({
 
         {/* controles */}
         <div className="flex w-full max-w-[220px] flex-col items-center gap-3">
-          <div className="flex gap-2">
-            <DiceFace v={state.lastRoll?.[0] ?? 1} />
-            <DiceFace v={state.lastRoll?.[1] ?? 1} />
+          <div className={`flex gap-2 ${rolando ? 'animate-bounce' : ''}`}>
+            <DiceFace v={rolando ? faces[0] : (state.lastRoll?.[0] ?? 1)} />
+            <DiceFace v={rolando ? faces[1] : (state.lastRoll?.[1] ?? 1)} />
           </div>
+          {rolando && <p className="text-xs font-bold text-pop-cyan">rolando o dado…</p>}
 
           {state.winner !== null ? (
             <p className="text-center font-display text-lg font-extrabold text-pop-green">
@@ -209,15 +239,25 @@ export default function GansoBoard({
             </button>
           )}
 
-          {narração && (
+          {!rolando && narração && (
             <p className="rounded-field bg-ink-900 px-3 py-2 text-center text-sm font-semibold text-cream ring-1 ring-ink-700">
               {narração}
             </p>
           )}
 
-          <p className="text-center text-xs text-text-muted">
-            Chegue EXATO na casa 63. Passou? Ricocheteia. 🪿 avança de novo!
-          </p>
+          {/* legenda das casas especiais — o que cada desafio faz */}
+          <div className="w-full rounded-field bg-ink-900 p-2.5 text-[11px] ring-1 ring-ink-700">
+            <p className="mb-1 font-display font-bold text-cream">O que cada casa faz</p>
+            <ul className="flex flex-col gap-0.5 text-text-muted">
+              <li>🪿 <b className="text-pop-green">Ganso</b>: avança de novo o mesmo valor</li>
+              <li>🌉 <b className="text-pop-cyan">Ponte</b>: atalho pra frente</li>
+              <li>🏨 <b className="text-pop-cyan">Estalagem</b>: perde 1 rodada</li>
+              <li>🕳️ <b className="text-pop-cyan">Poço</b>: perde 2 rodadas</li>
+              <li>🌀 <b className="text-pop-cyan">Labirinto</b>: recua um trecho</li>
+              <li>💀 <b className="text-pop-magenta">Caveira</b>: volta à largada</li>
+              <li>🏁 <b className="text-pop-yellow">Chegada</b>: casa 63, no centro</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

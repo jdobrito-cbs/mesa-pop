@@ -30,7 +30,7 @@ function Roleta({ girando, rotation }: { girando: boolean; rotation: number }) {
         width={240}
         height={240}
         viewBox="0 0 240 240"
-        style={{ transform: `rotate(${rotation}deg)`, transition: girando ? 'transform 2.4s cubic-bezier(.17,.67,.3,1)' : 'none' }}
+        style={{ transform: `rotate(${rotation}deg)`, transition: girando ? 'transform 2.8s cubic-bezier(.12,.7,.2,1)' : 'none' }}
       >
         {GG_CATEGORIAS.map((cat, i) => {
           const [x1, y1] = polar(cx, cy, R, i * 60)
@@ -67,21 +67,55 @@ export default function GiraGenioGame({
   const spins = useRef(0)
   const [tempo, setTempo] = useState(TEMPO)
   const respondidoRef = useRef(false)
+  // etapa local da rodada: gira ~3s → SALTA a categoria → pergunta → resposta (3s)
+  const [etapa, setEtapa] = useState<'ocioso' | 'girando' | 'revelando' | 'pergunta' | 'resposta'>('ocioso')
+  const faseAnt = useRef(view.fase)
+  const ultimoRef = useRef(view.ultimo)
+  // pergunta capturada (o servidor zera view.pergunta ao responder — guardo p/ o reveal)
+  const [perguntaCap, setPerguntaCap] = useState<{ texto: string; opcoes: string[]; catId: GGCategoria } | null>(null)
+  const [minhaResp, setMinhaResp] = useState<number | null>(null)
 
   const nome = (seat: number) => players.find((p) => p.seat === seat)?.name ?? `Jogador ${seat + 1}`
 
-  // gira a roleta até a categoria sorteada
+  // sequência: girar (roleta 3s + salto da categoria) e resposta (mostra 3s a certa)
   useEffect(() => {
-    if (!view.categoria) return
-    const k = GG_CATEGORIAS.findIndex((c) => c.id === view.categoria)
-    spins.current += 5
-    setRotation(spins.current * 360 + (360 - (k * 60 + 30)))
-  }, [view.categoria])
+    const prevFase = faseAnt.current
+    const prevUltimo = ultimoRef.current
+    faseAnt.current = view.fase
+    ultimoRef.current = view.ultimo
 
-  // timer da pergunta: some auto-resposta errada se estourar (só na sua vez)
+    // alguém acabou de responder → segura a pergunta 3s destacando a resposta certa
+    if (view.ultimo && view.ultimo !== prevUltimo) {
+      setEtapa('resposta')
+      const t = setTimeout(() => setEtapa('ocioso'), 3000)
+      return () => clearTimeout(t)
+    }
+
+    // alguém girou (fase → pergunta): roda a roleta, revela a categoria, mostra a pergunta
+    if (view.fase === 'pergunta' && prevFase !== 'pergunta') {
+      const k = GG_CATEGORIAS.findIndex((c) => c.id === view.categoria)
+      spins.current += 5
+      setRotation(spins.current * 360 + (360 - (k * 60 + 30)))
+      setMinhaResp(null)
+      if (view.pergunta && view.categoria) {
+        setPerguntaCap({ texto: view.pergunta.texto, opcoes: view.pergunta.opcoes, catId: view.categoria })
+      }
+      setEtapa('girando')
+      const t1 = setTimeout(() => setEtapa('revelando'), 3000)
+      const t2 = setTimeout(() => setEtapa('pergunta'), 4300)
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+      }
+    }
+
+    if (view.fase === 'escolhendo' && !view.ultimo) setEtapa('ocioso')
+  }, [view.fase, view.categoria, view.ultimo, view.pergunta])
+
+  // timer da pergunta: só começa quando a pergunta REALMENTE aparece (após a roleta)
   useEffect(() => {
     respondidoRef.current = false
-    if (view.fase !== 'pergunta') return
+    if (etapa !== 'pergunta' || view.fase !== 'pergunta') return
     setTempo(TEMPO)
     if (!suaVez) return
     const inicio = Date.now()
@@ -95,11 +129,12 @@ export default function GiraGenioGame({
       }
     }, 250)
     return () => clearInterval(t)
-  }, [view.fase, view.pergunta?.texto, suaVez, onResponder])
+  }, [etapa, view.fase, view.pergunta?.texto, suaVez, onResponder])
 
   function responde(i: number) {
     if (respondidoRef.current) return
     respondidoRef.current = true
+    setMinhaResp(i)
     onResponder(i)
   }
 
@@ -163,8 +198,8 @@ export default function GiraGenioGame({
           </p>
         )}
 
-        {view.fase === 'pergunta' && view.pergunta && cat ? (
-          <div className="w-full">
+        {etapa === 'pergunta' && view.fase === 'pergunta' && view.pergunta && cat ? (
+          <div className="w-full animate-pop">
             <div className="mb-2 flex items-center justify-between">
               <span className="flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold" style={{ backgroundColor: `${cat.cor}22`, color: cat.cor }}>
                 {cat.icone} {cat.nome}
@@ -191,10 +226,53 @@ export default function GiraGenioGame({
             </div>
             {!suaVez && <p className="mt-3 text-center text-sm text-text-muted">{nome(view.turn)} está respondendo…</p>}
           </div>
+        ) : etapa === 'resposta' && perguntaCap && view.ultimo ? (
+          /* mostra a resposta CERTA por ~3s (verde) e a errada escolhida (vermelho) */
+          <div className="w-full animate-pop">
+            <p className="mt-1 text-center font-display text-xl font-bold">{perguntaCap.texto}</p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {perguntaCap.opcoes.map((op, i) => {
+                const certa = op === view.ultimo!.respostaCerta
+                const minhaErrada = minhaResp === i && !certa
+                return (
+                  <div
+                    key={i}
+                    className={`rounded-2xl px-4 py-3 text-left font-semibold ring-1 ${
+                      certa
+                        ? 'bg-pop-green/20 text-pop-green ring-pop-green'
+                        : minhaErrada
+                          ? 'bg-pop-magenta/20 text-pop-magenta ring-pop-magenta'
+                          : 'bg-ink-800 text-text-muted ring-ink-700'
+                    }`}
+                  >
+                    <span className="mr-2 font-display">{'ABCD'[i]}</span>
+                    {op} {certa ? '✅' : minhaErrada ? '❌' : ''}
+                  </div>
+                )
+              })}
+            </div>
+            <p className="mt-3 text-center text-sm font-bold text-cream">
+              Resposta certa: «{view.ultimo.respostaCerta}»
+            </p>
+          </div>
         ) : (
           <>
-            <Roleta girando={view.categoria !== null} rotation={rotation} />
-            {view.winnerSeats.length === 0 &&
+            {/* salto da categoria assim que a roleta para */}
+            <div className="flex h-14 items-center justify-center">
+              {etapa === 'revelando' && cat ? (
+                <div key={cat.id} className="animate-pop text-center">
+                  <p className="font-display text-2xl font-extrabold" style={{ color: cat.cor }}>
+                    {cat.icone} {cat.nome}
+                  </p>
+                  <p className="text-xs font-semibold text-text-muted">prepare-se para responder!</p>
+                </div>
+              ) : etapa === 'girando' ? (
+                <p className="animate-pulse text-sm font-bold text-pop-cyan">girando a roleta…</p>
+              ) : null}
+            </div>
+            <Roleta girando={etapa === 'girando' || etapa === 'revelando'} rotation={rotation} />
+            {view.fase === 'escolhendo' &&
+              view.winnerSeats.length === 0 &&
               (suaVez ? (
                 <button
                   onClick={onGirar}

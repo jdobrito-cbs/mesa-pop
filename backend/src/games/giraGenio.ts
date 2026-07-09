@@ -68,6 +68,8 @@ export const giraGenioModule: GameModule<GGState, GGAction> = {
   slug: 'gira-genio',
   minPlayers: 2,
   maxPlayers: 6,
+  // o robô "pensa" o bastante para a roleta girar (3s) + o salto da categoria
+  botDelayMs: 4500,
 
   init(playerCount) {
     return initialGiraGenioState(playerCount)

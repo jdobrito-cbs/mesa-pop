@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CORES_GRUPO,
   custoResgate,
@@ -26,6 +26,8 @@ function cell(i: number): { r: number; c: number } {
 }
 
 const reais = (n: number) => `R$ ${n}`
+const PASSO_MS = 1500 // tempo de cada "pulo" do peão de uma casa à seguinte
+const ROLL_MS = 3000 // duração da rolagem animada dos dados
 
 function DiceFace({ v }: { v: number }) {
   const P: Record<number, Array<[number, number]>> = {
@@ -37,11 +39,30 @@ function DiceFace({ v }: { v: number }) {
     6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
   }
   return (
-    <svg width={34} height={34} viewBox="0 0 34 34" className="drop-shadow">
+    <svg width={38} height={38} viewBox="0 0 34 34" className="drop-shadow">
       <rect x={1} y={1} width={32} height={32} rx={7} fill="#faf6ea" stroke="#d8cfb4" />
       {(P[v] ?? []).map(([c, r], i) => (
         <circle key={i} cx={7 + c * 10} cy={7 + r * 10} r={3.2} fill="#16233a" />
       ))}
+    </svg>
+  )
+}
+
+/** ficha-peão desenhada (chibi), na cor do jogador — bem mais visível que um ponto */
+function Pawn({ color, mine }: { color: string; mine: boolean }) {
+  return (
+    <svg width={mine ? 22 : 19} height={mine ? 27 : 23} viewBox="0 0 16 20" className={`drop-shadow-md ${mine ? 'animate-bob' : ''}`}>
+      <ellipse cx={8} cy={18.6} rx={5.2} ry={1.5} fill="rgba(0,0,0,.4)" />
+      {/* base */}
+      <path d="M2.8 18.5 C2.8 15.2 5 14 8 14 C11 14 13.2 15.2 13.2 18.5 Z" fill={color} stroke="#ffffffcc" strokeWidth={0.8} />
+      {/* corpo (sino) */}
+      <path d="M5.2 14.2 C4.4 11 5.2 9.2 8 8.4 C10.8 9.2 11.6 11 10.8 14.2 Z" fill={color} stroke="#ffffff99" strokeWidth={0.7} />
+      {/* colarinho */}
+      <ellipse cx={8} cy={8.5} rx={3} ry={1.1} fill={color} stroke="#ffffffcc" strokeWidth={0.7} />
+      {/* cabeça */}
+      <circle cx={8} cy={4.8} r={3.1} fill={color} stroke="#ffffffdd" strokeWidth={1} />
+      {/* brilho */}
+      <circle cx={6.7} cy={3.8} r={0.9} fill="#ffffff90" />
     </svg>
   )
 }
@@ -80,6 +101,82 @@ export default function MagnataBoard({
   const [ofD, setOfD] = useState('')
   const [peD, setPeD] = useState('')
 
+  // ——— animações (peões pulando casa a casa + dados rolando) ———
+  const [mostra, setMostra] = useState<Record<number, number>>(() =>
+    Object.fromEntries(view.jogadores.map((j) => [j.seat, j.pos])),
+  )
+  // snap imediato de teleportes (prisão, cartas) + inicialização de novos assentos
+  useEffect(() => {
+    setMostra((prev) => {
+      const novo = { ...prev }
+      let mudou = false
+      for (const j of view.jogadores) {
+        if (novo[j.seat] === undefined) {
+          novo[j.seat] = j.pos
+          mudou = true
+          continue
+        }
+        const d = (j.pos - novo[j.seat]! + 40) % 40
+        if (d > 13 && novo[j.seat] !== j.pos) {
+          novo[j.seat] = j.pos // salto grande = teleporte → sem passinhos
+          mudou = true
+        }
+      }
+      return mudou ? novo : prev
+    })
+  }, [view.jogadores])
+  // passo-a-passo: avança 1 casa a cada PASSO_MS até chegar ao destino
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMostra((prev) => {
+        const novo = { ...prev }
+        let mudou = false
+        for (const j of view.jogadores) {
+          const cur = novo[j.seat]
+          if (cur === undefined || cur === j.pos) continue
+          novo[j.seat] = (cur + 1) % 40
+          mudou = true
+        }
+        return mudou ? novo : prev
+      })
+    }, PASSO_MS)
+    return () => clearInterval(id)
+  }, [view.jogadores])
+
+  // dados rolando ~3s a cada nova rolagem (contador do servidor)
+  const [rolando, setRolando] = useState(false)
+  const [faces, setFaces] = useState<[number, number]>([1, 1])
+  const rolagensRef = useRef(view.rolagens)
+  useEffect(() => {
+    if (view.rolagens === rolagensRef.current || view.rolagens === 0) {
+      rolagensRef.current = view.rolagens
+      return
+    }
+    rolagensRef.current = view.rolagens
+    setRolando(true)
+    const spin = setInterval(() => setFaces([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]), 90)
+    const stop = setTimeout(() => {
+      clearInterval(spin)
+      setRolando(false)
+    }, ROLL_MS)
+    return () => {
+      clearInterval(spin)
+      clearTimeout(stop)
+    }
+  }, [view.rolagens])
+
+  const posDe = (seat: number) => mostra[seat] ?? view.jogadores[seat]?.pos ?? 0
+
+  // último imóvel que EU adquiri (para sugerir construir logo após comprar)
+  const propsRef = useRef<number[]>(eu?.props ?? [])
+  const [ultimaCompra, setUltimaCompra] = useState<number | null>(null)
+  useEffect(() => {
+    const atual = eu?.props ?? []
+    const novos = atual.filter((p) => !propsRef.current.includes(p))
+    if (novos.length) setUltimaCompra(novos[novos.length - 1]!)
+    propsRef.current = atual
+  }, [eu?.props])
+
   const podeGerir = suaVez && (view.fase === 'rolar' || view.fase === 'agir' || view.fase === 'comprar')
   const meusImoveis = eu ? eu.props.slice().sort((a, b) => a - b) : []
   const nomeProps = (ids: number[]) => (ids.length ? ids.map((i) => MAGNATA_CASAS[i]!.nome).join(', ') : '—')
@@ -110,10 +207,10 @@ export default function MagnataBoard({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="mp-magnata mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       {/* TABULEIRO */}
       <div
-        className="relative mx-auto grid aspect-square w-full max-w-[560px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 ring-2 ring-ink-700"
+        className="mp-magnata-board relative mx-auto grid aspect-square w-full max-w-[760px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 text-[8px] ring-2 ring-ink-700"
         style={{ gridTemplateColumns: 'repeat(11,1fr)', gridTemplateRows: 'repeat(11,1fr)' }}
       >
         {MAGNATA_CASAS.map((c) => {
@@ -126,38 +223,36 @@ export default function MagnataBoard({
           return (
             <div
               key={c.i}
-              style={{ gridRow: p.r, gridColumn: p.c, borderColor: donoCor ?? 'transparent' }}
-              className={`relative flex flex-col overflow-hidden rounded-[3px] bg-ink-900 text-[6px] leading-tight ${donoCor ? 'ring-2' : 'ring-1 ring-ink-700'}`}
+              style={{
+                gridRow: p.r,
+                gridColumn: p.c,
+                // moldura na cor do DONO (quem é o terreno de quem)
+                ...(donoCor ? { boxShadow: `inset 0 0 0 3px ${donoCor}` } : {}),
+              }}
+              className={`relative flex flex-col overflow-hidden rounded-[3px] bg-ink-900 leading-tight ${donoCor ? '' : 'ring-1 ring-ink-700'}`}
             >
-              {grupoCor && <div style={{ background: grupoCor }} className="h-1.5 w-full shrink-0" />}
-              <div className="flex-1 px-0.5 pt-0.5 font-bold text-cream/90">{c.nome}</div>
-              {c.preco !== undefined && <div className="px-0.5 pb-0.5 text-pop-yellow">{c.preco}</div>}
-              {c.tipo === 'sorte' && <div className="grid flex-1 place-items-center text-base">🎲</div>}
-              {c.tipo === 'cofre' && <div className="grid flex-1 place-items-center text-base">📦</div>}
-              {c.tipo === 'imposto' && <div className="grid flex-1 place-items-center text-base">🏛️</div>}
-              {c.tipo === 'prisao' && <div className="grid flex-1 place-items-center text-base">🚓</div>}
-              {c.tipo === 'vaprisao' && <div className="grid flex-1 place-items-center text-base">👮</div>}
-              {c.tipo === 'parada' && <div className="grid flex-1 place-items-center text-base">🅿️</div>}
-              {c.tipo === 'inicio' && <div className="grid flex-1 place-items-center text-base">🏁</div>}
+              {grupoCor && <div style={{ background: grupoCor }} className="h-2 w-full shrink-0" />}
+              <div className="flex-1 px-1 pt-0.5 font-bold text-cream/90">{c.nome}</div>
+              {c.preco !== undefined && <div className="px-1 pb-0.5 text-[9px] font-bold text-pop-yellow">{reais(c.preco)}</div>}
+              {c.tipo === 'sorte' && <div className="grid flex-1 place-items-center text-xl">🎲</div>}
+              {c.tipo === 'cofre' && <div className="grid flex-1 place-items-center text-xl">📦</div>}
+              {c.tipo === 'imposto' && <div className="grid flex-1 place-items-center text-xl">🏛️</div>}
+              {c.tipo === 'prisao' && <div className="grid flex-1 place-items-center text-xl">🚓</div>}
+              {c.tipo === 'vaprisao' && <div className="grid flex-1 place-items-center text-xl">👮</div>}
+              {c.tipo === 'parada' && <div className="grid flex-1 place-items-center text-xl">🅿️</div>}
+              {c.tipo === 'inicio' && <div className="grid flex-1 place-items-center text-xl">🏁</div>}
               {nCasas > 0 && (
-                <div className="absolute right-0.5 bottom-0.5 text-[7px]">{nCasas >= 5 ? '🏨' : '🏠'.repeat(nCasas)}</div>
+                <div className="absolute right-0.5 top-2 text-[9px] leading-none">{nCasas >= 5 ? '🏨' : '🏠'.repeat(nCasas)}</div>
               )}
               {hipotecada && (
-                <div className="absolute inset-0 grid place-items-center bg-ink-950/55 text-[7px] font-bold text-pop-yellow">🏦 HIP</div>
+                <div className="absolute inset-0 grid place-items-center bg-ink-950/55 text-[8px] font-bold text-pop-yellow">🏦 HIP</div>
               )}
-              {/* peões */}
-              <div className="absolute inset-x-0 top-2 flex flex-wrap justify-center gap-px">
+              {/* peões (na posição ANIMADA, pulando casa a casa) */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0.5 flex flex-wrap items-end justify-center gap-0">
                 {view.jogadores.map(
                   (j) =>
                     !j.falido &&
-                    j.pos === c.i && (
-                      <span
-                        key={j.seat}
-                        title={j.nome}
-                        style={{ backgroundColor: j.cor }}
-                        className={`size-2 rounded-full ring-1 ring-white/70 ${j.seat === yourSeat ? 'animate-pulse' : ''}`}
-                      />
-                    ),
+                    posDe(j.seat) === c.i && <Pawn key={j.seat} color={j.cor} mine={j.seat === yourSeat} />,
                 )}
               </div>
             </div>
@@ -169,14 +264,15 @@ export default function MagnataBoard({
           style={{ gridRow: '3 / 10', gridColumn: '3 / 10' }}
           className="flex flex-col items-center justify-center gap-2 rounded-lg bg-ink-950/40 p-2 text-center"
         >
-          <p className="font-display text-lg font-extrabold text-cream">MAGNATA</p>
-          {view.dados && (
-            <div className="flex gap-2">
-              <DiceFace v={view.dados[0]} />
-              <DiceFace v={view.dados[1]} />
+          <p className="font-display text-xl font-extrabold text-cream">MAGNATA</p>
+          {(view.dados || rolando) && (
+            <div className={`flex gap-2 ${rolando ? 'animate-bounce' : ''}`}>
+              <DiceFace v={rolando ? faces[0] : (view.dados?.[0] ?? 1)} />
+              <DiceFace v={rolando ? faces[1] : (view.dados?.[1] ?? 1)} />
             </div>
           )}
-          {view.aviso && <p className="max-w-[90%] text-[10px] leading-tight text-pop-yellow">{view.aviso}</p>}
+          {rolando && <p className="text-[11px] font-bold text-pop-cyan">rolando os dados…</p>}
+          {!rolando && view.aviso && <p className="max-w-[90%] text-[11px] leading-tight text-pop-yellow">{view.aviso}</p>}
           {view.vencedor !== null ? (
             <p className="font-display text-sm font-extrabold text-pop-green">🏆 {nomeSeat(view.vencedor)} venceu!</p>
           ) : (
@@ -317,20 +413,32 @@ export default function MagnataBoard({
                   </button>
                 </>
               )}
+              {/* construir vem em destaque ANTES de encerrar — logo após comprar */}
+              {construir.length > 0 && (view.fase === 'agir' || view.fase === 'comprar') && (
+                <>
+                  <p className="text-center text-xs font-bold text-pop-green">🏗️ Você tem o grupo — construa!</p>
+                  {construir.map((i) => (
+                    <button
+                      key={i}
+                      onClick={() => onAction({ type: 'construir', casa: i })}
+                      className="btn-pop bg-gradient-to-br from-pop-green to-pop-cyan px-3 py-2 text-xs font-bold text-white"
+                    >
+                      Construir em {MAGNATA_CASAS[i]!.nome} ({reais(CUSTO_CASA[MAGNATA_CASAS[i]!.grupo as MagnataGrupo] ?? 100)})
+                    </button>
+                  ))}
+                </>
+              )}
+              {/* acabou de comprar mas ainda não tem o grupo → dica */}
+              {view.fase === 'agir' && construir.length === 0 && eu && ultimaCompra !== null && (
+                <p className="text-center text-[11px] text-text-muted">
+                  Complete o grupo de {MAGNATA_CASAS[ultimaCompra]!.nome} para poder construir.
+                </p>
+              )}
               {(view.fase === 'agir' || view.fase === 'fim') && (
                 <button onClick={() => onAction({ type: 'encerrar' })} className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-4 py-3 font-bold text-white">
                   Encerrar turno
                 </button>
               )}
-              {construir.map((i) => (
-                <button
-                  key={i}
-                  onClick={() => onAction({ type: 'construir', casa: i })}
-                  className="btn-pop px-3 py-1.5 text-xs ring-1 ring-pop-green/50 hover:ring-pop-green"
-                >
-                  🏗️ Construir em {MAGNATA_CASAS[i]!.nome} ({reais(CUSTO_CASA[MAGNATA_CASAS[i]!.grupo as MagnataGrupo] ?? 100)})
-                </button>
-              ))}
 
               {/* negociar + gerir imóveis (hipoteca/venda) */}
               {podeGerir && (view.fase === 'agir' || view.fase === 'comprar') && outros.length > 0 && (

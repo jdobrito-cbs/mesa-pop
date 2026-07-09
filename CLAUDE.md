@@ -21,6 +21,49 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **REALISMO/UX — rodada de polimento (pedidos do usuário 2026-07-09)**,
+  vários jogos:
+  - **Magnata** (6 pedidos): tabuleiro maior e legível no PC
+    (`max-w-[760px]`, texto 6px→8px + preços visíveis); **peões viraram
+    FICHAS** desenhadas (SVG chibi na cor do jogador, com bob no meu)
+    no lugar dos pontinhos; **movimento passo-a-passo** — o peão pula de
+    casa em casa a cada 1,5s (`PASSO_MS`; teleporte de prisão/carta com
+    salto>13 casas dá snap); **moldura do terreno na cor do DONO**
+    (`boxShadow` interno) em vez de branco; **dados ROLANDO ~3s** antes
+    de assentar (contador `rolagens` novo na view dispara a animação de
+    faces girando); e **construir logo após comprar** (botões de
+    construir em destaque acima de "Encerrar" + dica "Complete o grupo
+    de X" quando ainda não é monopólio).
+  - **Tela cheia AMPLIA o jogo** (não só o navegador): regras
+    `.game-fs:fullscreen` no `global.css` fazem o `canvas` e os
+    tabuleiros (`.mp-magnata-board`/`.mp-fs-fit`) crescerem até
+    `min(96vw, 88vh)` — enche a largura no celular e a altura no PC.
+  - **Gira Gênio**: a **roleta GIRA ~3s e para na categoria** (sequência
+    local girando→revelando→pergunta), com o **nome da categoria
+    SALTANDO** (`animate-pop`) acima da roleta antes das perguntas
+    (estilo Perguntados); ao responder, **mostra a resposta certa por
+    3s** (a correta em verde ✅, a errada escolhida em vermelho ❌,
+    "Resposta certa: «…»") — a pergunta é capturada no cliente porque o
+    servidor zera `view.pergunta` ao responder. **Banco expandido**
+    96→156 (26/categoria). Novo `GameModule.botDelayMs` (o robô do Gira
+    "pensa" 4,5s para a roleta girar antes de ele responder;
+    `RoomManager` usa `module.botDelayMs ?? BOT_THINK_MS`).
+  - **Mahjong**: removido o botão "Reembaralhar" da barra (fica só no
+    overlay "Sem jogadas livres!", igual ao de vitória); peças mantêm o
+    contraste claro/escuro (livre×presa — o usuário preferiu assim); e
+    **clicar numa peça presa a faz PISCAR EM VERMELHO** (estado
+    `travada`, todas clicáveis agora).
+  - **Corrida do Ganso**: **objetivo em destaque** no topo (chegar
+    primeiro à casa 63 no centro, exato ou ricocheteia), **legenda "O
+    que cada casa faz"** (ganso/ponte/estalagem/poço/labirinto/caveira/
+    chegada) e **dados ROLANDO ~2s** (disparado pela mudança de
+    `state.lastMove`, já que cada snapshot é uma rolagem).
+  - 275 testes seguem verdes; typecheck limpo nos 3 workspaces. Demos
+    reais (Playwright): Magnata (tabuleiro grande, fichas, dados
+    "rolando os dados…", molduras coloridas, dica de grupo), Gira Gênio
+    (roleta parou em História com salto do texto; reveal mostrou Ottawa
+    em verde e Vancouver em vermelho), Mahjong (barra sem reembaralhar,
+    peças claras/escuras) e Ganso (banner + legenda + espiral).
 - **MAGNATA · NEGOCIAÇÃO + LEILÃO + HIPOTECA (pedido do usuário
   2026-07-09, fecha a leva "vamos fazer tudo isso")**: as três mecânicas
   clássicas que faltavam ao Magnata, servidor autoritativo.

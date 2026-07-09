@@ -44,6 +44,12 @@ export interface GameModule<S = unknown, A = unknown> {
    */
   bot?(state: S, seat: number): A | null
   /**
+   * atraso do "pensar" do robô neste jogo (ms). Ausente = padrão do manager.
+   * Jogos com animação longa entre a jogada e a resposta (ex.: a roleta do
+   * Gira Gênio girando 3s) aumentam isto para o robô não responder antes.
+   */
+  botDelayMs?: number
+  /**
    * IA para jogos REALTIME (opcional): chamado a cada tick com os assentos
    * controlados por robô — o módulo age por eles direto no estado (ex.: o
    * quiz responde as perguntas pelos bots).

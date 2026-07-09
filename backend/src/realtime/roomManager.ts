@@ -495,7 +495,8 @@ export class RoomManager {
     const bot = [...room.players.values()].find((p) => p.seat === seat && p.isBot)
     if (!bot) return
     if (room.botTimer) clearTimeout(room.botTimer)
-    room.botTimer = setTimeout(() => void this.runBotMove(room, seat), BOT_THINK_MS)
+    const delay = room.module.botDelayMs ?? BOT_THINK_MS
+    room.botTimer = setTimeout(() => void this.runBotMove(room, seat), delay)
   }
 
   private async runBotMove(room: LiveRoom, seat: number) {

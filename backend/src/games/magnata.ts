@@ -43,6 +43,7 @@ export interface MagState {
   turno: number
   fase: MagnataFase
   dados: [number, number] | null
+  rolagens: number
   somaDados: number
   donoDe: Array<number | null>
   log: string[]
@@ -319,6 +320,7 @@ export function initialMagnataState(playerCount: number): MagState {
     turno: 0,
     fase: 'rolar',
     dados: null,
+    rolagens: 0,
     somaDados: 0,
     donoDe: Array(40).fill(null),
     log: ['🏙️ A cidade está à venda — boa sorte, magnatas!'],
@@ -484,6 +486,7 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
     const d2 = rolaDado()
     s.dados = [d1, d2]
     s.somaDados = d1 + d2
+    s.rolagens++
     const dobra = d1 === d2
 
     if (j.preso) {
@@ -722,6 +725,7 @@ function view(s: MagState): MagnataView {
     turno: s.turno,
     fase: s.fase,
     dados: s.dados,
+    rolagens: s.rolagens,
     donoDe: s.donoDe,
     log: s.log,
     aviso: s.aviso,

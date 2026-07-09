@@ -129,6 +129,21 @@
       transform: translateY(-3px) rotate(2deg);
     }
   }
+  /* "salto" pop (roleta do Gira Gênio revela a categoria; card da pergunta) */
+  --animate-pop: pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 1;
+  @keyframes pop {
+    0% {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
   /* colheita pronta chamando atenção */
   --animate-ripe: ripe 1s ease-in-out infinite;
   @keyframes ripe {
@@ -572,4 +587,32 @@
   z-index: 60;
   width: 100vw;
   height: 100vh;
+}
+
+/* Em tela cheia o JOGO deve CRESCER para aproveitar o espaço (PC e celular,
+   pela proporção da tela) — não basta o navegador ir a tela cheia. */
+.game-fs:fullscreen canvas,
+.game-fs:-webkit-full-screen canvas,
+.game-fs.mp-fs--fake canvas {
+  max-height: calc(100vh - 1.5rem) !important;
+  max-width: 100% !important;
+  height: auto;
+  width: auto;
+}
+/* tabuleiros quadrados (Magnata e demais que marcarem .mp-fs-fit) crescem
+   até o menor lado disponível: enche a largura no celular, a altura no PC */
+.game-fs:fullscreen .mp-magnata-board,
+.game-fs:-webkit-full-screen .mp-magnata-board,
+.game-fs.mp-fs--fake .mp-magnata-board,
+.game-fs:fullscreen .mp-fs-fit,
+.game-fs:-webkit-full-screen .mp-fs-fit,
+.game-fs.mp-fs--fake .mp-fs-fit {
+  max-width: min(96vw, 88vh) !important;
+}
+/* na tela cheia, o painel lateral do Magnata não precisa encolher o tabuleiro */
+.game-fs:fullscreen .mp-magnata,
+.game-fs:-webkit-full-screen .mp-magnata,
+.game-fs.mp-fs--fake .mp-magnata {
+  max-width: 100%;
+  align-items: start;
 }

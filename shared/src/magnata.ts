@@ -176,6 +176,8 @@ export interface MagnataView {
   turno: number
   fase: MagnataFase
   dados: [number, number] | null
+  /** contador de rolagens — o cliente anima os dados quando ele aumenta */
+  rolagens: number
   donoDe: Array<number | null>
   log: string[]
   aviso: string | null
