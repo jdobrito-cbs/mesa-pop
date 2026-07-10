@@ -8,6 +8,7 @@ import {
   grupoDe,
   MAGNATA_CARTAO_INICIAL,
   MAGNATA_CASAS,
+  MAGNATA_CORES,
   MAGNATA_DINHEIRO_INICIAL,
   MAGNATA_FIANCA,
   MAGNATA_INICIO_BONUS,
@@ -28,7 +29,6 @@ import type { GameModule } from './module'
  * pagamentos; quando o caixa zera, o cartão banca o pagamento (vira dívida).
  */
 
-const CORES = ['#ff3ea5', '#22d3ee', '#facc15', '#34d399', '#a855f7', '#fb923c']
 const CARTAO_FATOR = 0.5
 const CARTAO_PISO = 200
 const MAX_TURNOS = 400 // trava de segurança: além disso, vence o mais rico
@@ -303,7 +303,7 @@ export function initialMagnataState(playerCount: number): MagState {
   const jogadores: MagnataJogador[] = Array.from({ length: playerCount }, (_, seat) => ({
     seat,
     nome: `Jogador ${seat + 1}`,
-    cor: CORES[seat % CORES.length]!,
+    cor: MAGNATA_CORES[seat % MAGNATA_CORES.length]!,
     pos: 0,
     dinheiro: MAGNATA_DINHEIRO_INICIAL,
     cartaoLimite: MAGNATA_CARTAO_INICIAL,
@@ -314,6 +314,7 @@ export function initialMagnataState(playerCount: number): MagState {
     preso: false,
     turnosPreso: 0,
     falido: false,
+    jaRolou: false,
   }))
   return {
     jogadores,
@@ -439,7 +440,16 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
   const j = s.jogadores[seat]!
   if (j.falido) return { error: 'Você está fora do jogo' }
 
-  // —— ações FORA do turno: lances de leilão e resposta de troca ——
+  // —— ações FORA do turno: trocar a cor do peão, lances de leilão e resposta de troca ——
+  if (a.type === 'cor') {
+    if (j.jaRolou) return { error: 'A cor só pode ser trocada antes da sua primeira rolagem' }
+    if (!MAGNATA_CORES.includes(a.cor)) return { error: 'Cor inválida' }
+    if (s.jogadores.some((x) => x.seat !== seat && x.cor === a.cor)) return { error: 'Essa cor já foi escolhida' }
+    j.cor = a.cor
+    logar(s, `🎨 ${j.nome} escolheu a cor do peão.`)
+    return { state: s }
+  }
+
   if (a.type === 'lance' || a.type === 'desistir') {
     if (!s.leilao) return { error: 'Nenhum leilão em andamento' }
     if (s.leilao.vez !== seat) return { error: 'Não é a sua vez de dar lance' }
@@ -482,6 +492,7 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
 
   if (a.type === 'rolar') {
     if (s.fase !== 'rolar') return { error: 'Você já rolou os dados' }
+    j.jaRolou = true
     const d1 = rolaDado()
     const d2 = rolaDado()
     s.dados = [d1, d2]

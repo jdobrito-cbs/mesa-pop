@@ -5,6 +5,7 @@ import {
   CUSTO_CASA,
   grupoDe,
   MAGNATA_CASAS,
+  MAGNATA_CORES,
   MAGNATA_FIANCA,
   valorHipoteca,
   type MagnataAction,
@@ -333,6 +334,30 @@ export default function MagnataBoard({
             </div>
             <div className="mt-1 text-[10px] opacity-80">
               limite {reais(cartao.cartaoLimite)} · usado {reais(cartao.cartaoUsado)}
+            </div>
+          </div>
+        )}
+
+        {/* cor do peão — livre trocar até a própria primeira rolagem */}
+        {eu && !eu.jaRolou && view.vencedor === null && (
+          <div className="card p-3">
+            <p className="mb-2 text-xs font-bold text-text-muted">🎨 Cor do seu peão (até a primeira rolagem)</p>
+            <div className="flex flex-wrap gap-2">
+              {MAGNATA_CORES.map((cor) => {
+                const ocupada = view.jogadores.some((j) => j.seat !== eu.seat && j.cor === cor)
+                const minha = eu.cor === cor
+                return (
+                  <button
+                    key={cor}
+                    disabled={ocupada}
+                    onClick={() => onAction({ type: 'cor', cor })}
+                    aria-pressed={minha}
+                    title={ocupada ? 'Cor já escolhida' : 'Escolher esta cor'}
+                    className={`size-7 rounded-full ring-2 transition ${minha ? 'ring-white' : 'ring-transparent'} ${ocupada ? 'opacity-30' : 'hover:scale-110'}`}
+                    style={{ background: cor }}
+                  />
+                )
+              })}
             </div>
           </div>
         )}

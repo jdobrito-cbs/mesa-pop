@@ -83,6 +83,8 @@ export const MAGNATA_CASAS: MagnataCasa[] = [
   P(39, 'Praia de Copacabana', 'azul', 400),
 ]
 
+export const MAGNATA_CORES = ['#ff3ea5', '#22d3ee', '#facc15', '#34d399', '#a855f7', '#fb923c', '#ef4444', '#3b82f6']
+
 export const MAGNATA_INICIO_BONUS = 200
 export const MAGNATA_FIANCA = 50
 export const MAGNATA_DINHEIRO_INICIAL = 1500
@@ -146,6 +148,8 @@ export interface MagnataJogador {
   turnosPreso: number
   falido: boolean
   isBot?: boolean
+  /** se já rolou os dados alguma vez — trava a troca da cor do peão */
+  jaRolou: boolean
 }
 
 export type MagnataFase = 'rolar' | 'comprar' | 'agir' | 'leilao' | 'fim'
@@ -208,3 +212,5 @@ export type MagnataAction =
   | { type: 'propor'; para: number; ofereceProps: number[]; ofereceDinheiro: number; pedeProps: number[]; pedeDinheiro: number }
   | { type: 'aceitarTroca' }
   | { type: 'recusarTroca' }
+  // escolher a cor do peão — vale até a própria primeira rolagem
+  | { type: 'cor'; cor: string }
