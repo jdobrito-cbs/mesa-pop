@@ -27,13 +27,6 @@ interface RoomRow {
   host: { displayName: string }
 }
 
-interface Standing {
-  guest: boolean
-  globalRank: number | null
-  globalWins: number
-  topGame: { slug: string; name: string; icon: string; plays: number; rank: number | null; metric: string } | null
-}
-
 /** estrela de favoritar sala pública (contas registradas) */
 export function FavoriteStar({
   room,
@@ -88,7 +81,6 @@ export default function Mesa() {
   const { data: gamesData, loading: loadingGames } = useFetch<{ games: GameView[] }>('/api/games')
   const { data: roomsData, reload: reloadRooms } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
   const { data: annData } = useFetch<{ announcements: AnnouncementView[] }>('/api/announcements')
-  const { data: standing } = useFetch<Standing>('/api/me/standing')
   const { data: geral } = useFetch<RankingsGerais>('/api/rankings/gerais')
   const { data: minha, reload: reloadMinha } = useFetch<{ fichas: number; owned: string[]; melhorPosicao: number | null }>('/api/me/avatares')
   const [escolher, setEscolher] = useState(false)
@@ -123,8 +115,8 @@ export default function Mesa() {
         E aí, <span className="text-pop-cyan">{firstName}</span>! 👋
       </h1>
 
-      {/* sua posição nos rankings */}
-      {user.isGuest ? (
+      {/* convidado: convite para criar conta */}
+      {user.isGuest && (
         <div className="card mt-6 flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-pop-cyan p-4">
           <p className="text-sm text-text-muted">
             🎟️ Você está jogando como <strong className="text-text">convidado</strong> — chat,
@@ -137,43 +129,11 @@ export default function Mesa() {
             Criar minha conta
           </Link>
         </div>
-      ) : (
-        standing &&
-        !standing.guest && (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className="card flex items-center gap-4 p-4">
-              <span className="text-3xl" aria-hidden="true">🌍</span>
-              <div>
-                <p className="font-display font-bold">Ranking global</p>
-                <p className="text-sm text-text-muted">
-                  {standing.globalRank
-                    ? <>Você é o <strong className="text-pop-yellow">{standing.globalRank}º</strong> em vitórias ({standing.globalWins})</>
-                    : 'Vença sua primeira partida para entrar no ranking!'}
-                </p>
-              </div>
-            </div>
-            <div className="card flex items-center gap-4 p-4">
-              <span className="text-3xl" aria-hidden="true">{standing.topGame?.icon ?? '🎮'}</span>
-              <div>
-                <p className="font-display font-bold">
-                  {standing.topGame ? `Seu jogo: ${standing.topGame.name}` : 'Seu jogo favorito'}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {standing.topGame
-                    ? standing.topGame.rank
-                      ? <><strong className="text-pop-cyan">{standing.topGame.rank}º</strong> no ranking de {standing.topGame.metric} · {standing.topGame.plays} partidas</>
-                      : `${standing.topGame.plays} partidas jogadas — pontue para ranquear!`
-                    : 'Jogue qualquer coisa e ele aparece aqui.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )
       )}
 
       {/* banners de posição nos rankings gerais */}
       {!user.isGuest && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Link
             to="/rankings"
             className="card group relative overflow-hidden border-0 bg-gradient-to-br from-pop-purple to-pop-magenta p-4 text-white transition hover:-translate-y-0.5"
