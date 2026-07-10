@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { avatarTier, ehAvatarValido } from '@mesapop/shared'
+import { melhorPosicao } from '../lib/rankingsGerais'
 
 /**
  * Posição do usuário nos rankings, para a "Minha mesa":
@@ -66,9 +67,14 @@ export default async function meRoutes(app: FastifyInstance) {
   app.put('/api/me/avatar', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { id } = z.object({ id: z.string().trim() }).parse(req.body)
     if (!ehAvatarValido(id)) return reply.code(400).send({ error: 'INVALID_AVATAR', message: 'Avatar inválido' })
-    // Fase A: só os NORMAIS estão liberados; especiais/super serão desbloqueados nas fases C/D
     if (avatarTier(id) !== 'normal') {
-      return reply.code(403).send({ error: 'AVATAR_LOCKED', message: 'Esse avatar ainda está bloqueado — conquiste nos rankings ou com fichas' })
+      // Fase C: top 10 dos rankings gerais equipam ESPECIAIS; o nº 1, SUPER
+      const pos = await melhorPosicao(app.prisma, req.auth!.sub)
+      const tier = avatarTier(id)
+      const liberado = tier === 'especial' ? pos !== null && pos <= 10 : pos === 1
+      if (!liberado) {
+        return reply.code(403).send({ error: 'AVATAR_LOCKED', message: 'Esse avatar ainda está bloqueado — conquiste nos rankings ou com fichas' })
+      }
     }
     await app.prisma.user.update({ where: { id: req.auth!.sub }, data: { avatar: id } })
     return { avatar: id }
