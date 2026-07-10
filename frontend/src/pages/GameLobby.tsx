@@ -114,14 +114,20 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
-      <div className="flex items-center gap-4">
-        <span className="flex size-16 items-center justify-center rounded-3xl bg-ink-800 text-4xl ring-1 ring-ink-700" aria-hidden="true">
+      <div className="flex items-start gap-4">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-3xl bg-ink-800 text-4xl ring-1 ring-ink-700" aria-hidden="true">
           {game?.icon ?? '🎲'}
         </span>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-4xl font-extrabold">{game?.name ?? '…'}</h1>
           <p className="text-text-muted">{game?.description}</p>
         </div>
+        <button
+          onClick={() => navigate('/mesa')}
+          className="btn-pop shrink-0 px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange"
+        >
+          ← Voltar à mesa
+        </button>
       </div>
 
       {error && (
