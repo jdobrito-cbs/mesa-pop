@@ -102,79 +102,91 @@ export default function MagnataBoard({
   const [ofD, setOfD] = useState('')
   const [peD, setPeD] = useState('')
 
-  // ——— animação SINCRONIZADA: dados (3s) → pausa (1s) → peão anda (1s/casa) → chega ———
+  // ——— animação em FILA: cada movimento (de QUALQUER jogador — robô ou humano)
+  // entra numa fila e é tocado por INTEIRO (dados → pausa → passo a passo), UM de
+  // cada vez. Assim o robô segue o MESMO princípio do usuário e nada "pula", mesmo
+  // quando o servidor resolve o turno do robô muito rápido. ———
   const [mostra, setMostra] = useState<Record<number, number>>(() =>
     Object.fromEntries(view.jogadores.map((j) => [j.seat, j.pos])),
   )
   const [rolando, setRolando] = useState(false)
   const [faces, setFaces] = useState<[number, number]>([1, 1])
   const [animando, setAnimando] = useState(false)
-  const mostraRef = useRef(mostra)
-  useEffect(() => {
-    mostraRef.current = mostra
-  }, [mostra])
-  const rolagensRef = useRef(view.rolagens)
+  // última posição CONHECIDA do servidor por assento (para detectar movimentos)
+  const posServidorRef = useRef<Record<number, number>>(
+    Object.fromEntries(view.jogadores.map((j) => [j.seat, j.pos])),
+  )
+  const filaRef = useRef<Array<{ seat: number; de: number; ate: number }>>([])
+  const tocandoRef = useRef(false)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const spinRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(
+    () => () => {
+      timersRef.current.forEach(clearTimeout)
+      if (spinRef.current) clearInterval(spinRef.current)
+    },
+    [],
+  ) // limpa timers/intervalo ao desmontar
 
   useEffect(() => {
-    const rolou = view.rolagens !== rolagensRef.current && view.rolagens > 0
-    rolagensRef.current = view.rolagens
+    const push = (fn: () => void, ms: number) => timersRef.current.push(setTimeout(fn, ms))
 
-    // SEM rolagem (init, compra, construção, troca, leilão): peões param nas
-    // posições e nada fica "animando" (evita travar as ações)
-    if (!rolou) {
-      setRolando(false)
-      setAnimando(false)
-      setMostra((prev) => {
-        const novo = { ...prev }
-        let mudou = false
-        for (const j of view.jogadores) if (novo[j.seat] !== j.pos) ((novo[j.seat] = j.pos), (mudou = true))
-        return mudou ? novo : prev
-      })
-      return
-    }
-
-    // ROLAGEM → segue a sequência exata; só o peão da VEZ anda, os outros ficam parados
-    const mover = view.turno
-    const alvo = view.jogadores[mover]?.pos ?? 0
-    const de = mostraRef.current[mover] ?? alvo
-    const dist = (alvo - de + 40) % 40
-
-    setAnimando(true)
-    setRolando(true)
-    setMostra((prev) => {
-      const novo = { ...prev }
-      for (const j of view.jogadores) if (j.seat !== mover) novo[j.seat] = j.pos
-      return novo
-    })
-
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const spin = setInterval(() => setFaces([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]), 90)
-    timers.push(setTimeout(() => {
-      clearInterval(spin)
-      setRolando(false)
-    }, ROLL_MS))
-
-    const inicioAndar = ROLL_MS + POS_DADOS_MS // só anda 1s DEPOIS de os dados pararem
-    if (dist === 0) {
-      timers.push(setTimeout(() => setAnimando(false), ROLL_MS))
-    } else if (dist > 13) {
-      // teleporte (prisão / carta) → salta direto na hora de andar
-      timers.push(setTimeout(() => {
-        setMostra((p) => ({ ...p, [mover]: alvo }))
+    function processa() {
+      if (tocandoRef.current) return
+      const mov = filaRef.current.shift()
+      if (!mov) {
         setAnimando(false)
-      }, inicioAndar))
-    } else {
-      for (let k = 1; k <= dist; k++) {
-        timers.push(setTimeout(() => setMostra((p) => ({ ...p, [mover]: (de + k) % 40 })), inicioAndar + k * PASSO_MS))
+        setRolando(false)
+        timersRef.current = []
+        return
       }
-      timers.push(setTimeout(() => setAnimando(false), inicioAndar + dist * PASSO_MS + 60))
+      tocandoRef.current = true
+      setAnimando(true)
+      setRolando(true)
+      const spin = setInterval(
+        () => setFaces([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]),
+        90,
+      )
+      spinRef.current = spin
+      push(() => {
+        clearInterval(spin)
+        setRolando(false)
+      }, ROLL_MS)
+      const dist = (mov.ate - mov.de + 40) % 40
+      const inicio = ROLL_MS + POS_DADOS_MS // só anda após os dados pararem + a pausa
+      const fim = () => {
+        tocandoRef.current = false
+        processa()
+      }
+      if (dist === 0) {
+        push(fim, ROLL_MS)
+      } else if (dist > 13) {
+        // teleporte (prisão / carta) → salta direto na hora de andar
+        push(() => setMostra((p) => ({ ...p, [mov.seat]: mov.ate })), inicio)
+        push(fim, inicio + 60)
+      } else {
+        for (let k = 1; k <= dist; k++) push(() => setMostra((p) => ({ ...p, [mov.seat]: (mov.de + k) % 40 })), inicio + k * PASSO_MS)
+        push(fim, inicio + dist * PASSO_MS + 60)
+      }
     }
 
-    return () => {
-      clearInterval(spin)
-      timers.forEach(clearTimeout)
+    // detecta cada peão que mudou de posição no servidor e enfileira o movimento
+    let enfileirou = false
+    for (const j of view.jogadores) {
+      const prev = posServidorRef.current[j.seat]
+      if (prev === undefined) {
+        posServidorRef.current[j.seat] = j.pos
+        continue
+      }
+      if (j.pos !== prev) {
+        filaRef.current.push({ seat: j.seat, de: prev, ate: j.pos })
+        posServidorRef.current[j.seat] = j.pos
+        enfileirou = true
+      }
     }
-  }, [view.jogadores, view.rolagens])
+    if (enfileirou) processa()
+  }, [view.jogadores])
 
   const posDe = (seat: number) => mostra[seat] ?? view.jogadores[seat]?.pos ?? 0
 
@@ -227,7 +239,7 @@ export default function MagnataBoard({
     <div className="mp-magnata mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       {/* TABULEIRO */}
       <div
-        className="mp-magnata-board relative mx-auto grid aspect-square w-full max-w-[760px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 text-[8px] ring-2 ring-ink-700"
+        className="mp-magnata-board relative mx-auto grid aspect-square w-full max-w-[860px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 text-[8px] ring-2 ring-ink-700"
         style={{ gridTemplateColumns: 'repeat(11,1fr)', gridTemplateRows: 'repeat(11,1fr)' }}
       >
         {MAGNATA_CASAS.map((c) => {
