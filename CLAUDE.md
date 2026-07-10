@@ -57,13 +57,20 @@ Base sólida primeiro; os jogos plugam nela.
     → "Você parou e levou R$ 1.000!" e o ranking mostrou o 1º lugar.
     LIÇÃO: `nameSchema` recusa nome de 1 letra — usar nomes reais nos
     testes de register.
-  - **BÔNUS DE FICHAS (pedido do usuário 2026-07-10)**: gabaritar o
-    MILHÃO também dá **+100 fichas de avatar** (`MILHAO_FICHAS_PREMIO`
-    no shared; creditadas pelo SERVIDOR no `encerra` junto do
-    Match/Score; convidado não ganha). A view devolve `fichasGanhas` e
-    a tela final do MILHÃO informa "🪙 Bônus: +100 fichas para a
-    máquina de avatares!". 305 testes (2 novos: milhão credita 100 no
-    banco e informa na view; parar/errar dá 0).
+  - **PONTUAÇÃO E FICHAS PROPORCIONAIS (pedidos do usuário
+    2026-07-10)**: o ranking é em PONTOS, não em R$ — o R$ é
+    cenográfico. Regra única no `encerra`: **pontos = prêmio ÷ 20**
+    (`milhaoPontos`; o milhão vale 50.000 = `MILHAO_PONTOS_MAX`) e
+    **fichas = prêmio ÷ 10.000** (`milhaoFichas`; o milhão vale 100 =
+    `MILHAO_FICHAS_MAX`) — quem PARA ou ERRA no meio leva a FRAÇÃO de
+    ambos (ex.: parou com R$ 2.000 → 100 pts; abaixo de R$ 10.000
+    ainda não rende ficha). MatchPlayer.score e Score.points gravam os
+    PONTOS (metadata guarda o `premio` em R$); fichas creditadas pelo
+    servidor; convidado não pontua nem ganha. A view devolve
+    `pontosGanhos`+`fichasGanhas` e a tela final mostra os dois selos
+    ("🏁 +X pontos no ranking" / "🪙 +Y fichas"); o ranking lateral
+    exibe "pts". 305 testes (fração no parar/errar, milhão = 50.000
+    pts + 100 fichas no banco).
 - **AVATARES · REDESIGN VISUAL COMPLETO (pedido do usuário 2026-07-10,
   com 6 imagens de referência)**: o usuário rejeitou o estilo
   "bichinhos" da 1ª versão e definiu os estilos — NUNCA tristes (só

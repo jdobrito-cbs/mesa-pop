@@ -202,11 +202,6 @@ export default function TioMarioPage() {
                   <h2 className="mt-3 font-display text-3xl font-extrabold text-pop-yellow">
                     R$ 1.000.000! VOCÊ É O NOVO MILIONÁRIO!
                   </h2>
-                  {view.fichasGanhas > 0 && (
-                    <p className="mt-3 inline-block rounded-full bg-pop-yellow/15 px-5 py-2 font-display font-extrabold text-pop-yellow">
-                      🪙 Bônus: +{view.fichasGanhas} fichas para a máquina de avatares!
-                    </p>
-                  )}
                 </>
               ) : view.resultado === 'parou' ? (
                 <>
@@ -226,6 +221,19 @@ export default function TioMarioPage() {
                   </h2>
                   <p className="mt-2 text-sm text-text-muted">Bora tentar de novo?</p>
                 </>
+              )}
+              {/* o que a partida rendeu de verdade: PONTOS no ranking + FICHAS */}
+              {(view.pontosGanhos > 0 || view.fichasGanhas > 0) && (
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-full bg-pop-cyan/15 px-5 py-2 font-display font-extrabold text-pop-cyan">
+                    🏁 +{view.pontosGanhos.toLocaleString('pt-BR')} pontos no ranking
+                  </span>
+                  {view.fichasGanhas > 0 && (
+                    <span className="rounded-full bg-pop-yellow/15 px-5 py-2 font-display font-extrabold text-pop-yellow">
+                      🪙 +{view.fichasGanhas} fichas para a máquina de avatares!
+                    </span>
+                  )}
+                </div>
               )}
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
@@ -408,7 +416,7 @@ export default function TioMarioPage() {
                   </span>
                   <AvatarSvg id={r.displayName} size={20} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{r.displayName}</span>
-                  <span className="font-bold text-pop-cyan tabular-nums">{fmt(r.points)}</span>
+                  <span className="font-bold text-pop-cyan tabular-nums">{r.points.toLocaleString('pt-BR')} pts</span>
                 </div>
               ))}
             </div>

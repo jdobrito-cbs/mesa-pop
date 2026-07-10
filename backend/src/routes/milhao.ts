@@ -3,9 +3,10 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
   MILHAO_ESCADA,
-  MILHAO_FICHAS_PREMIO,
   MILHAO_NIVEIS,
   MILHAO_PULOS,
+  milhaoFichas,
+  milhaoPontos,
   milhaoSeErrar,
   milhaoTier,
   type MilhaoResultado,
@@ -45,7 +46,7 @@ interface Sessao {
   universitarios: MilhaoUniversitario[] | null
   plateia: number[] | null
   ultima: MilhaoView['ultima']
-  fim: { resultado: MilhaoResultado; premio: number; fichasGanhas: number } | null
+  fim: { resultado: MilhaoResultado; premio: number; pontosGanhos: number; fichasGanhas: number } | null
 }
 
 const BANCOS = { facil: MILHAO_FACIL, medio: MILHAO_MEDIO, dificil: MILHAO_DIFICIL }
@@ -100,11 +101,16 @@ function view(s: Sessao): MilhaoView {
     ultima: s.ultima,
     resultado: s.fim?.resultado ?? null,
     premio: s.fim?.premio ?? 0,
+    pontosGanhos: s.fim?.pontosGanhos ?? 0,
     fichasGanhas: s.fim?.fichasGanhas ?? 0,
   }
 }
 
-/** encerra a partida: grava Match/MatchPlayer/Score (contas registradas) */
+/**
+ * Encerra a partida. O ranking é em PONTOS (prêmio/20 — o milhão vale
+ * 50.000) e as FICHAS de avatar são proporcionais (prêmio/10.000 — o
+ * milhão vale 100): quem para ou erra no meio leva a fração de ambos.
+ */
 async function encerra(
   app: FastifyInstance,
   userId: string,
@@ -112,7 +118,9 @@ async function encerra(
   resultado: MilhaoResultado,
   premio: number,
 ): Promise<void> {
-  s.fim = { resultado, premio, fichasGanhas: 0 }
+  const pontos = milhaoPontos(premio)
+  const fichas = s.matchId ? milhaoFichas(premio) : 0
+  s.fim = { resultado, premio, pontosGanhos: s.matchId ? pontos : 0, fichasGanhas: fichas }
   if (!s.matchId) return // convidado: joga, mas não pontua nem ganha fichas
   await app.prisma.match.update({
     where: { id: s.matchId },
@@ -120,18 +128,16 @@ async function encerra(
   })
   await app.prisma.matchPlayer.updateMany({
     where: { matchId: s.matchId, userId },
-    data: { score: premio, isWinner: resultado === 'milhao' },
+    data: { score: pontos, isWinner: resultado === 'milhao' },
   })
   await app.prisma.score.create({
-    data: { userId, gameId: s.gameId, points: premio, metadata: { resultado, nivel: s.nivel } },
+    data: { userId, gameId: s.gameId, points: pontos, metadata: { resultado, nivel: s.nivel, premio } },
   })
-  // gabaritou o MILHÃO → bônus de fichas de avatar (informado na tela final)
-  if (resultado === 'milhao') {
+  if (fichas > 0) {
     await app.prisma.user.update({
       where: { id: userId },
-      data: { fichas: { increment: MILHAO_FICHAS_PREMIO } },
+      data: { fichas: { increment: fichas } },
     })
-    s.fim.fichasGanhas = MILHAO_FICHAS_PREMIO
   }
 }
 
