@@ -239,7 +239,7 @@ export default function MagnataBoard({
     <div className="mp-magnata mx-auto grid w-full max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       {/* TABULEIRO */}
       <div
-        className="mp-magnata-board relative mx-auto grid aspect-square w-full max-w-[860px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 text-[8px] ring-2 ring-ink-700"
+        className="mp-magnata-board relative mx-auto grid aspect-square w-full max-w-[860px] gap-0.5 rounded-card bg-[#0d5c3a] p-1.5 text-[6px] ring-2 ring-ink-700 min-[480px]:text-[7px] sm:text-[8px]"
         style={{ gridTemplateColumns: 'repeat(11,1fr)', gridTemplateRows: 'repeat(11,1fr)' }}
       >
         {MAGNATA_CASAS.map((c) => {
@@ -262,7 +262,7 @@ export default function MagnataBoard({
             >
               {grupoCor && <div style={{ background: grupoCor }} className="h-2 w-full shrink-0" />}
               <div className="flex-1 px-1 pt-0.5 font-bold text-cream/90">{c.nome}</div>
-              {c.preco !== undefined && <div className="px-1 pb-0.5 text-[9px] font-bold text-pop-yellow">{reais(c.preco)}</div>}
+              {c.preco !== undefined && <div className="px-1 pb-0.5 text-[7px] font-bold text-pop-yellow min-[480px]:text-[8px] sm:text-[9px]">{reais(c.preco)}</div>}
               {c.tipo === 'sorte' && <div className="grid flex-1 place-items-center text-xl">🎲</div>}
               {c.tipo === 'cofre' && <div className="grid flex-1 place-items-center text-xl">📦</div>}
               {c.tipo === 'imposto' && <div className="grid flex-1 place-items-center text-xl">🏛️</div>}
