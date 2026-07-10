@@ -119,13 +119,24 @@ describe('Tio Mário Milionário (servidor autoritativo)', () => {
     expect((r.json() as MilhaoView).pergunta!.texto).toBe(v.pergunta!.texto)
   })
 
-  it('escada completa: acertando tudo, leva o MILHÃO', async () => {
+  it('escada completa: acertando tudo, leva o MILHÃO + 100 fichas de avatar', async () => {
+    const antes = await app.prisma.user.findUnique({ where: { email: `${runId}@t.local` } })
     let v = await start()
     for (let i = 0; i < 16; i++) v = await responder(idxCorreta(v))
     expect(v.fase).toBe('fim')
     expect(v.resultado).toBe('milhao')
     expect(v.premio).toBe(1_000_000)
+    expect(v.fichasGanhas).toBe(100) // a view INFORMA o bônus para a tela final
     const mp = await app.prisma.matchPlayer.findFirst({ where: { score: 1_000_000 }, include: { match: true } })
     expect(mp?.isWinner).toBe(true)
+    const depois = await app.prisma.user.findUnique({ where: { email: `${runId}@t.local` } })
+    expect(depois!.fichas).toBe((antes!.fichas ?? 0) + 100) // fichas creditadas no banco
+  })
+
+  it('parar ou errar NÃO dá bônus de fichas', async () => {
+    let v = await start()
+    v = await responder(idxCorreta(v))
+    const fim = (await app.inject({ method: 'POST', url: '/api/milhao/parar', headers: auth() })).json() as MilhaoView
+    expect(fim.fichasGanhas).toBe(0)
   })
 })

@@ -202,6 +202,11 @@ export default function TioMarioPage() {
                   <h2 className="mt-3 font-display text-3xl font-extrabold text-pop-yellow">
                     R$ 1.000.000! VOCÊ É O NOVO MILIONÁRIO!
                   </h2>
+                  {view.fichasGanhas > 0 && (
+                    <p className="mt-3 inline-block rounded-full bg-pop-yellow/15 px-5 py-2 font-display font-extrabold text-pop-yellow">
+                      🪙 Bônus: +{view.fichasGanhas} fichas para a máquina de avatares!
+                    </p>
+                  )}
                 </>
               ) : view.resultado === 'parou' ? (
                 <>

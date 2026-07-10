@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import {
   MILHAO_ESCADA,
+  MILHAO_FICHAS_PREMIO,
   MILHAO_NIVEIS,
   MILHAO_PULOS,
   milhaoSeErrar,
@@ -44,7 +45,7 @@ interface Sessao {
   universitarios: MilhaoUniversitario[] | null
   plateia: number[] | null
   ultima: MilhaoView['ultima']
-  fim: { resultado: MilhaoResultado; premio: number } | null
+  fim: { resultado: MilhaoResultado; premio: number; fichasGanhas: number } | null
 }
 
 const BANCOS = { facil: MILHAO_FACIL, medio: MILHAO_MEDIO, dificil: MILHAO_DIFICIL }
@@ -99,6 +100,7 @@ function view(s: Sessao): MilhaoView {
     ultima: s.ultima,
     resultado: s.fim?.resultado ?? null,
     premio: s.fim?.premio ?? 0,
+    fichasGanhas: s.fim?.fichasGanhas ?? 0,
   }
 }
 
@@ -110,8 +112,8 @@ async function encerra(
   resultado: MilhaoResultado,
   premio: number,
 ): Promise<void> {
-  s.fim = { resultado, premio }
-  if (!s.matchId) return // convidado: joga, mas não pontua
+  s.fim = { resultado, premio, fichasGanhas: 0 }
+  if (!s.matchId) return // convidado: joga, mas não pontua nem ganha fichas
   await app.prisma.match.update({
     where: { id: s.matchId },
     data: { status: 'FINISHED', endedAt: new Date() },
@@ -123,6 +125,14 @@ async function encerra(
   await app.prisma.score.create({
     data: { userId, gameId: s.gameId, points: premio, metadata: { resultado, nivel: s.nivel } },
   })
+  // gabaritou o MILHÃO → bônus de fichas de avatar (informado na tela final)
+  if (resultado === 'milhao') {
+    await app.prisma.user.update({
+      where: { id: userId },
+      data: { fichas: { increment: MILHAO_FICHAS_PREMIO } },
+    })
+    s.fim.fichasGanhas = MILHAO_FICHAS_PREMIO
+  }
 }
 
 export default async function milhaoRoutes(app: FastifyInstance) {

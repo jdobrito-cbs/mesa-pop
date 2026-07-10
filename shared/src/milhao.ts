@@ -53,7 +53,12 @@ export interface MilhaoView {
   /** só na fase 'fim' */
   resultado: MilhaoResultado | null
   premio: number
+  /** fichas de avatar ganhas na partida (100 ao gabaritar o milhão) */
+  fichasGanhas: number
 }
+
+/** fichas de avatar ganhas ao acertar a pergunta do MILHÃO */
+export const MILHAO_FICHAS_PREMIO = 100
 
 /** quanto o jogador leva se ERRAR tendo `acumulado` no nível `nivel` */
 export function milhaoSeErrar(nivel: number, acumulado: number): number {
