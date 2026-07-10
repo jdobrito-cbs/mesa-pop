@@ -147,7 +147,8 @@ export default function TioMarioPage() {
     <main className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">
-          <span aria-hidden="true">💰</span> Tio Mário Milionário
+          <span aria-hidden="true">💰</span> Milionário{' '}
+          <span className="text-lg font-bold text-text-muted">(Tio Mário Milionário)</span>
         </h1>
         <button
           onClick={() => navigate('/mesa')}

@@ -23,10 +23,13 @@ Base sólida primeiro; os jogos plugam nela.
 - **Última atualização**: 2026-07-10
 - **BOB MAGNATA (rename) + NOVO JOGO — TIO MÁRIO MILIONÁRIO (pedidos do
   usuário 2026-07-10)**:
-  - **Rename**: o Magnata agora se chama **"Bob Magnata"** (nome no
-    catálogo/shared + medalhão do tabuleiro; o SLUG `magnata` foi
-    mantido para não quebrar histórico/salas; o seed já atualiza o
-    `name` de jogos existentes no update do upsert).
+  - **Rename (AJUSTE FINAL, pedido 2026-07-10)**: nomes COMPOSTOS no
+    catálogo — **"Magnata (Bob Magnata)"** e **"Milionário (Tio Mário
+    Milionário)"** (base clássica + apelido entre parênteses; medalhão
+    do tabuleiro mostra MAGNATA com "(BOB MAGNATA)" menor embaixo;
+    título da página do quiz idem). SLUGs `magnata` e
+    `tio-mario-milionario` inalterados; o seed atualiza o `name` de
+    jogos existentes no update do upsert.
   - **Tio Mário Milionário** (slug `tio-mario-milionario`, solo, 💰):
     quiz de ESCADA DE PRÊMIOS — formato clássico de gincana de
     perguntas recriado com identidade própria (regra 6: nada de
