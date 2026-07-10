@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
-import { loginSchema, registerSchema } from '@mesapop/shared'
+import { avatarAleatorioNormal, avatarTier, loginSchema, registerSchema } from '@mesapop/shared'
 import { hashPassword, verifyPassword } from '../lib/password'
 import {
   createRefreshToken,
@@ -52,6 +52,8 @@ export default async function authRoutes(app: FastifyInstance) {
         displayName: input.username,
         phone: input.phone,
         passwordHash: await hashPassword(input.password),
+        // usa o avatar escolhido só se for um NORMAL válido; senão sorteia um
+        avatar: input.avatar && avatarTier(input.avatar) === 'normal' ? input.avatar : avatarAleatorioNormal(),
       },
     })
     await audit(app.prisma, 'user.register', { userId: user.id, req })
@@ -94,6 +96,7 @@ export default async function authRoutes(app: FastifyInstance) {
         phone: '',
         passwordHash: '!guest', // nunca é um hash argon2 válido → login impossível
         isGuest: true,
+        avatar: avatarAleatorioNormal(),
       },
     })
     // registro permanente da visita (relatório mensal) — sobrevive ao convidado

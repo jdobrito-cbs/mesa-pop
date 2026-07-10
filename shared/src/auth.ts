@@ -55,6 +55,7 @@ export const registerSchema = z
     phone: phoneSchema,
     password: passwordSchema,
     passwordConfirm: z.string(),
+    avatar: z.string().trim().max(8).optional(),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: 'As senhas não conferem',
