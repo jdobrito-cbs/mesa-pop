@@ -27,7 +27,7 @@ import type {
 } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
-import { useFullscreen } from '../lib/useFullscreen'
+import FullscreenButton from '../components/FullscreenButton'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
 import GiraGenioGame from '../components/GiraGenioGame'
@@ -79,9 +79,8 @@ export default function RoomPage() {
 
   // a tela do jogo abre no topo, sem rolagem automática (título junto ao header)
   const partidaRef = useRef<HTMLDivElement>(null)
-  // tela cheia da área de jogo + chat
+  // tela cheia da área de jogo + chat (botão de sair vem do FullscreenButton)
   const fsRef = useRef<HTMLDivElement>(null)
-  const { isFs, toggle: toggleFs } = useFullscreen(fsRef)
 
   useEffect(() => {
     if (!code || !user) return
@@ -228,12 +227,7 @@ export default function RoomPage() {
           )}
         </h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => void toggleFs()}
-            className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan"
-          >
-            {isFs ? '⤢ Sair da tela cheia' : '⛶ Tela cheia'}
-          </button>
+          <FullscreenButton targetRef={fsRef} />
           <button
             onClick={() => void shareRoom()}
             className="btn-pop px-4 py-2 text-sm ring-1 ring-pop-cyan/50 hover:ring-pop-cyan"

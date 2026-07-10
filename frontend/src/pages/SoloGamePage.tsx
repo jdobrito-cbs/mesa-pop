@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api, ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
-import { useFullscreen } from '../lib/useFullscreen'
+import FullscreenButton from '../components/FullscreenButton'
 import AdSlot from '../components/AdSlot'
 import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
@@ -208,7 +208,6 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
   const isGuest = !!user?.isGuest
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fsRef = useRef<HTMLDivElement>(null)
-  const { isFs, toggle: toggleFs } = useFullscreen(fsRef)
   const gameRef = useRef<SoloGame | null>(null)
   const matchIdRef = useRef<string | null>(null)
   const [hud, setHud] = useState<Record<string, unknown>>({})
@@ -295,12 +294,7 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
           <span aria-hidden="true">{def.icon}</span> {def.title}
         </h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => void toggleFs()}
-            className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-cyan"
-          >
-            {isFs ? '⤢ Sair da tela cheia' : '⛶ Tela cheia'}
-          </button>
+          <FullscreenButton targetRef={fsRef} />
           <button
             onClick={() => navigate('/mesa')}
             className="btn-pop px-4 py-2 text-sm ring-1 ring-ink-700 hover:ring-pop-orange"
