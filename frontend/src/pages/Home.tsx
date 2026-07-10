@@ -1,4 +1,4 @@
-import type { GameDef } from '@mesapop/shared'
+import { GAME_CATALOG, type GameDef } from '@mesapop/shared'
 import GameCard from '../components/GameCard'
 import { Chip, Spark } from '../components/Logo'
 import { useFetch } from '../lib/useFetch'
@@ -17,9 +17,10 @@ export default function Home() {
   const { data: destaque } = useFetch<{ maisJogados: GameDef[]; aleatorios: GameDef[] }>(
     '/api/games/destaque',
   )
-  // total de jogos disponíveis (contagem dinâmica — nunca desatualiza)
+  // total de jogos disponíveis (contagem DINÂMICA via /api/games; o fallback
+  // vem do catálogo desta versão — nunca um número fixo desatualizado)
   const { data: gamesData } = useFetch<{ games: GameDef[] }>('/api/games')
-  const totalJogos = gamesData?.games.length ?? 32
+  const totalJogos = gamesData?.games.length ?? GAME_CATALOG.filter((g) => g.enabled).length
 
   return (
     <main>
