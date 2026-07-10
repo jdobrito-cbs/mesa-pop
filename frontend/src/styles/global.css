@@ -201,8 +201,14 @@
 }
 
 @layer base {
+  html {
+    /* celular: desliga o "puxar para atualizar" — um refresh acidental
+       no meio da partida perdia o jogo (pedido do usuário 2026-07-10) */
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-ink-900 font-body text-text antialiased;
+    overscroll-behavior-y: none;
     background-image:
       radial-gradient(1100px 500px at 85% -10%, rgb(157 92 255 / 0.14), transparent 60%),
       radial-gradient(900px 480px at -10% 30%, rgb(51 224 214 / 0.1), transparent 55%);

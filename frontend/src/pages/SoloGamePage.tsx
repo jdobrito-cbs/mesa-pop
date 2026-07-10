@@ -228,6 +228,18 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
     }
   }, [])
 
+  // partida em andamento: recarregar/fechar a página pede confirmação
+  // (no celular um refresh acidental perdia o jogo)
+  useEffect(() => {
+    if (phase !== 'playing') return
+    const guarda = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', guarda)
+    return () => window.removeEventListener('beforeunload', guarda)
+  }, [phase])
+
   const finish = useCallback(
     async (points: number) => {
       setPhase('over')

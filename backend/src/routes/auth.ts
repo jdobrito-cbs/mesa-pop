@@ -11,7 +11,7 @@ import {
   signAccessToken,
 } from '../lib/tokens'
 import { audit } from '../lib/audit'
-import { deleteGuest } from '../lib/guests'
+import { cancelGuestLeave, deleteGuest, scheduleGuestLeave } from '../lib/guests'
 import { toPublicUser } from '../lib/user'
 import { getLoginMaxAttempts, LOCK_FOREVER } from '../lib/settings'
 import { config, REFRESH_COOKIE } from '../config'
@@ -185,6 +185,8 @@ export default async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: 'INVALID_REFRESH', message: 'Sessão expirada' })
     }
     setRefreshCookie(reply, rotated.token, rotated.expiresAt)
+    // convidado voltou (reload da página) → cancela a exclusão agendada
+    if (rotated.user.isGuest) cancelGuestLeave(rotated.user.id)
     return {
       user: toPublicUser(rotated.user),
       accessToken: signAccessToken(rotated.user.id, rotated.user.role, rotated.user.isGuest),
@@ -198,7 +200,11 @@ export default async function authRoutes(app: FastifyInstance) {
       // registrada em GuestVisit para o relatório mensal
       const user = await findUserByRefreshToken(app.prisma, token)
       await revokeRefreshToken(app.prisma, token)
-      if (user?.isGuest) await deleteGuest(app.prisma, user.id)
+      if (user?.isGuest) {
+        // sair é explícito: apaga na hora (e limpa qualquer saída agendada)
+        cancelGuestLeave(user.id)
+        await deleteGuest(app.prisma, user.id)
+      }
     }
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
     return { ok: true }
@@ -206,18 +212,16 @@ export default async function authRoutes(app: FastifyInstance) {
 
   /**
    * Fechou o navegador/aba: o cliente dispara isto via navigator.sendBeacon
-   * no pagehide. Apaga o convidado (temporário) sem depender do logout.
+   * no pagehide. ATENÇÃO: o pagehide também dispara num simples RELOAD —
+   * por isso a exclusão tem CARÊNCIA (agendada; o refresh da sessão cancela).
+   * A sessão NÃO é revogada aqui: se foi só um reload, ela precisa voltar.
    */
-  app.post('/api/auth/guest/leave', async (req, reply) => {
+  app.post('/api/auth/guest/leave', async (req) => {
     const token = req.cookies[REFRESH_COOKIE]
     if (token) {
       const user = await findUserByRefreshToken(app.prisma, token)
-      if (user?.isGuest) {
-        await revokeRefreshToken(app.prisma, token)
-        await deleteGuest(app.prisma, user.id)
-      }
+      if (user?.isGuest) scheduleGuestLeave(app.prisma, user.id)
     }
-    reply.clearCookie(REFRESH_COOKIE, { path: '/api/auth' })
     return { ok: true }
   })
 

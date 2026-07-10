@@ -108,15 +108,42 @@ describe('Convidados temporários', () => {
     expect(reuso.res.statusCode).toBe(201)
   })
 
-  it('/guest/leave (fechar o navegador) apaga o convidado', async () => {
+  it('/guest/leave (fechar o navegador) apaga o convidado após a carência', async () => {
     const nomeC = `${nome} C`
     const { refresh } = await criarConvidado(nomeC)
+    // carência zero = apaga já (o padrão em produção é 90s, p/ reload não perder a sessão)
+    process.env.GUEST_LEAVE_GRACE_MS = '0'
     await app.inject({
       method: 'POST',
       url: '/api/auth/guest/leave',
       cookies: { [REFRESH_COOKIE]: refresh },
     })
+    delete process.env.GUEST_LEAVE_GRACE_MS
+    await new Promise((r) => setTimeout(r, 50)) // a exclusão com carência 0 é assíncrona
     const existe = await app.prisma.user.count({ where: { isGuest: true, displayName: nomeC } })
     expect(existe).toBe(0)
+  })
+
+  it('/guest/leave num RELOAD não perde o convidado (refresh cancela a carência)', async () => {
+    const nomeD = `${nome} D`
+    const { refresh } = await criarConvidado(nomeD)
+    // pagehide do reload: agenda a exclusão (carência longa) SEM revogar a sessão
+    process.env.GUEST_LEAVE_GRACE_MS = '60000'
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/guest/leave',
+      cookies: { [REFRESH_COOKIE]: refresh },
+    })
+    delete process.env.GUEST_LEAVE_GRACE_MS
+    // a página voltou: a sessão se restaura pelo cookie → cancela a exclusão
+    const volta = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      cookies: { [REFRESH_COOKIE]: refresh },
+    })
+    expect(volta.statusCode).toBe(200)
+    expect(volta.json().user.displayName).toBe(nomeD)
+    const existe = await app.prisma.user.count({ where: { isGuest: true, displayName: nomeD } })
+    expect(existe).toBe(1)
   })
 })

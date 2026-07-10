@@ -127,6 +127,18 @@ export default function RoomPage() {
     }
   }, [code, user])
 
+  // partida em andamento: recarregar/fechar a página pede confirmação
+  // (no celular um refresh acidental derrubava o jogador da mesa)
+  useEffect(() => {
+    if (room?.status !== 'PLAYING') return
+    const guarda = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', guarda)
+    return () => window.removeEventListener('beforeunload', guarda)
+  }, [room?.status])
+
   /** fecha o overlay de fim e libera a mesa (rotação já pode ter resetado) */
   function dismissEnd() {
     setEnd(null)

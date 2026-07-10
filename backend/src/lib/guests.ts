@@ -14,6 +14,39 @@ export async function deleteGuest(prisma: PrismaClient, userId: string): Promise
   await prisma.user.delete({ where: { id: userId } }).catch(() => {})
 }
 
+/**
+ * Saída com CARÊNCIA: o pagehide dispara também num simples RELOAD da página
+ * (celular: puxar para atualizar) — apagar o convidado na hora perdia a
+ * sessão E a partida. Agora a exclusão é agendada (padrão 90s) e cancelada
+ * se a sessão voltar (refresh do token). Fechou o navegador de verdade →
+ * ninguém volta → apaga.
+ */
+const saidasPendentes = new Map<string, NodeJS.Timeout>()
+
+export function scheduleGuestLeave(prisma: PrismaClient, userId: string, graceMs?: number): void {
+  const ms = graceMs ?? Number(process.env.GUEST_LEAVE_GRACE_MS ?? 90_000)
+  cancelGuestLeave(userId)
+  if (ms <= 0) {
+    void deleteGuest(prisma, userId)
+    return
+  }
+  const timer = setTimeout(() => {
+    saidasPendentes.delete(userId)
+    void deleteGuest(prisma, userId)
+  }, ms)
+  timer.unref?.()
+  saidasPendentes.set(userId, timer)
+}
+
+/** a sessão do convidado voltou (reload) — cancela a exclusão agendada */
+export function cancelGuestLeave(userId: string): void {
+  const timer = saidasPendentes.get(userId)
+  if (timer) {
+    clearTimeout(timer)
+    saidasPendentes.delete(userId)
+  }
+}
+
 /** rede de segurança: remove convidados esquecidos (sessão antiga) */
 export async function reapOldGuests(prisma: PrismaClient, olderThanHours = 12): Promise<number> {
   const limite = new Date(Date.now() - olderThanHours * 3600_000)
