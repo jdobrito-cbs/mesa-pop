@@ -22,7 +22,6 @@ import { forcaModule } from '../games/forca'
 import { bingoModule } from '../games/bingo'
 import { makeQuizModule } from '../games/quiz'
 import { QUIZ_NOSTALGIA, QUIZ_POP } from '../lib/quizPerguntas'
-import { gansoModule } from '../games/ganso'
 import { giraGenioModule } from '../games/giraGenio'
 import { slitherModule } from '../games/slither'
 import { magnataModule } from '../games/magnata'
@@ -51,7 +50,6 @@ registerGame(forcaModule)
 registerGame(bingoModule)
 registerGame(makeQuizModule('quiz-pop', QUIZ_POP))
 registerGame(makeQuizModule('quiz-nostalgia', QUIZ_NOSTALGIA))
-registerGame(gansoModule)
 registerGame(giraGenioModule)
 registerGame(slitherModule)
 registerGame(magnataModule)

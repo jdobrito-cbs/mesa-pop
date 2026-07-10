@@ -12,7 +12,6 @@ import type {
   BingoView,
   ForcaView,
   GameEndView,
-  GansoState,
   GGView,
   CobraSnapshot,
   MagnataView,
@@ -31,7 +30,6 @@ import { useAuth } from '../lib/auth'
 import { useFullscreen } from '../lib/useFullscreen'
 import CheckersBoard from '../components/CheckersBoard'
 import ChessBoard from '../components/ChessBoard'
-import GansoBoard from '../components/GansoBoard'
 import GiraGenioGame from '../components/GiraGenioGame'
 import SlitherGame from '../components/SlitherGame'
 import MagnataBoard from '../components/MagnataBoard'
@@ -332,14 +330,6 @@ export default function RoomPage() {
                   yourSeat={game.yourSeat}
                   players={seatedPlayers}
                   onMove={(move: ChessMove) => void sendAction(move)}
-                />
-              )}
-              {room.gameSlug === 'ganso' && (
-                <GansoBoard
-                  state={game.state as GansoState}
-                  yourSeat={game.yourSeat}
-                  players={seatedPlayers}
-                  onRoll={() => void sendAction({ type: 'roll' })}
                 />
               )}
               {room.gameSlug === 'gira-genio' && (

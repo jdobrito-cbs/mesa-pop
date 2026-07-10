@@ -183,21 +183,6 @@ export default function GiraGenioGame({
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        {/* reveal do último lance */}
-        {view.ultimo && view.fase !== 'pergunta' && (
-          <p
-            className={`rounded-field px-4 py-2 text-center text-sm font-semibold ring-1 ${
-              view.ultimo.acertou ? 'bg-pop-green/15 text-pop-green ring-pop-green/40' : 'bg-pop-magenta/15 text-pop-magenta ring-pop-magenta/40'
-            }`}
-          >
-            {view.ultimo.acertou
-              ? view.ultimo.ganhouCoroa
-                ? `✅ ${nome(view.ultimo.seat)} acertou e ganhou a coroa de ${catInfo(view.ultimo.categoria).nome}!`
-                : `✅ ${nome(view.ultimo.seat)} acertou!`
-              : `❌ ${nome(view.ultimo.seat)} errou — a resposta era «${view.ultimo.respostaCerta}».`}
-          </p>
-        )}
-
         {etapa === 'pergunta' && view.fase === 'pergunta' && view.pergunta && cat ? (
           <div className="w-full animate-pop">
             <div className="mb-2 flex items-center justify-between">
@@ -257,8 +242,8 @@ export default function GiraGenioGame({
           </div>
         ) : (
           <>
-            {/* salto da categoria assim que a roleta para */}
-            <div className="flex h-14 items-center justify-center">
+            {/* slot de altura FIXA acima da roleta (para ela NÃO subir/descer) */}
+            <div className="flex h-16 items-center justify-center">
               {etapa === 'revelando' && cat ? (
                 <div key={cat.id} className="animate-pop text-center">
                   <p className="font-display text-2xl font-extrabold" style={{ color: cat.cor }}>
@@ -268,6 +253,18 @@ export default function GiraGenioGame({
                 </div>
               ) : etapa === 'girando' ? (
                 <p className="animate-pulse text-sm font-bold text-pop-cyan">girando a roleta…</p>
+              ) : view.ultimo ? (
+                <p
+                  className={`rounded-field px-4 py-2 text-center text-sm font-semibold ring-1 ${
+                    view.ultimo.acertou ? 'bg-pop-green/15 text-pop-green ring-pop-green/40' : 'bg-pop-magenta/15 text-pop-magenta ring-pop-magenta/40'
+                  }`}
+                >
+                  {view.ultimo.acertou
+                    ? view.ultimo.ganhouCoroa
+                      ? `✅ ${nome(view.ultimo.seat)} ganhou a coroa de ${catInfo(view.ultimo.categoria).nome}!`
+                      : `✅ ${nome(view.ultimo.seat)} acertou!`
+                    : `❌ ${nome(view.ultimo.seat)} errou.`}
+                </p>
               ) : null}
             </div>
             <Roleta girando={etapa === 'girando' || etapa === 'revelando'} rotation={rotation} />

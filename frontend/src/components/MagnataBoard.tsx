@@ -26,8 +26,9 @@ function cell(i: number): { r: number; c: number } {
 }
 
 const reais = (n: number) => `R$ ${n}`
-const PASSO_MS = 1500 // tempo de cada "pulo" do peão de uma casa à seguinte
+const PASSO_MS = 1000 // tempo de cada "pulo" do peão de uma casa à seguinte
 const ROLL_MS = 3000 // duração da rolagem animada dos dados
+const POS_DADOS_MS = 1000 // pausa após os dados pararem, antes de o peão andar
 
 function DiceFace({ v }: { v: number }) {
   const P: Record<number, Array<[number, number]>> = {
@@ -101,71 +102,87 @@ export default function MagnataBoard({
   const [ofD, setOfD] = useState('')
   const [peD, setPeD] = useState('')
 
-  // ——— animações (peões pulando casa a casa + dados rolando) ———
+  // ——— animação SINCRONIZADA: dados (3s) → pausa (1s) → peão anda (1s/casa) → chega ———
   const [mostra, setMostra] = useState<Record<number, number>>(() =>
     Object.fromEntries(view.jogadores.map((j) => [j.seat, j.pos])),
   )
-  // snap imediato de teleportes (prisão, cartas) + inicialização de novos assentos
+  const [rolando, setRolando] = useState(false)
+  const [faces, setFaces] = useState<[number, number]>([1, 1])
+  const [animando, setAnimando] = useState(false)
+  const mostraRef = useRef(mostra)
   useEffect(() => {
-    setMostra((prev) => {
-      const novo = { ...prev }
-      let mudou = false
-      for (const j of view.jogadores) {
-        if (novo[j.seat] === undefined) {
-          novo[j.seat] = j.pos
-          mudou = true
-          continue
-        }
-        const d = (j.pos - novo[j.seat]! + 40) % 40
-        if (d > 13 && novo[j.seat] !== j.pos) {
-          novo[j.seat] = j.pos // salto grande = teleporte → sem passinhos
-          mudou = true
-        }
-      }
-      return mudou ? novo : prev
-    })
-  }, [view.jogadores])
-  // passo-a-passo: avança 1 casa a cada PASSO_MS até chegar ao destino
+    mostraRef.current = mostra
+  }, [mostra])
+  const rolagensRef = useRef(view.rolagens)
+
   useEffect(() => {
-    const id = setInterval(() => {
+    const rolou = view.rolagens !== rolagensRef.current && view.rolagens > 0
+    rolagensRef.current = view.rolagens
+
+    // SEM rolagem (init, compra, construção, troca, leilão): peões param nas
+    // posições e nada fica "animando" (evita travar as ações)
+    if (!rolou) {
+      setRolando(false)
+      setAnimando(false)
       setMostra((prev) => {
         const novo = { ...prev }
         let mudou = false
-        for (const j of view.jogadores) {
-          const cur = novo[j.seat]
-          if (cur === undefined || cur === j.pos) continue
-          novo[j.seat] = (cur + 1) % 40
-          mudou = true
-        }
+        for (const j of view.jogadores) if (novo[j.seat] !== j.pos) ((novo[j.seat] = j.pos), (mudou = true))
         return mudou ? novo : prev
       })
-    }, PASSO_MS)
-    return () => clearInterval(id)
-  }, [view.jogadores])
-
-  // dados rolando ~3s a cada nova rolagem (contador do servidor)
-  const [rolando, setRolando] = useState(false)
-  const [faces, setFaces] = useState<[number, number]>([1, 1])
-  const rolagensRef = useRef(view.rolagens)
-  useEffect(() => {
-    if (view.rolagens === rolagensRef.current || view.rolagens === 0) {
-      rolagensRef.current = view.rolagens
       return
     }
-    rolagensRef.current = view.rolagens
+
+    // ROLAGEM → segue a sequência exata; só o peão da VEZ anda, os outros ficam parados
+    const mover = view.turno
+    const alvo = view.jogadores[mover]?.pos ?? 0
+    const de = mostraRef.current[mover] ?? alvo
+    const dist = (alvo - de + 40) % 40
+
+    setAnimando(true)
     setRolando(true)
+    setMostra((prev) => {
+      const novo = { ...prev }
+      for (const j of view.jogadores) if (j.seat !== mover) novo[j.seat] = j.pos
+      return novo
+    })
+
+    const timers: ReturnType<typeof setTimeout>[] = []
     const spin = setInterval(() => setFaces([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]), 90)
-    const stop = setTimeout(() => {
+    timers.push(setTimeout(() => {
       clearInterval(spin)
       setRolando(false)
-    }, ROLL_MS)
+    }, ROLL_MS))
+
+    const inicioAndar = ROLL_MS + POS_DADOS_MS // só anda 1s DEPOIS de os dados pararem
+    if (dist === 0) {
+      timers.push(setTimeout(() => setAnimando(false), ROLL_MS))
+    } else if (dist > 13) {
+      // teleporte (prisão / carta) → salta direto na hora de andar
+      timers.push(setTimeout(() => {
+        setMostra((p) => ({ ...p, [mover]: alvo }))
+        setAnimando(false)
+      }, inicioAndar))
+    } else {
+      for (let k = 1; k <= dist; k++) {
+        timers.push(setTimeout(() => setMostra((p) => ({ ...p, [mover]: (de + k) % 40 })), inicioAndar + k * PASSO_MS))
+      }
+      timers.push(setTimeout(() => setAnimando(false), inicioAndar + dist * PASSO_MS + 60))
+    }
+
     return () => {
       clearInterval(spin)
-      clearTimeout(stop)
+      timers.forEach(clearTimeout)
     }
-  }, [view.rolagens])
+  }, [view.jogadores, view.rolagens])
 
   const posDe = (seat: number) => mostra[seat] ?? view.jogadores[seat]?.pos ?? 0
+
+  // SINCRONIA: enquanto anima (dados + peão andando), o "resultado" (comprar/cobrar/
+  // aviso/cartão) fica segurado — só aparece quando o peão CHEGA na casa.
+  const cartaoRef = useRef(eu)
+  if (!animando) cartaoRef.current = eu
+  const cartao = animando ? cartaoRef.current : eu
 
   // último imóvel que EU adquiri (para sugerir construir logo após comprar)
   const propsRef = useRef<number[]>(eu?.props ?? [])
@@ -272,7 +289,7 @@ export default function MagnataBoard({
             </div>
           )}
           {rolando && <p className="text-[11px] font-bold text-pop-cyan">rolando os dados…</p>}
-          {!rolando && view.aviso && <p className="max-w-[90%] text-[11px] leading-tight text-pop-yellow">{view.aviso}</p>}
+          {!animando && view.aviso && <p className="max-w-[90%] text-[11px] leading-tight text-pop-yellow">{view.aviso}</p>}
           {view.vencedor !== null ? (
             <p className="font-display text-sm font-extrabold text-pop-green">🏆 {nomeSeat(view.vencedor)} venceu!</p>
           ) : (
@@ -285,8 +302,8 @@ export default function MagnataBoard({
 
       {/* PAINEL LATERAL */}
       <div className="flex flex-col gap-3">
-        {/* seu cartão de crédito */}
-        {eu && (
+        {/* seu cartão de crédito — valores segurados até o peão chegar */}
+        {eu && cartao && (
           <div className="rounded-card bg-gradient-to-br from-pop-purple to-pop-magenta p-3 text-white shadow-lg">
             <div className="flex items-center justify-between text-xs opacity-90">
               <span>💳 Cartão Magnata</span>
@@ -295,15 +312,15 @@ export default function MagnataBoard({
             <div className="mt-2 flex items-end justify-between">
               <div>
                 <p className="text-[10px] opacity-80">Caixa</p>
-                <p className="font-display text-xl font-extrabold tabular-nums">{reais(eu.dinheiro)}</p>
+                <p className="font-display text-xl font-extrabold tabular-nums">{reais(cartao.dinheiro)}</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] opacity-80">Crédito livre</p>
-                <p className="font-display text-lg font-extrabold tabular-nums">{reais(eu.cartaoLimite - eu.cartaoUsado)}</p>
+                <p className="font-display text-lg font-extrabold tabular-nums">{reais(cartao.cartaoLimite - cartao.cartaoUsado)}</p>
               </div>
             </div>
             <div className="mt-1 text-[10px] opacity-80">
-              limite {reais(eu.cartaoLimite)} · usado {reais(eu.cartaoUsado)}
+              limite {reais(cartao.cartaoLimite)} · usado {reais(cartao.cartaoUsado)}
             </div>
           </div>
         )}
@@ -389,6 +406,10 @@ export default function MagnataBoard({
             </>
           ) : !suaVez ? (
             <p className="text-center text-sm text-text-muted">Aguarde: vez de {nomeSeat(view.turno)}…</p>
+          ) : animando ? (
+            <p className="text-center text-sm text-text-muted">
+              {rolando ? '🎲 rolando os dados…' : '🚶 o peão está andando…'}
+            </p>
           ) : (
             <>
               {view.fase === 'rolar' && (

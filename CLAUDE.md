@@ -21,6 +21,37 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-09
+- **CORRIDA DO GANSO REMOVIDO + FIX de sincronia do Magnata (pedidos do
+  usuário 2026-07-09)**:
+  - **Ganso removido** ("não ficou legal"): tirado do catálogo
+    (`shared/games.ts`), do registro do socket, do `RoomPage`/`GameLobby`
+    (hasBot) e do `index.ts`; arquivos deletados (`shared/ganso.ts`,
+    `backend/games/ganso.ts`, `GansoBoard.tsx`, `test/ganso.test.ts`) e
+    a linha do banco de dev apagada (com dependências). **36 jogos** no
+    catálogo. NOTA sobre a referência de imagem do "Goose Game": recriei
+    o ESTILO clássico (domínio público) na nossa arte — nunca se clona a
+    ilustração/logo/peças do produto específico (regra 6).
+  - **Magnata — BUG da prisão**: ao sair da prisão pagando a fiança
+    obrigatória (3ª tentativa) o servidor NÃO zerava `preso` → o jogador
+    andava mas continuava "preso" e o painel pedia "Tentar dupla" fora
+    da prisão. Corrigido (`j.preso = false` no ramo `turnosPreso >= 3`).
+  - **Magnata — SINCRONIA total (pedido do usuário)**: a UI agora segue
+    a sequência EXATA: 1) rola os dados (animação 3s); 2) dados param,
+    espera 1s (`POS_DADOS_MS`); 3) o peão anda 1 casa por **1s**
+    (`PASSO_MS` 1,5s→1s); 4) SÓ ao chegar aparecem comprar/cobrar/aviso
+    e o cartão atualiza. Reescrita a animação para ser CONVERGENTE (o
+    `podeAndarRef` compartilhado travava peões e desincronizava): agora
+    um efeito único, guiado pelo contador `rolagens`, agenda a sequência
+    por `setTimeout` só para o peão da VEZ (os outros vão direto à
+    posição), com estado `animando` que esconde as ações e segura o
+    cartão (`cartaoRef`) até a chegada; teleporte (prisão/carta) dá snap
+    no momento de andar. Demo real: dados 6+6 pararam → "🚶 o peão está
+    andando…" (ações escondidas, cartão em R$1500) → opções na chegada.
+  - **Gira Gênio — roleta não pula mais**: o texto acima da roleta
+    mudava de altura (chip de resultado × "girando" × salto da
+    categoria) e empurrava a roleta p/ cima/baixo (parecia bug). Agora há
+    UM slot de altura FIXA (`h-16`) acima da roleta que hospeda os três
+    estados; a roleta fica imóvel.
 - **REALISMO/UX — rodada de polimento (pedidos do usuário 2026-07-09)**,
   vários jogos:
   - **Magnata** (6 pedidos): tabuleiro maior e legível no PC
@@ -1335,8 +1366,9 @@ Base sólida primeiro; os jogos plugam nela.
   autônoma, cada um com testes + demo + pacotes + push):
   Mahjong ✅, Corrida do Ganso ✅, Gira Gênio (Perguntados) ✅, Tela cheia
   (todos os jogos) ✅, Cobra Arena (slither) ✅, **Magnata (Monopoly BR
-  com cartão de crédito) ✅** — todos descritos acima. **37 jogos** no
-  catálogo do seed (+ treino solo da memória e rotas dedicadas).
+  com cartão de crédito) ✅** — todos descritos acima. **36 jogos** no
+  catálogo do seed (Corrida do Ganso foi REMOVIDO depois, a pedido do
+  usuário; + treino solo da memória e rotas dedicadas).
 - **Próximo passo**: leva "vamos fazer tudo isso" (2026-07-09) 100%
   ENTREGUE — Bots Lote 3 (Truco/Memória/Forca) ✅, Lote 4 (Quiz) ✅
   (iniciativa de bots de turno FECHADA: 13 jogos com robô), fix das

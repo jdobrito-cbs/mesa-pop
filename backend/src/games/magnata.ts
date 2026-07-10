@@ -498,6 +498,7 @@ function aplica(s: MagState, seat: number, a: MagnataAction): { error: string } 
         j.turnosPreso++
         if (j.turnosPreso >= 3) {
           logar(s, `${j.nome} pagou a fiança e saiu.`)
+          j.preso = false // sai da prisão ao pagar a fiança obrigatória
           if (pagar(s, seat, MAGNATA_FIANCA, null)) andar(s, seat, d1 + d2)
         } else {
           logar(s, `${j.nome} tentou dupla na prisão e não conseguiu.`)
