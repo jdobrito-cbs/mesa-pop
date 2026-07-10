@@ -20,7 +20,21 @@ Base sólida primeiro; os jogos plugam nela.
   (Modo Conforto 60+: fontes grandes, alto contraste, timers
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
-- **Última atualização**: 2026-07-09
+- **Última atualização**: 2026-07-10
+- **FIX CRÍTICO — atualização WSRTA deixava ÓRFÃOS e quebrava o build
+  (2026-07-10)**: ao remover o Corrida do Ganso, o deploy WSRTA no
+  servidor falhava no `tsc` porque o `GansoBoard.tsx` (apagado do
+  código) CONTINUAVA no `/var/www/.../frontend/src` — a atualização
+  SOBREPÕE os arquivos do pacote mas NÃO apaga os que sumiram. Correção:
+  o empacotador (`build-wsrta.mjs`) agora grava um `wsrta-manifest.txt`
+  com TODOS os arquivos do pacote, e o `wsrta-update.sh`, antes de
+  compilar, apaga de `frontend/src`/`backend/src`/`shared/src` qualquer
+  arquivo que NÃO esteja no manifesto (órfãos). Comprovado por simulação
+  (injetei um GansoBoard órfão → o update o removeu). **LIÇÃO**: sempre
+  que um arquivo é REMOVIDO do código, o update WSRTA precisa do
+  manifesto para limpá-lo no servidor; senão o build quebra em código
+  velho. Também adicionado o botão "Voltar à mesa" no topo do lobby de
+  cada jogo.
 - **CORRIDA DO GANSO REMOVIDO + FIX de sincronia do Magnata (pedidos do
   usuário 2026-07-09)**:
   - **Ganso removido** ("não ficou legal"): tirado do catálogo

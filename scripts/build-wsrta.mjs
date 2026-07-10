@@ -152,6 +152,15 @@ function zipar(alvo, appMdOrigem, scriptOrigem, scriptNome, txt, saidaZip) {
   // remove.sh vai nos DOIS zips (## Remove do app.md chama ele ao remover)
   writeFileSync(path.join(tmp, 'remove.sh'), limpaSh(readFileSync(path.join(raiz, 'deploy/wsrta-remove.sh'), 'utf8')))
   writeFileSync(path.join(tmp, 'LEIAME.txt'), txt)
+  // manifesto de TODOS os arquivos do pacote — o update.sh usa para apagar
+  // ORFAOS (arquivos que sumiram nesta versao, ex.: um jogo removido) e assim
+  // o tsc nao quebra em codigo antigo deixado pela sobreposicao do update.
+  const manifesto = []
+  for (const e of readdirSync(tmp, { recursive: true })) {
+    if (statSync(path.join(tmp, String(e))).isDirectory()) continue
+    manifesto.push(String(e).split(path.sep).join('/'))
+  }
+  writeFileSync(path.join(tmp, 'wsrta-manifest.txt'), `${manifesto.sort().join('\n')}\n`)
   const zip = path.join(releases, saidaZip)
   rmSync(zip, { force: true })
   const n = zipDir(tmp, zip)

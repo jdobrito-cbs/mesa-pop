@@ -42,6 +42,20 @@ if [ -n "$SITE_ORIGIN" ] && [ "$SITE_ORIGIN" != "http://localhost:8080" ]; then
   sed -i "s|http://localhost:8080|${SITE_ORIGIN}|g" frontend/public/robots.txt frontend/public/sitemap.xml 2>/dev/null || true
 fi
 
+# remove ORFAOS: a atualizacao SOBREPOE os arquivos (nao apaga os que sumiram),
+# entao codigo removido nesta versao (ex.: um jogo tirado) fica no disco e
+# quebra o tsc. Apaga do src tudo que NAO esta no manifesto desta versao.
+if [ -f wsrta-manifest.txt ]; then
+  log "Removendo arquivos orfaos (removidos nesta versao)..."
+  for dir in frontend/src backend/src shared/src; do
+    [ -d "$dir" ] || continue
+    find "$dir" -type f | while IFS= read -r f; do
+      rel="${f#./}"
+      grep -qxF "$rel" wsrta-manifest.txt || { log "  orfao removido: $rel"; rm -f "$f"; }
+    done
+  done
+fi
+
 log "Recompilando o site..."
 export VITE_API_URL=
 npm run build -w frontend
