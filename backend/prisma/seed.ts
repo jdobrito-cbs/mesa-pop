@@ -39,6 +39,29 @@ async function main() {
   }
   console.log(`✔ Catálogo: ${GAME_CATALOG.length} jogos`)
 
+  // Remove jogos que saíram do catálogo (ex.: um jogo retirado) — o upsert
+  // acima só cria/atualiza, então sem isto uma linha antiga fica no banco e
+  // continua aparecendo em /api/games. Apaga com as dependências (FK).
+  const slugs = GAME_CATALOG.map((g) => g.slug)
+  const orfaos = await prisma.game.findMany({
+    where: { slug: { notIn: slugs } },
+    select: { id: true, slug: true },
+  })
+  for (const g of orfaos) {
+    const matches = await prisma.match.findMany({ where: { gameId: g.id }, select: { id: true } })
+    const mids = matches.map((m) => m.id)
+    const rooms = await prisma.room.findMany({ where: { gameId: g.id }, select: { id: true } })
+    const rids = rooms.map((r) => r.id)
+    await prisma.score.deleteMany({ where: { gameId: g.id } })
+    await prisma.matchPlayer.deleteMany({ where: { matchId: { in: mids } } })
+    await prisma.match.deleteMany({ where: { gameId: g.id } })
+    await prisma.favoriteRoom.deleteMany({ where: { roomId: { in: rids } } })
+    await prisma.roomPlayer.deleteMany({ where: { roomId: { in: rids } } })
+    await prisma.room.deleteMany({ where: { gameId: g.id } })
+    await prisma.game.delete({ where: { id: g.id } })
+    console.log(`✂ jogo fora do catálogo removido: ${g.slug}`)
+  }
+
   // Admin inicial
   const email = (process.env.ADMIN_EMAIL ?? 'admin@mesapop.local').toLowerCase()
   const password = process.env.ADMIN_PASSWORD
