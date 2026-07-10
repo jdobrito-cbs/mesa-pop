@@ -10,6 +10,9 @@ const acumulado = new Map<string, number>()
 
 /** soma `segundos` para cada usuário presente e credita fichas completas */
 export async function creditarSegundos(prisma: PrismaClient, userIds: string[], segundos: number): Promise<void> {
+  // teto de segurança: o mapa guarda só frações (<300s) — se crescer demais
+  // (usuários que saíram e não voltaram), zera; perde-se no máximo a fração
+  if (acumulado.size > 5000) acumulado.clear()
   for (const id of userIds) {
     const total = (acumulado.get(id) ?? 0) + segundos
     const fichas = Math.floor(total / SEGUNDOS_POR_FICHA)

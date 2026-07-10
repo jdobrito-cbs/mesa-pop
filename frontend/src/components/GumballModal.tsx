@@ -41,8 +41,15 @@ export default function GumballModal({
   const [erro, setErro] = useState('')
   const [equipado, setEquipado] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const esperasRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      esperasRef.current.forEach(clearTimeout)
+    },
+    [],
+  )
 
   const podeInserir = fase === 'inserir' && fichas >= CUSTO
 
@@ -71,8 +78,8 @@ export default function GumballModal({
       setPremio(res.avatar)
       setFichas(res.fichas)
       onFichas(res.fichas)
-      setTimeout(() => setFase('caindo'), 1100) // a manivela gira…
-      setTimeout(() => setFase('revelado'), 2100) // …a bolinha cai e abre
+      esperasRef.current.push(setTimeout(() => setFase('caindo'), 1100)) // a manivela gira…
+      esperasRef.current.push(setTimeout(() => setFase('revelado'), 2100)) // …a bolinha cai e abre
     } catch (err) {
       setErro(err instanceof ApiRequestError ? err.message : 'A máquina engasgou — tente de novo')
       setFase('inserir')
