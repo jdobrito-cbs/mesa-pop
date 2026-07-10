@@ -50,12 +50,12 @@ economia de fichas com a máquina gumball (D).
    para o banner.
 
 ## Tarefas
-- [ ] B1 backend: MAGNATA_CORES + ação 'cor' (servidor valida) + testes
-- [ ] B2 frontend: paleta de cor no MagnataBoard
-- [ ] C1 backend: rankingsGerais (cache) + GET /api/rankings/gerais + testes
-- [ ] C2 backend: PUT /api/me/avatar com regra posicional (top10/nº1) + testes
-- [ ] C3 frontend: banners na Mesa + página /rankings
-- [ ] D1 backend: migração AvatarOwned + UserPublic.fichas + acúmulo por presença + testes
-- [ ] D2 backend: POST /api/fichas/trocar + GET /api/me/avatares + PUT aceita owned + testes
-- [ ] D3 frontend: banner de fichas + GumballModal + Meus avatares com owned
-- [ ] Entrega: suíte + demo + pacotes + CLAUDE.md + push
+- [x] B1 (64c9537)
+- [x] B2 (64c9537)
+- [x] C1 (cb2df25)
+- [x] C2 (cb2df25)
+- [x] C3 (474d696)
+- [x] D1 (bf04c95)
+- [x] D2 (bf04c95)
+- [x] D3 (38d377b)
+- [x] Entrega: 297 testes + revisão APROVADA (fix 540498f) + demo + pacotes + push

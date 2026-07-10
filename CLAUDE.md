@@ -21,6 +21,50 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-10
+- **AVATARES · FASES B+C+D ENTREGUES — SISTEMA DE AVATARES COMPLETO
+  (2026-07-10, execução contínua autorizada pelo usuário: "faça todos os
+  planos sem parar"; plano em
+  docs/superpowers/plans/2026-07-10-avatares-fases-bcd.md)**:
+  - **B — COR DO PEÃO no Magnata**: `MAGNATA_CORES` (8 cores, + vermelho
+    e azul) no shared; ação `{type:'cor'}` validada no servidor — só até
+    a PRÓPRIA primeira rolagem (`MagnataJogador.jaRolou`), vale fora do
+    turno (tratada antes do guard, como lance/troca), cor em uso →
+    recusa; paleta de bolinhas no painel do MagnataBoard (ocupadas
+    apagadas); bots mantêm a cor do assento.
+  - **C — RANKINGS GERAIS + desbloqueio posicional**:
+    `lib/rankingsGerais.ts` (cache 60s; PONTOS = SUM MatchPlayer.score —
+    não somar Score, dupla contagem; TEMPO = SUM duração de Match
+    FINISHED; convidados fora; `limparCacheRankings()` p/ testes) +
+    `GET /api/rankings/gerais` (pública, auth OPCIONAL no padrão do
+    /api/rooms, devolve `voce` logado). PUT /api/me/avatar: ESPECIAL
+    liberado p/ top 10 (qualquer dos 2 rankings), SUPER p/ nº 1; quem
+    cai mantém o equipado (grandfather). Página `/rankings` (2 top-10
+    com medalhas 🥇🥈🥉 + avatar + "Você: nº X") e 2 BANNERS pop
+    clicáveis na Mesa com nome+posição.
+  - **D — FICHAS + MÁQUINA GUMBALL**: acúmulo = 1 ficha a cada 5 min
+    ONLINE (`lib/fichas.ts`: sweep de 60s no server.ts credita presença
+    não-convidado; fração em memória, teto de 5000 entradas);
+    `UserPublic.fichas`; model `AvatarOwned` (posse permanente, migração
+    `20260710140000_avatar_owned`); `POST /api/fichas/trocar` — débito
+    de 1000 + posse na MESMA transação (LIÇÃO da revisão: duas
+    requisições sorteando o MESMO especial violavam a PK e perdiam as
+    fichas; `$transaction` desfaz o débito em qualquer falha; coleção
+    completa → 409 sem debitar); sorteia especial NÃO possuído;
+    `GET /api/me/avatares` {fichas, owned, melhorPosicao}. PUT aceita
+    avatar POSSUÍDO sempre. UI: banner "🪙 Suas fichas" na Mesa +
+    `GumballModal` (máquina SVG procedural com globo de bolinhas;
+    Inserir despeja 10 em 10 animado até 1000 → Retirar gira a manivela
+    → bolinha CAI → revela o avatar com Equipar agora/Girar de novo);
+    "Meus avatares" ganhou "⭐ Conquistados na máquina" e, no top 10,
+    os especiais da amostra ficam clicáveis.
+  - Qualidade: 297 testes verdes (41 arquivos; novos: magnata-cor,
+    rankings-gerais, fichas), typecheck limpo, revisão final adversarial
+    APROVADA (1 média corrigida = transação da troca; 2 baixas =
+    timeouts do gumball limpos + teto do mapa). Demo real (Playwright,
+    9 capturas): banners na Mesa, /rankings, paleta do Magnata com peão
+    VERMELHO escolhido, admin deu +1000 fichas, máquina inseriu 1000,
+    bolinha caiu, "✨ Avatar ESPECIAL conquistado!" equipado e listado
+    em Conquistados. **Visão das 4 fases (A–D) 100% entregue.**
 - **AVATARES · FASE A ENTREGUE + FICHAS DO ADMIN + FIXES MOBILE
   (2026-07-10, execução por subagentes — plano em
   docs/superpowers/plans/2026-07-10-avatares-fase-a.md)**: início do
