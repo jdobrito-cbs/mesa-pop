@@ -21,6 +21,8 @@ interface AuthContextValue {
   /** "jogar sem conta": cria sessão de convidado com o nome informado */
   guest: (name: string) => Promise<void>
   logout: () => Promise<void>
+  /** atualiza o avatar ativo no estado local (após PUT /api/me/avatar) */
+  setAvatar: (id: string) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -92,8 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  const setAvatar = useCallback((id: string) => {
+    setUser((u) => (u ? { ...u, avatar: id } : u))
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, restoring, login, register, setupAdmin, guest, logout }}>
+    <AuthContext.Provider value={{ user, restoring, login, register, setupAdmin, guest, logout, setAvatar }}>
       {children}
     </AuthContext.Provider>
   )
