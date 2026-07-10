@@ -11,6 +11,7 @@ import {
 import AdSlot from '../components/AdSlot'
 import AvatarSvg from '../components/AvatarSvg'
 import GameCard from '../components/GameCard'
+import GumballModal from '../components/GumballModal'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
@@ -89,7 +90,9 @@ export default function Mesa() {
   const { data: annData } = useFetch<{ announcements: AnnouncementView[] }>('/api/announcements')
   const { data: standing } = useFetch<Standing>('/api/me/standing')
   const { data: geral } = useFetch<RankingsGerais>('/api/rankings/gerais')
+  const { data: minha, reload: reloadMinha } = useFetch<{ fichas: number; owned: string[]; melhorPosicao: number | null }>('/api/me/avatares')
   const [escolher, setEscolher] = useState(false)
+  const [gumball, setGumball] = useState(false)
 
   // contas registradas que ainda não viram o convite: mostra UMA vez (pulável)
   useEffect(() => {
@@ -206,6 +209,19 @@ export default function Mesa() {
         </div>
       )}
 
+      {/* banner de fichas — trocar por avatar na máquina */}
+      {!user.isGuest && (
+        <div className="card mt-3 flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-pop-yellow p-4">
+          <div>
+            <p className="font-display font-bold">🪙 Suas fichas: <span className="text-pop-yellow tabular-nums">{(minha?.fichas ?? user.fichas).toLocaleString('pt-BR')}</span></p>
+            <p className="text-sm text-text-muted">Você ganha 1 ficha a cada 5 minutos jogando · 1.000 fichas = 1 avatar especial</p>
+          </div>
+          <button onClick={() => setGumball(true)} className="btn-pop bg-gradient-to-br from-pop-yellow to-pop-orange px-5 py-2.5 text-sm font-bold text-ink-950">
+            🎰 Trocar por avatar
+          </button>
+        </div>
+      )}
+
       {/* avisos do admin */}
       {!!annData?.announcements.length && (
         <div className="mt-6 flex flex-col gap-3">
@@ -314,6 +330,14 @@ export default function Mesa() {
             <button onClick={() => fecharPrompt()} className="btn-pop mt-4 px-4 py-2 text-sm ring-1 ring-ink-700">Agora não</button>
           </div>
         </div>
+      )}
+
+      {gumball && (
+        <GumballModal
+          fichas={minha?.fichas ?? user.fichas}
+          onFichas={() => void reloadMinha()}
+          onClose={() => setGumball(false)}
+        />
       )}
     </main>
   )
