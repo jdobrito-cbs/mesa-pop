@@ -21,6 +21,29 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-10
+- **AVATARES · REDESIGN VISUAL COMPLETO (pedido do usuário 2026-07-10,
+  com 6 imagens de referência)**: o usuário rejeitou o estilo
+  "bichinhos" da 1ª versão e definiu os estilos — NUNCA tristes (só
+  sorriso/sério/bravo). Novo `AvatarSvg` + `shared/avatares.ts` v2:
+  **NORMAIS (20, curados à mão)** = 12 rostos cartoon de PESSOAS
+  (12 penteados: curto, franja, cacheado, coque, maria-chiquinha, rabo,
+  grisalho, careca+barba, longo, bandana, topete, cacho rente; 6 tons de
+  pele; óculos; sorrisão com dentes) + 8 BICHOS flat (leão/panda/raposa/
+  urso/coruja/gato/cachorro/coelho) em círculo CHAPADO colorido
+  (AVATAR_FUNDOS, 12 cores vivas) com sombra diagonal sutil.
+  **ESPECIAIS (e0..e999)** = ícones GAMER flat (controle, joystick, dado,
+  troféu, foguete, bomba, baú, poção, coroa, ficha, coração pixel,
+  estrela) + MASCOTES de e-sports com contorno forte (leão, coruja,
+  ninja, caveira, fênix, robô, touro, dragão, lobo, tubarão, águia,
+  samurai). **SUPER (s0..s14)** = 15 mascotes premium curados com a
+  moldura girante. `paramsFromId` segue determinístico e o CONTRATO do
+  tier (acessorio>0 especial, moldura>0 super) foi preservado — testes
+  antigos passam sem mudança. QA visual real (capturas da grade do
+  cadastro e do Meus avatares com filtro de bloqueio removido).
+  **Também a pedido**: removidos os 2 boxes antigos de standing da Mesa
+  ("Ranking global"/"Seu jogo") — substituídos pelos banners dos
+  rankings gerais (o GET /api/me/standing ficou sem consumidor; remoção
+  futura opcional). 297 testes verdes; pacotes regenerados.
 - **AVATARES · FASES B+C+D ENTREGUES — SISTEMA DE AVATARES COMPLETO
   (2026-07-10, execução contínua autorizada pelo usuário: "faça todos os
   planos sem parar"; plano em
