@@ -21,6 +21,42 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-10
+- **BOB MAGNATA (rename) + NOVO JOGO — TIO MÁRIO MILIONÁRIO (pedidos do
+  usuário 2026-07-10)**:
+  - **Rename**: o Magnata agora se chama **"Bob Magnata"** (nome no
+    catálogo/shared + medalhão do tabuleiro; o SLUG `magnata` foi
+    mantido para não quebrar histórico/salas; o seed já atualiza o
+    `name` de jogos existentes no update do upsert).
+  - **Tio Mário Milionário** (slug `tio-mario-milionario`, solo, 💰):
+    quiz de ESCADA DE PRÊMIOS — formato clássico de gincana de
+    perguntas recriado com identidade própria (regra 6: nada de
+    marca/arte/perguntas de programas reais; banco 100% autoral). 16
+    níveis (R$ 1 mil → 1 milhão em `MILHAO_ESCADA`), acertou sobe;
+    **PARAR** leva o acumulado; **errar leva METADE** (na pergunta do
+    milhão: tudo ou nada). Ajudas de uso único — 🃏 cartas (elimina 1–3
+    erradas), 🎓 universitários (3 palpites simulados), 📊 plateia
+    (percentuais pendendo à correta; taxa cai com a dificuldade) — e
+    ⏭️ 3 pulos. **Servidor AUTORITATIVO**: `routes/milhao.ts` guarda a
+    pergunta+gabarito em sessão de memória por usuário (a view NUNCA
+    contém a correta antes da resposta; teste de vazamento por
+    serialização); retomada via `GET /api/milhao/estado` (refresh não
+    perde a partida); Match/MatchPlayer/Score gravados PELO SERVIDOR
+    (prêmio = pontos; ranking pelo `GET /api/leaderboards/:slug`
+    existente; convidado joga sem pontuar). Banco autoral
+    `lib/milhaoPerguntas.ts` com 96 perguntas (32 fáceis/médias/
+    difíceis, alts[0] correta, embaralhadas por partida; tier por nível
+    via `milhaoTier`). UI `TioMarioPage.tsx` estilo PALCO: escada
+    lateral dourada, chips de ajuda, seleção+confirmação ("✅ É essa!"),
+    reveal verde/vermelho de 1,6s, telas de fim (parou/errou/MILHÃO) —
+    despachada por slug no GameLobby (padrão TermoPage). Catálogo: 37
+    jogos. 304 testes (7 novos: sem vazamento, subir/parar grava Score,
+    errar=metade, cartas nunca tiram a correta + pulo troca, plateia
+    soma 100, estado retoma, escada completa dá o milhão com isWinner).
+    Demo real (Playwright): pergunta com plateia 71% + carta eliminando
+    alternativa, resposta certa subiu p/ "Pergunta 2 · R$ 2.000", parou
+    → "Você parou e levou R$ 1.000!" e o ranking mostrou o 1º lugar.
+    LIÇÃO: `nameSchema` recusa nome de 1 letra — usar nomes reais nos
+    testes de register.
 - **AVATARES · REDESIGN VISUAL COMPLETO (pedido do usuário 2026-07-10,
   com 6 imagens de referência)**: o usuário rejeitou o estilo
   "bichinhos" da 1ª versão e definiu os estilos — NUNCA tristes (só
