@@ -2,6 +2,7 @@ import { buildApp } from './app'
 import { config } from './config'
 import { reapOldGuests } from './lib/guests'
 import { abandonarPartidasOrfas, fecharSalasOrfas, reapSoloParadas } from './lib/matches'
+import { creditarSegundos } from './lib/fichas'
 
 const app = await buildApp()
 
@@ -31,6 +32,17 @@ const matchReaper = setInterval(
   10 * 60 * 1000, // a cada 10 min
 )
 matchReaper.unref()
+
+// fichas por presença: 1 ficha a cada 5 min online (contas registradas). Um
+// sweep por minuto credita os segundos de quem está com socket aberto.
+const fichasSweep = setInterval(
+  () => {
+    const presentes = app.presence.list().filter((p) => !p.isGuest).map((p) => p.userId)
+    creditarSegundos(app.prisma, presentes, 60).catch((err) => app.log.warn({ err }, 'credito de fichas falhou'))
+  },
+  60 * 1000, // a cada 1 min
+)
+fichasSweep.unref()
 
 try {
   await app.listen({ port: config.port, host: config.host })

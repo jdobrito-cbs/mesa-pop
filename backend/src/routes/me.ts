@@ -67,13 +67,19 @@ export default async function meRoutes(app: FastifyInstance) {
   app.put('/api/me/avatar', { preHandler: [app.authenticate] }, async (req, reply) => {
     const { id } = z.object({ id: z.string().trim() }).parse(req.body)
     if (!ehAvatarValido(id)) return reply.code(400).send({ error: 'INVALID_AVATAR', message: 'Avatar inválido' })
-    if (avatarTier(id) !== 'normal') {
-      // Fase C: top 10 dos rankings gerais equipam ESPECIAIS; o nº 1, SUPER
-      const pos = await melhorPosicao(app.prisma, req.auth!.sub)
-      const tier = avatarTier(id)
-      const liberado = tier === 'especial' ? pos !== null && pos <= 10 : pos === 1
-      if (!liberado) {
-        return reply.code(403).send({ error: 'AVATAR_LOCKED', message: 'Esse avatar ainda está bloqueado — conquiste nos rankings ou com fichas' })
+    const tier = avatarTier(id)
+    if (tier !== 'normal') {
+      // avatar possuído (troca na máquina de fichas) é sempre equipável
+      const possui = await app.prisma.avatarOwned.findUnique({
+        where: { userId_avatarId: { userId: req.auth!.sub, avatarId: id } },
+      })
+      if (!possui) {
+        // Fase C: top 10 dos rankings gerais equipam ESPECIAIS; o nº 1, SUPER
+        const pos = await melhorPosicao(app.prisma, req.auth!.sub)
+        const liberado = tier === 'especial' ? pos !== null && pos <= 10 : pos === 1
+        if (!liberado) {
+          return reply.code(403).send({ error: 'AVATAR_LOCKED', message: 'Esse avatar ainda está bloqueado — conquiste nos rankings ou com fichas' })
+        }
       }
     }
     await app.prisma.user.update({ where: { id: req.auth!.sub }, data: { avatar: id } })
@@ -83,5 +89,16 @@ export default async function meRoutes(app: FastifyInstance) {
   app.post('/api/me/avatar/prompt-visto', { preHandler: [app.authenticate] }, async (req) => {
     await app.prisma.user.update({ where: { id: req.auth!.sub }, data: { avatarPromptedAt: new Date() } })
     return { ok: true }
+  })
+
+  /** dados p/ o modal "Meus avatares" e o banner de fichas: saldo, coleção e posição nos rankings. */
+  app.get('/api/me/avatares', { preHandler: [app.authenticate] }, async (req) => {
+    const userId = req.auth!.sub
+    const [user, owned, pos] = await Promise.all([
+      app.prisma.user.findUnique({ where: { id: userId }, select: { fichas: true } }),
+      app.prisma.avatarOwned.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+      melhorPosicao(app.prisma, userId),
+    ])
+    return { fichas: user?.fichas ?? 0, owned: owned.map((o) => o.avatarId), melhorPosicao: pos }
   })
 }

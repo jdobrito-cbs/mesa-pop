@@ -13,6 +13,8 @@ export interface UserPublic {
   avatarUrl: string | null
   /** id do avatar ativo (procedural). null = ainda não escolheu */
   avatar: string | null
+  /** fichas da plataforma (1 a cada 5 min jogando; 1000 = 1 avatar especial) */
+  fichas: number
   /** conta convidada ("jogar sem conta"): sem chat, saves ou ranking */
   isGuest: boolean
   createdAt: string

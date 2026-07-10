@@ -75,6 +75,7 @@ model User {
   favorites     FavoriteRoom[]
   termoPlays    TermoPlay[]
   desafioPlays  DesafioPlay[]
+  avataresOwned AvatarOwned[]
 }
 
 model RefreshToken {
@@ -177,6 +178,16 @@ model DesafioPlay {
 
   @@id([userId, gameSlug, date])
   @@index([gameSlug, date, done])
+}
+
+/// Avatar ESPECIAL conquistado (troca por fichas na máquina) — posse permanente.
+model AvatarOwned {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarId  String
+  createdAt DateTime @default(now())
+
+  @@id([userId, avatarId])
 }
 
 /// sala pública favoritada por um usuário (fixa no topo do lobby dele)
