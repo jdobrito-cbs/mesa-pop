@@ -294,7 +294,7 @@ export default function MagnataBoard({
           style={{ gridRow: '3 / 10', gridColumn: '3 / 10' }}
           className="flex flex-col items-center justify-center gap-2 rounded-lg bg-ink-950/40 p-2 text-center"
         >
-          <p className="font-display text-xl font-extrabold text-cream">MAGNATA</p>
+          <p className="font-display text-xl font-extrabold text-cream">BOB MAGNATA</p>
           {(view.dados || rolando) && (
             <div className={`flex gap-2 ${rolando ? 'animate-bounce' : ''}`}>
               <DiceFace v={rolando ? faces[0] : (view.dados?.[0] ?? 1)} />
