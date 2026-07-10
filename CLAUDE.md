@@ -21,6 +21,51 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-10
+- **AVATARES · FASE A ENTREGUE + FICHAS DO ADMIN + FIXES MOBILE
+  (2026-07-10, execução por subagentes — plano em
+  docs/superpowers/plans/2026-07-10-avatares-fase-a.md)**: início do
+  sistema de avatares (visão completa em 4 fases A–D; B=cor do peão no
+  Magnata, C=rankings gerais+banners, D=fichas 1/5min+máquina gumball).
+  **Gerador procedural** em `shared/avatares.ts` (ids n0..n19 livres,
+  e0..e999 especiais e s0..s14 super — BLOQUEADOS até C/D;
+  `paramsFromId` determinístico via hashSeed/mulberry32; 10 espécies de
+  bichinhos) + componente `AvatarSvg.tsx` (SVG 100% procedural).
+  **Modelo**: `User.avatar`/`avatarPromptedAt` (migração
+  `20260710120000_avatar`) + `UserPublic.avatar`. **Fluxos**: cadastro
+  com grade de 20 (sem/inválido → aleatório; registrar grava
+  `mp_avatar_prompt` p/ não rever o convite), convidado ganha normal
+  aleatório, `PUT /api/me/avatar` (especial/super → 403 AVATAR_LOCKED)
+  + `POST /api/me/avatar/prompt-visto`, header com avatar + menu
+  **"Meus avatares"** (à ESQUERDA de "Minha mesa"; modal via PORTAL —
+  LIÇÃO: `backdrop-blur` no header vira containing block e prende o
+  `position:fixed` do overlay), modal pulável 1× na Mesa p/ contas
+  antigas. **Avatar em todo lugar**: `RoomUser→LivePlayer→views` levam
+  `avatar`+`isAdmin` (decididos NO SERVIDOR); avatar pequeno ao lado do
+  nome no chat da mesa, no chat RESPOSTAS do Desenha, nos chips de
+  sala/SeatPicker e nos rankings (fallback: nome como seed) — e **nome
+  de ADMIN em VERMELHO (`text-red-500`) em qualquer chat** (pedido).
+  **FICHAS (pedido)**: `User.fichas` (migração `20260710130000_fichas`
+  com backfill) — admin ATUAL, promovido via PATCH (guard: promover 2×
+  não duplica), criado com role ADMIN, setup e seed ganham **100.000**;
+  `POST /api/admin/users/:id/fichas` dá **+1.000** (convidado → 400
+  GUEST_NO_FICHAS) com botão "+1000 🪙" e coluna no painel de usuários.
+  **FIXES mobile (pedidos)**: (1) botão SAIR da tela cheia agora é um
+  flutuante renderizado por portal DENTRO do elemento fullscreen
+  (fora dele a API esconde tudo; celular não tem ESC) — RoomPage e
+  SoloGamePage passaram a usar o `FullscreenButton`; (2) Magnata com
+  fonte responsiva 6/7/8px (nomes legíveis no celular); (3) **refresh
+  acidental NÃO perde mais a partida**: `overscroll-behavior-y: none`
+  (mata o puxar-para-atualizar), `beforeunload` pede confirmação em
+  partida ativa, e o `guest/leave` do pagehide (que TAMBÉM dispara num
+  reload) ganhou CARÊNCIA de 90s SEM revogar a sessão — o refresh
+  restaura e cancela (`scheduleGuestLeave`/`cancelGuestLeave` +
+  checagem de presença p/ multi-abas); logout explícito segue apagando
+  na hora. 281 testes verdes (38 arquivos; novos: avatares, avatar-auth,
+  avatar-me, fichas-admin, carência do convidado); typecheck limpo;
+  revisão final de branch APROVADA (2 minors corrigidos). Demo real
+  (Playwright): cadastro com grade, "Meus avatares" com 🔒, convite 1×,
+  chat com avatar + "Administrador" em vermelho, painel com
+  "+1.000 fichas (agora 1.000 🪙)" e admin com 100.000 no banco.
 - **FIX CRÍTICO — atualização WSRTA deixava ÓRFÃOS e quebrava o build
   (2026-07-10)**: ao remover o Corrida do Ganso, o deploy WSRTA no
   servidor falhava no `tsc` porque o `GansoBoard.tsx` (apagado do
