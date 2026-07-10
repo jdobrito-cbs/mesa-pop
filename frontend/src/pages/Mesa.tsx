@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AVATARES_NORMAIS, GAME_CATALOG, type AnnouncementView, type GameDef, type GameView } from '@mesapop/shared'
+import {
+  AVATARES_NORMAIS,
+  GAME_CATALOG,
+  type AnnouncementView,
+  type GameDef,
+  type GameView,
+  type RankingsGerais,
+} from '@mesapop/shared'
 import AdSlot from '../components/AdSlot'
 import AvatarSvg from '../components/AvatarSvg'
 import GameCard from '../components/GameCard'
@@ -81,6 +88,7 @@ export default function Mesa() {
   const { data: roomsData, reload: reloadRooms } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
   const { data: annData } = useFetch<{ announcements: AnnouncementView[] }>('/api/announcements')
   const { data: standing } = useFetch<Standing>('/api/me/standing')
+  const { data: geral } = useFetch<RankingsGerais>('/api/rankings/gerais')
   const [escolher, setEscolher] = useState(false)
 
   // contas registradas que ainda não viram o convite: mostra UMA vez (pulável)
@@ -158,6 +166,44 @@ export default function Mesa() {
             </div>
           </div>
         )
+      )}
+
+      {/* banners de posição nos rankings gerais */}
+      {!user.isGuest && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Link
+            to="/rankings"
+            className="card group relative overflow-hidden border-0 bg-gradient-to-br from-pop-purple to-pop-magenta p-4 text-white transition hover:-translate-y-0.5"
+          >
+            <p className="text-xs font-bold tracking-widest uppercase opacity-80">🏆 Ranking geral · pontos</p>
+            <p className="mt-1 font-display text-lg font-extrabold">
+              {geral?.voce?.pontos ? (
+                <>
+                  {user.displayName}, você é o <span className="text-pop-yellow">nº {geral.voce.pontos}</span>!
+                </>
+              ) : (
+                'Some pontos em qualquer jogo e apareça aqui!'
+              )}
+            </p>
+            <p className="mt-0.5 text-xs opacity-80">Top 10 usa avatares especiais ✨ — toque para ver</p>
+          </Link>
+          <Link
+            to="/rankings"
+            className="card group relative overflow-hidden border-0 bg-gradient-to-br from-pop-cyan to-pop-purple p-4 text-white transition hover:-translate-y-0.5"
+          >
+            <p className="text-xs font-bold tracking-widest uppercase opacity-80">⏱️ Ranking geral · tempo de jogo</p>
+            <p className="mt-1 font-display text-lg font-extrabold">
+              {geral?.voce?.tempo ? (
+                <>
+                  {user.displayName}, você é o <span className="text-pop-yellow">nº {geral.voce.tempo}</span>!
+                </>
+              ) : (
+                'Jogue mais para entrar no ranking!'
+              )}
+            </p>
+            <p className="mt-0.5 text-xs opacity-80">O nº 1 usa os avatares SUPER 👑 — toque para ver</p>
+          </Link>
+        </div>
       )}
 
       {/* avisos do admin */}

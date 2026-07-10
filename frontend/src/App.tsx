@@ -11,6 +11,7 @@ import Mesa from './pages/Mesa'
 import GameLobby from './pages/GameLobby'
 import MemoriaSoloPage from './pages/MemoriaSoloPage'
 import DesafioHub, { DesafioJogo } from './pages/DesafioPage'
+import RankingsGerais from './pages/RankingsGerais'
 import RoomPage from './pages/RoomPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import Dashboard from './pages/admin/Dashboard'
@@ -106,6 +107,7 @@ export default function App() {
                 <Route path="/mesa" element={<Mesa />} />
                 <Route path="/desafio" element={<DesafioHub />} />
                 <Route path="/desafio/:slug" element={<DesafioJogo />} />
+                <Route path="/rankings" element={<RankingsGerais />} />
                 <Route path="/jogos/memoria/solo" element={<MemoriaSoloPage />} />
                 <Route path="/jogos/:slug" element={<GameLobby />} />
                 <Route path="/sala/:code" element={<RoomPage />} />
