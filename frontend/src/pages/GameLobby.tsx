@@ -11,6 +11,7 @@ import SudokuPage from './SudokuPage'
 import CacaPalavrasPage from './CacaPalavrasPage'
 import CruzadinhaPage from './CruzadinhaPage'
 import MahjongPage from './MahjongPage'
+import TioMarioPage from './TioMarioPage'
 import { FavoriteStar, RoomPeople } from './Mesa'
 import { useAuth } from '../lib/auth'
 import AdSlot from '../components/AdSlot'
@@ -39,6 +40,7 @@ export default function GameLobby() {
   if (slug === 'caca-palavras') return <CacaPalavrasPage />
   if (slug === 'cruzadinha') return <CruzadinhaPage />
   if (slug === 'mahjong') return <MahjongPage />
+  if (slug === 'tio-mario-milionario') return <TioMarioPage />
   const solo = slug ? SOLO_GAMES[slug] : undefined
   if (solo) return <SoloGamePage key={solo.slug} def={solo} />
   return <MultiplayerLobby slug={slug} />
