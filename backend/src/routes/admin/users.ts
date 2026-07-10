@@ -25,6 +25,7 @@ function toAdminView(u: User): UserAdminView {
     banReason: u.banReason,
     locked: !!u.lockedUntil && u.lockedUntil > new Date(),
     failedLogins: u.failedLogins,
+    fichas: u.fichas,
   }
 }
 
@@ -136,6 +137,7 @@ export default async function usersAdminRoutes(app: FastifyInstance) {
         phone: input.phone,
         role: input.role,
         passwordHash: await hashPassword(input.password),
+        fichas: input.role === 'ADMIN' ? 100_000 : 0,
       },
     })
     await audit(app.prisma, 'admin.user.create', {
@@ -172,6 +174,9 @@ export default async function usersAdminRoutes(app: FastifyInstance) {
     }
     if (input.banReason !== undefined) data.banReason = input.banReason
 
+    // virou ADMIN agora → ganha as 100.000 fichas de boas-vindas
+    if (input.role === 'ADMIN' && target.role !== 'ADMIN') data.fichas = { increment: 100_000 }
+
     const user = await app.prisma.user.update({ where: { id }, data })
 
     // Conta desativada ou banida perde todas as sessões imediatamente.
@@ -205,6 +210,23 @@ export default async function usersAdminRoutes(app: FastifyInstance) {
       userId: req.auth!.sub,
       req,
       detail: { targetUserId: id, email: target.email },
+    })
+    return { user: toAdminView(user) }
+  })
+
+  // presente do admin: +1.000 fichas para um usuário cadastrado
+  app.post('/api/admin/users/:id/fichas', async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const target = await app.prisma.user.findUnique({ where: { id } })
+    if (!target) return reply.code(404).send({ error: 'NOT_FOUND', message: 'Usuário não encontrado' })
+    if (target.isGuest) {
+      return reply.code(400).send({ error: 'GUEST_NO_FICHAS', message: 'Convidados não têm carteira de fichas — só contas cadastradas' })
+    }
+    const user = await app.prisma.user.update({ where: { id }, data: { fichas: { increment: 1000 } } })
+    await audit(app.prisma, 'admin.user.fichas', {
+      userId: req.auth!.sub,
+      req,
+      detail: { targetUserId: id, email: target.email, amount: 1000 },
     })
     return { user: toAdminView(user) }
   })

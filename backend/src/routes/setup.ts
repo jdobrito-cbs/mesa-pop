@@ -45,6 +45,7 @@ export default async function setupRoutes(app: FastifyInstance) {
           phone: '',
           passwordHash: await hashPassword(input.password),
           role: 'ADMIN',
+          fichas: 100_000, // admin nasce com as fichas de boas-vindas
         },
       })
       await audit(app.prisma, 'setup.admin_created', { userId: user.id, req })

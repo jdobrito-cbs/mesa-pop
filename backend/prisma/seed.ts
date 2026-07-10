@@ -88,6 +88,7 @@ async function main() {
       phone: '0000000000',
       passwordHash: await hashPassword(password),
       role: 'ADMIN',
+      fichas: 100_000,
     },
   })
   console.log(`✔ Admin criado: ${email}`)

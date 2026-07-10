@@ -50,6 +50,8 @@ model User {
   avatar       String?
   /// quando o modal "escolha seu avatar" foi mostrado (só uma vez)
   avatarPromptedAt DateTime?
+  /// moeda da plataforma (troca por avatares) — admin ganha 100k ao virar admin
+  fichas       Int       @default(0)
   isActive     Boolean   @default(true)
   /// conta-sombra do "jogar sem conta" — fora de chat, saves e rankings
   isGuest      Boolean   @default(false)

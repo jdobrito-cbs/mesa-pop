@@ -44,6 +44,8 @@ export interface UserAdminView extends UserPublic {
   /** bloqueada por tentativas de login (aguarda o admin desbloquear) */
   locked: boolean
   failedLogins: number
+  /** fichas da plataforma (🪙) */
+  fichas: number
   updatedAt: string
 }
 
