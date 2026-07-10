@@ -23,8 +23,12 @@ export async function deleteGuest(prisma: PrismaClient, userId: string): Promise
  */
 const saidasPendentes = new Map<string, NodeJS.Timeout>()
 
-export function scheduleGuestLeave(prisma: PrismaClient, userId: string, graceMs?: number): void {
-  const ms = graceMs ?? Number(process.env.GUEST_LEAVE_GRACE_MS ?? 90_000)
+export function scheduleGuestLeave(
+  prisma: PrismaClient,
+  userId: string,
+  opts?: { graceMs?: number; aindaOnline?: () => boolean },
+): void {
+  const ms = opts?.graceMs ?? Number(process.env.GUEST_LEAVE_GRACE_MS ?? 90_000)
   cancelGuestLeave(userId)
   if (ms <= 0) {
     void deleteGuest(prisma, userId)
@@ -32,6 +36,9 @@ export function scheduleGuestLeave(prisma: PrismaClient, userId: string, graceMs
   }
   const timer = setTimeout(() => {
     saidasPendentes.delete(userId)
+    // outra aba do convidado continua conectada? então ele NÃO saiu —
+    // o pagehide da última aba agenda de novo quando fechar de verdade
+    if (opts?.aindaOnline?.()) return
     void deleteGuest(prisma, userId)
   }, ms)
   timer.unref?.()

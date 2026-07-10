@@ -220,7 +220,12 @@ export default async function authRoutes(app: FastifyInstance) {
     const token = req.cookies[REFRESH_COOKIE]
     if (token) {
       const user = await findUserByRefreshToken(app.prisma, token)
-      if (user?.isGuest) scheduleGuestLeave(app.prisma, user.id)
+      if (user?.isGuest) {
+        // não apaga se outra aba do convidado seguir conectada (presença)
+        scheduleGuestLeave(app.prisma, user.id, {
+          aindaOnline: () => app.presence?.isOnline(user.id) ?? false,
+        })
+      }
     }
     return { ok: true }
   })

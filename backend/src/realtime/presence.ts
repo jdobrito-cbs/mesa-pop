@@ -42,4 +42,9 @@ export class Presence {
   list(): OnlinePerson[] {
     return [...this.info.values()]
   }
+
+  /** ainda tem alguma aba/socket conectado? */
+  isOnline(userId: string): boolean {
+    return (this.sockets.get(userId)?.size ?? 0) > 0
+  }
 }

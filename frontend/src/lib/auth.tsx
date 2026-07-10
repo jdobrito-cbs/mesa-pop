@@ -71,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(
     async (input: RegisterInput) => {
       applySession(await api<AuthResponse>('/api/auth/register', { body: input }))
+      // quem acabou de se cadastrar JÁ escolheu o avatar na grade do cadastro —
+      // não precisa rever o convite "Escolha seu avatar" da Mesa
+      localStorage.setItem('mp_avatar_prompt', '1')
     },
     [applySession],
   )
