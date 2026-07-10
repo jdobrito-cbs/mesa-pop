@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AVATARES_ESPECIAIS, AVATARES_NORMAIS, AVATARES_SUPER } from '@mesapop/shared'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -19,7 +20,9 @@ export default function MeusAvataresModal({ onClose }: { onClose: () => void }) 
   }
   // amostra dos bloqueados (o catálogo completo chega nas fases C/D)
   const bloqueados = [...AVATARES_ESPECIAIS.slice(0, 24), ...AVATARES_SUPER.slice(0, 6)]
-  return (
+  // portal no body: o header tem backdrop-blur, e backdrop-filter faz o
+  // position:fixed do overlay virar relativo ao HEADER (modal cortado)
+  return createPortal(
     <div className="fixed inset-0 z-[80] grid place-items-center bg-ink-950/80 p-4" onClick={onClose}>
       <div className="card max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
@@ -50,6 +53,7 @@ export default function MeusAvataresModal({ onClose }: { onClose: () => void }) 
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
