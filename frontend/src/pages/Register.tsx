@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { registerSchema, type RegisterInput } from '@mesapop/shared'
+import { AVATARES_NORMAIS, registerSchema, type RegisterInput } from '@mesapop/shared'
+import AvatarSvg from '../components/AvatarSvg'
 import { ApiRequestError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
@@ -16,6 +17,7 @@ export default function Register() {
     phone: '',
     password: '',
     passwordConfirm: '',
+    avatar: AVATARES_NORMAIS[Math.floor(Math.random() * AVATARES_NORMAIS.length)],
   })
   const [errors, setErrors] = useState<FieldErrors>({})
   const [topError, setTopError] = useState('')
@@ -90,6 +92,22 @@ export default function Register() {
             )}
           </label>
         ))}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-bold">Escolha seu avatar</span>
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+            {AVATARES_NORMAIS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, avatar: id }))}
+                aria-pressed={form.avatar === id}
+                className={`rounded-full ring-2 transition ${form.avatar === id ? 'ring-pop-cyan' : 'ring-transparent hover:ring-pop-purple/60'}`}
+              >
+                <AvatarSvg id={id} size={44} />
+              </button>
+            ))}
+          </div>
+        </div>
         <button
           type="submit"
           disabled={sending}
