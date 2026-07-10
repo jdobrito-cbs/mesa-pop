@@ -90,6 +90,8 @@ export default fp(async (app) => {
         id: user.id,
         displayName: user.displayName,
         isGuest: user.isGuest,
+        avatar: user.avatar,
+        isAdmin: user.role === 'ADMIN',
       } satisfies RoomUser
       next()
     } catch {

@@ -24,6 +24,10 @@ export interface RoomUser {
   displayName: string
   /** convidado: joga, mas não usa o chat da mesa */
   isGuest?: boolean
+  /** id do avatar procedural ativo */
+  avatar?: string | null
+  /** administrador da plataforma (nome em vermelho nos chats) */
+  isAdmin?: boolean
 }
 
 interface LivePlayer {
@@ -34,6 +38,10 @@ interface LivePlayer {
   isGuest?: boolean
   /** jogador controlado pelo servidor (robô) — sem socket, fora do banco */
   isBot?: boolean
+  /** id do avatar procedural ativo */
+  avatar?: string | null
+  /** administrador da plataforma (nome em vermelho nos chats) */
+  isAdmin?: boolean
 }
 
 interface LiveSpectator {
@@ -41,6 +49,10 @@ interface LiveSpectator {
   displayName: string
   socketId: string | null
   isGuest?: boolean
+  /** id do avatar procedural ativo */
+  avatar?: string | null
+  /** administrador da plataforma (nome em vermelho nos chats) */
+  isAdmin?: boolean
 }
 
 export interface LiveRoom {
@@ -103,11 +115,15 @@ export class RoomManager {
         isConnected: p.isBot ? true : p.socketId !== null,
         seat: p.seat,
         isBot: p.isBot,
+        avatar: p.avatar ?? null,
+        isAdmin: p.isAdmin,
       })),
       spectators: [...room.spectators.values()].map((s) => ({
         userId: s.userId,
         displayName: s.displayName,
         isConnected: s.socketId !== null,
+        avatar: s.avatar ?? null,
+        isAdmin: s.isAdmin,
       })),
       features: {
         seatPicking: room.module.seatPicking ?? false,
@@ -217,7 +233,18 @@ export class RoomManager {
       maxPlayers: module.maxPlayers,
       status: 'WAITING',
       players: new Map([
-        [user.id, { userId: user.id, displayName: user.displayName, socketId, seat: null, isGuest: user.isGuest }],
+        [
+          user.id,
+          {
+            userId: user.id,
+            displayName: user.displayName,
+            socketId,
+            seat: null,
+            isGuest: user.isGuest,
+            avatar: user.avatar,
+            isAdmin: user.isAdmin,
+          },
+        ],
       ]),
       spectators: new Map(),
       module,
@@ -293,6 +320,8 @@ export class RoomManager {
         socketId,
         seat: null,
         isGuest: user.isGuest,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin,
       })
       this.roomCodeByUser.set(user.id, room.code)
       socket?.join(room.id)
@@ -314,6 +343,8 @@ export class RoomManager {
         displayName: user.displayName,
         socketId,
         isGuest: user.isGuest,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin,
       })
       this.roomCodeByUser.set(user.id, room.code)
       socket?.join(room.id)
@@ -371,6 +402,9 @@ export class RoomManager {
         displayName: spectator.displayName,
         socketId: spectator.socketId,
         seat: null,
+        isGuest: spectator.isGuest,
+        avatar: spectator.avatar,
+        isAdmin: spectator.isAdmin,
       }
       room.players.set(userId, player)
       await this.prisma.roomPlayer.upsert({
@@ -611,6 +645,8 @@ export class RoomManager {
       id: crypto.randomUUID(),
       userId,
       displayName: member.displayName,
+      avatar: member.avatar ?? null,
+      admin: member.isAdmin || undefined,
       text,
       at: new Date(now).toISOString(),
     }
@@ -781,6 +817,9 @@ export class RoomManager {
             userId: loser.userId,
             displayName: loser.displayName,
             socketId: loser.socketId,
+            isGuest: loser.isGuest,
+            avatar: loser.avatar,
+            isAdmin: loser.isAdmin,
           })
         }
         // chama a próxima dupla da fila (em ordem de chegada, só conectados)
@@ -796,6 +835,9 @@ export class RoomManager {
             displayName: next.displayName,
             socketId: next.socketId,
             seat,
+            isGuest: next.isGuest,
+            avatar: next.avatar,
+            isAdmin: next.isAdmin,
           })
           await this.prisma.roomPlayer.upsert({
             where: { roomId_userId: { roomId: room.id, userId: next.userId } },

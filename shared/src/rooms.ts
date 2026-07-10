@@ -8,6 +8,10 @@ export interface RoomPlayerView {
   seat: number | null
   /** jogador controlado pelo computador (robô) */
   isBot?: boolean
+  /** id do avatar procedural ativo */
+  avatar?: string | null
+  /** administrador da plataforma (nome em vermelho nos chats) */
+  isAdmin?: boolean
 }
 
 export type RoomStatusView = 'WAITING' | 'PLAYING' | 'FINISHED' | 'CLOSED'
@@ -16,6 +20,10 @@ export interface SpectatorView {
   userId: string
   displayName: string
   isConnected: boolean
+  /** id do avatar procedural ativo */
+  avatar?: string | null
+  /** administrador da plataforma (nome em vermelho nos chats) */
+  isAdmin?: boolean
 }
 
 export interface RoomFeatures {
@@ -49,6 +57,10 @@ export interface ChatMessageView {
   id: string
   userId: string
   displayName: string
+  /** id do avatar procedural do autor */
+  avatar?: string | null
+  /** autor é admin (nome em vermelho) */
+  admin?: boolean
   text: string
   /** ISO timestamp */
   at: string
