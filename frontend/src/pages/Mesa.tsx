@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { GAME_CATALOG, type AnnouncementView, type GameDef, type GameView } from '@mesapop/shared'
+import { AVATARES_NORMAIS, GAME_CATALOG, type AnnouncementView, type GameDef, type GameView } from '@mesapop/shared'
 import AdSlot from '../components/AdSlot'
+import AvatarSvg from '../components/AvatarSvg'
 import GameCard from '../components/GameCard'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -79,11 +81,28 @@ const toGameDef = (g: GameView): GameDef => ({ ...g, enabled: g.isEnabled })
 
 /** Lobby: jogos habilitados, salas abertas e avisos. */
 export default function Mesa() {
-  const { user } = useAuth()
+  const { user, setAvatar } = useAuth()
   const { data: gamesData, loading: loadingGames } = useFetch<{ games: GameView[] }>('/api/games')
   const { data: roomsData, reload: reloadRooms } = useFetch<{ rooms: RoomRow[] }>('/api/rooms')
   const { data: annData } = useFetch<{ announcements: AnnouncementView[] }>('/api/announcements')
   const { data: standing } = useFetch<Standing>('/api/me/standing')
+  const [escolher, setEscolher] = useState(false)
+
+  // contas registradas que ainda não viram o convite: mostra UMA vez (pulável)
+  useEffect(() => {
+    if (user && !user.isGuest && !localStorage.getItem('mp_avatar_prompt')) setEscolher(true)
+  }, [user])
+
+  function fecharPrompt(id?: string) {
+    localStorage.setItem('mp_avatar_prompt', '1')
+    void api('/api/me/avatar/prompt-visto', { method: 'POST' }).catch(() => {})
+    if (id) {
+      void api('/api/me/avatar', { method: 'PUT', body: { id } })
+        .then(() => setAvatar(id))
+        .catch(() => {})
+    }
+    setEscolher(false)
+  }
 
   if (!user) return null
   const firstName = user.displayName.split(' ')[0]
@@ -236,6 +255,24 @@ export default function Mesa() {
             ))}
           </div>
         </>
+      )}
+
+      {/* modal de escolha de avatar para contas antigas */}
+      {escolher && (
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-ink-950/80 p-4" onClick={() => fecharPrompt()}>
+          <div className="card w-full max-w-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-xl font-extrabold">Escolha seu avatar 🎭</h2>
+            <p className="mb-3 text-sm text-text-muted">Dá para trocar quando quiser em "Meus avatares".</p>
+            <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+              {AVATARES_NORMAIS.map((id) => (
+                <button key={id} onClick={() => fecharPrompt(id)} className="rounded-full ring-2 ring-transparent transition hover:ring-pop-cyan">
+                  <AvatarSvg id={id} size={44} />
+                </button>
+              ))}
+            </div>
+            <button onClick={() => fecharPrompt()} className="btn-pop mt-4 px-4 py-2 text-sm ring-1 ring-ink-700">Agora não</button>
+          </div>
+        </div>
       )}
     </main>
   )
