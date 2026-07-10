@@ -11,6 +11,7 @@ export function toPublicUser(user: User): UserPublic {
     phone: user.phone,
     role: user.role,
     avatarUrl: user.avatarUrl,
+    avatar: user.avatar ?? null,
     isGuest: user.isGuest,
     createdAt: user.createdAt.toISOString(),
   }

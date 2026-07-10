@@ -11,6 +11,8 @@ export interface UserPublic {
   phone: string
   role: Role
   avatarUrl: string | null
+  /** id do avatar ativo (procedural). null = ainda não escolheu */
+  avatar: string | null
   /** conta convidada ("jogar sem conta"): sem chat, saves ou ranking */
   isGuest: boolean
   createdAt: string

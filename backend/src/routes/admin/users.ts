@@ -17,6 +17,7 @@ function toAdminView(u: User): UserAdminView {
     phone: u.phone,
     role: u.role,
     avatarUrl: u.avatarUrl,
+    avatar: u.avatar ?? null,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
     isActive: u.isActive,

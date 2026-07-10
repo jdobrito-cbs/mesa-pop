@@ -46,6 +46,10 @@ model User {
   passwordHash String
   role         Role      @default(USER)
   avatarUrl    String?
+  /// id do avatar procedural ativo (n#/e#/s#)
+  avatar       String?
+  /// quando o modal "escolha seu avatar" foi mostrado (só uma vez)
+  avatarPromptedAt DateTime?
   isActive     Boolean   @default(true)
   /// conta-sombra do "jogar sem conta" — fora de chat, saves e rankings
   isGuest      Boolean   @default(false)
