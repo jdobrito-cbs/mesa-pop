@@ -26,9 +26,9 @@ function cell(i: number): { r: number; c: number } {
 }
 
 const reais = (n: number) => `R$ ${n}`
-const PASSO_MS = 1000 // tempo de cada "pulo" do peão de uma casa à seguinte
+const PASSO_MS = 600 // tempo de cada "pulo" do peão de uma casa à seguinte
 const ROLL_MS = 3000 // duração da rolagem animada dos dados
-const POS_DADOS_MS = 1000 // pausa após os dados pararem, antes de o peão andar
+const POS_DADOS_MS = 600 // pausa após os dados pararem, antes de o peão andar
 
 function DiceFace({ v }: { v: number }) {
   const P: Record<number, Array<[number, number]>> = {
