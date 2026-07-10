@@ -4,6 +4,7 @@ import { DESAFIOS_DIARIOS, ehDesafioDiario } from '@mesapop/shared'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
 import AdSlot from '../components/AdSlot'
+import AvatarSvg from '../components/AvatarSvg'
 import SudokuPage from './SudokuPage'
 import CacaPalavrasPage from './CacaPalavrasPage'
 import CruzadinhaPage from './CruzadinhaPage'
@@ -169,6 +170,7 @@ function DesafioFeito({ slug, pontos }: { slug: string; pontos: number }) {
               }`}
             >
               <span className={`w-7 font-display font-extrabold ${row.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>{row.rank}º</span>
+              <AvatarSvg id={row.displayName} size={20} />
               <span className="min-w-0 flex-1 truncate font-semibold">{row.displayName}</span>
               <span className="text-xs text-text-muted tabular-nums">{row.segundos}s</span>
               <span className="font-bold text-pop-cyan tabular-nums">{row.points}</span>

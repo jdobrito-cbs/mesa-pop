@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import FullscreenButton from '../components/FullscreenButton'
 import AdSlot from '../components/AdSlot'
+import AvatarSvg from '../components/AvatarSvg'
 import { startLoop, type GameHost, type Input } from '../engine/core'
 import { DesvioGame, DESVIO_W, DESVIO_H } from '../games/desvio'
 import { EsquadraoGame, ESQ_W, ESQ_H } from '../games/esquadrao'
@@ -446,6 +447,7 @@ export default function SoloGamePage({ def }: { def: SoloGameDef }) {
                 <span className={`w-7 font-display font-extrabold ${r.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>
                   {r.rank}º
                 </span>
+                <AvatarSvg id={r.displayName} size={20} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{r.displayName}</span>
                 <span className="font-bold text-pop-cyan tabular-nums">{r.points}</span>
               </div>

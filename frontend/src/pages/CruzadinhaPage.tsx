@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch'
 import { makeSoloBackend } from '../lib/soloBackend'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
+import AvatarSvg from '../components/AvatarSvg'
 
 /**
  * Cruzadinha estilo Coquetel — toque numa casa, leia a dica e digite
@@ -291,6 +292,7 @@ export default function CruzadinhaPage({ daily }: { daily?: string } = {}) {
               {board?.rows.map((row) => (
                 <div key={row.userId} className="flex items-center gap-2 rounded-field bg-ink-900 px-3 py-1.5 text-sm ring-1 ring-ink-700">
                   <span className={`w-7 font-display font-extrabold ${row.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>{row.rank}º</span>
+                  <AvatarSvg id={row.displayName} size={20} />
                   <span className="min-w-0 flex-1 truncate font-semibold">{row.displayName}</span>
                   <span className="font-bold text-pop-cyan tabular-nums">{row.points}</span>
                 </div>

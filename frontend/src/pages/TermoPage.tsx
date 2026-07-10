@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
+import AvatarSvg from '../components/AvatarSvg'
 
 /**
  * Palavra do Dia — a MESMA palavra de 5 letras para todo mundo, trocada
@@ -254,6 +255,7 @@ export default function TermoPage() {
                 <span className={`w-7 font-display font-extrabold ${r.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>
                   {r.rank}º
                 </span>
+                <AvatarSvg id={r.displayName} size={20} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{r.displayName}</span>
                 <span className="text-xs text-text-muted">{r.attempts} tent.</span>
                 <span className="font-bold text-pop-cyan tabular-nums">{r.points}</span>

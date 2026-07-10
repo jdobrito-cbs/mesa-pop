@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type PointerEvent } from 'react'
 import type { DesenhaStroke, DesenhaView } from '@mesapop/shared'
 import { emitAck } from '../lib/socket'
+import AvatarSvg from './AvatarSvg'
 
 /**
  * Desenha & Adivinha — tela estilo gartic: lista de jogadores com pontos
@@ -22,7 +23,7 @@ export default function DesenhaGame({
 }: {
   view: DesenhaView
   yourSeat: number
-  players: { name: string; seat: number; connected: boolean }[]
+  players: { name: string; seat: number; connected: boolean; avatar?: string | null; isAdmin?: boolean }[]
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [cor, setCor] = useState(CORES[0]!)
@@ -42,6 +43,7 @@ export default function DesenhaGame({
   const souDesenhista = yourSeat === view.desenhistaSeat
   const acertei = view.acertaram.includes(yourSeat)
   const nameOf = (seat: number) => players.find((p) => p.seat === seat)?.name ?? `Jogador ${seat + 1}`
+  const playerOf = (seat: number) => players.find((p) => p.seat === seat)
 
   if (lastRound.current !== roundKey) {
     lastRound.current = roundKey
@@ -183,9 +185,12 @@ export default function DesenhaGame({
                 {p.seat === view.desenhistaSeat ? '✏️' : view.acertaram.includes(p.seat) ? '✅' : '🙂'}
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold">
-                  {p.name}
-                  {p.seat === yourSeat ? ' (você)' : ''}
+                <p className="flex items-center gap-1 truncate text-sm font-bold">
+                  <AvatarSvg id={p.avatar ?? p.name} size={16} />
+                  <span className={`truncate ${p.isAdmin ? 'text-red-500' : ''}`}>
+                    {p.name}
+                    {p.seat === yourSeat ? ' (você)' : ''}
+                  </span>
                 </p>
                 <p className="text-xs font-bold text-pop-cyan tabular-nums">{view.scores[p.seat] ?? 0} pts</p>
               </div>
@@ -326,18 +331,21 @@ export default function DesenhaGame({
             {view.respostas.length === 0 && (
               <p className="text-sm text-text-muted">Os palpites aparecem aqui — chute sem medo!</p>
             )}
-            {view.respostas.map((r, i) =>
-              r.acertou ? (
-                <p key={i} className="text-sm font-extrabold text-pop-green">
-                  ✔ {nameOf(r.seat)} acertou!
+            {view.respostas.map((r, i) => {
+              const p = playerOf(r.seat)
+              return r.acertou ? (
+                <p key={i} className="inline-flex items-center gap-1 text-sm font-extrabold text-pop-green">
+                  ✔ <AvatarSvg id={p?.avatar ?? nameOf(r.seat)} size={14} />
+                  <span className={p?.isAdmin ? 'text-red-500' : ''}>{nameOf(r.seat)}</span> acertou!
                 </p>
               ) : (
-                <p key={i} className="text-sm">
-                  <span className="font-bold text-text-muted">{nameOf(r.seat)}</span>{' '}
+                <p key={i} className="inline-flex flex-wrap items-center gap-1 text-sm">
+                  <AvatarSvg id={p?.avatar ?? nameOf(r.seat)} size={14} />
+                  <span className={`font-bold ${p?.isAdmin ? 'text-red-500' : 'text-text-muted'}`}>{nameOf(r.seat)}</span>
                   <span className="break-words">{r.text}</span>
                 </p>
-              ),
-            )}
+              )
+            })}
           </div>
           {aviso && <p className="px-4 pb-1 text-xs font-semibold text-pop-orange">{aviso}</p>}
           <div className="border-t border-ink-700 p-3">

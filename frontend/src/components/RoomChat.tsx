@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { ChatMessageView } from '@mesapop/shared'
 import { connectSocket, emitAck } from '../lib/socket'
 import { useAuth } from '../lib/auth'
+import AvatarSvg from './AvatarSvg'
 
 /**
  * Chat geral da sala — presente em TODOS os jogos multijogador.
@@ -69,7 +70,10 @@ export default function RoomChat({ className = '' }: { className?: string }) {
                 }`}
               >
                 {!mine && (
-                  <span className="mr-2 font-bold text-pop-cyan">{m.displayName}</span>
+                  <span className="mr-2 inline-flex items-center gap-1 align-middle">
+                    <AvatarSvg id={m.avatar ?? m.displayName} size={16} />
+                    <span className={`font-bold ${m.admin ? 'text-red-500' : 'text-pop-cyan'}`}>{m.displayName}</span>
+                  </span>
                 )}
                 <span className="break-words">{m.text}</span>
                 <span className="ml-2 text-[10px] text-text-muted tabular-nums">{hour(m.at)}</span>

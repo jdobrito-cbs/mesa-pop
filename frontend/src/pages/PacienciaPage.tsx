@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { useFetch } from '../lib/useFetch'
 import AdSlot from '../components/AdSlot'
 import FullscreenButton from '../components/FullscreenButton'
+import AvatarSvg from '../components/AvatarSvg'
 
 /**
  * Paciência (Klondike) — clique inteligente: tocar numa carta manda para
@@ -298,6 +299,7 @@ export default function PacienciaPage() {
             {board?.rows.map((r) => (
               <div key={r.userId} className="flex items-center gap-2 rounded-field bg-ink-900 px-3 py-1.5 text-sm ring-1 ring-ink-700">
                 <span className={`w-7 font-display font-extrabold ${r.rank <= 3 ? 'text-pop-yellow' : 'text-text-muted'}`}>{r.rank}º</span>
+                <AvatarSvg id={r.displayName} size={20} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{r.displayName}</span>
                 <span className="font-bold text-pop-cyan tabular-nums">{r.points}</span>
               </div>

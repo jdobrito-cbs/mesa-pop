@@ -49,6 +49,7 @@ import QuizGame from '../components/QuizGame'
 import SeatPicker from '../components/SeatPicker'
 import RoomChat from '../components/RoomChat'
 import AdSlot from '../components/AdSlot'
+import AvatarSvg from '../components/AvatarSvg'
 import { Chip } from '../components/Logo'
 
 interface GamePayload {
@@ -206,7 +207,13 @@ export default function RoomPage() {
   const youWon = !!end?.winnerUserIds.includes(user.id)
   const seatedPlayers = room.players
     .filter((p) => p.seat !== null)
-    .map((p) => ({ name: p.displayName, seat: p.seat!, connected: p.isConnected }))
+    .map((p) => ({
+      name: p.displayName,
+      seat: p.seat!,
+      connected: p.isConnected,
+      avatar: p.avatar,
+      isAdmin: p.isAdmin,
+    }))
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -274,7 +281,7 @@ export default function RoomPage() {
                 <div className="mx-auto mt-8 flex max-w-sm flex-col gap-3">
                   {room.players.map((p) => (
                     <div key={p.userId} className="flex items-center gap-3 rounded-field bg-ink-900 px-4 py-3 ring-1 ring-ink-700">
-                      <span className="text-xl" aria-hidden="true">🪑</span>
+                      <AvatarSvg id={p.avatar ?? p.displayName} size={18} />
                       <span className="font-display font-bold">{p.displayName}</span>
                       {p.userId === room.hostId && (
                         <span className="rounded-full bg-pop-purple/15 px-2 py-0.5 text-xs font-bold text-pop-purple">anfitrião</span>

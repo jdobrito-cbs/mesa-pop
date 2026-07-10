@@ -1,5 +1,6 @@
 import type { RoomView } from '@mesapop/shared'
 import { emitAck } from '../lib/socket'
+import AvatarSvg from './AvatarSvg'
 
 const SEAT_LABEL = ['A', 'B', 'C', 'D']
 const TEAMS = [
@@ -53,6 +54,7 @@ export default function SeatPicker({
                         }`}
                       >
                         <span className="font-mono text-xs text-text-muted">{SEAT_LABEL[seat]}</span>
+                        <AvatarSvg id={p.avatar ?? p.displayName} size={18} />
                         <span className="truncate">{p.displayName}</span>
                         {isMe && <span className="text-xs text-pop-yellow">você</span>}
                         {!p.isConnected && <span className="text-xs text-pop-orange">caiu</span>}
@@ -90,12 +92,13 @@ export default function SeatPicker({
             {room.spectators.map((s, i) => (
               <span
                 key={s.userId}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
                   s.userId === myUserId
                     ? 'bg-pop-yellow/15 text-pop-yellow ring-pop-yellow/50'
                     : 'bg-ink-800 text-text-muted ring-ink-700'
                 }`}
               >
+                <AvatarSvg id={s.avatar ?? s.displayName} size={16} />
                 {i + 1}º {s.displayName}
                 {s.userId === myUserId && ' (você)'}
               </span>

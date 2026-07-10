@@ -59,12 +59,7 @@ export function RoomPeople({ names, maxPlayers }: { names: string[]; maxPlayers:
           key={n}
           className="flex items-center gap-1.5 rounded-full bg-ink-900 py-0.5 pr-2.5 pl-0.5 text-xs font-semibold ring-1 ring-ink-700"
         >
-          <span
-            className="flex size-5 items-center justify-center rounded-full bg-gradient-to-br from-pop-purple to-pop-magenta text-[10px] font-extrabold text-white"
-            aria-hidden="true"
-          >
-            {n.trim()[0]?.toUpperCase()}
-          </span>
+          <AvatarSvg id={n} size={20} />
           {n}
         </span>
       ))}
