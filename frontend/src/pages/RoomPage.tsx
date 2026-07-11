@@ -18,6 +18,7 @@ import type {
   MemoriaView,
   OneAction,
   OneView,
+  PareoView,
   PifeView,
   QuizView,
   RacingSnapshot,
@@ -41,6 +42,7 @@ import CoopGame from '../components/CoopGame'
 import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
+import PareoGame from '../components/PareoGame'
 import PifeTable from '../components/PifeTable'
 import MemoriaBoard from '../components/MemoriaBoard'
 import ForcaGame from '../components/ForcaGame'
@@ -462,6 +464,7 @@ export default function RoomPage() {
                   players={seatedPlayers}
                 />
               )}
+              {room.gameSlug === 'pareo' && <PareoGame view={game.state as PareoView} />}
             </div>
           )}
         </div>
