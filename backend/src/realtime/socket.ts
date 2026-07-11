@@ -25,6 +25,7 @@ import { QUIZ_NOSTALGIA, QUIZ_POP } from '../lib/quizPerguntas'
 import { giraGenioModule } from '../games/giraGenio'
 import { slitherModule } from '../games/slither'
 import { magnataModule } from '../games/magnata'
+import { pareoModule } from '../games/pareo'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -53,6 +54,7 @@ registerGame(makeQuizModule('quiz-nostalgia', QUIZ_NOSTALGIA))
 registerGame(giraGenioModule)
 registerGame(slitherModule)
 registerGame(magnataModule)
+registerGame(pareoModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {
