@@ -58,6 +58,8 @@ export const pareoModule: GameModule<PareoState, unknown> = {
   minPlayers: 1,
   maxPlayers: 16,
   allowSpectators: true,
+  // público contínuo: entra jogando, sem espera; sala cheia → outra sala
+  dropIn: true,
   // ciclo dirigido pelo relógio do servidor; snapshot a cada ~2s (o cliente
   // anima localmente pela seed + timestamps — não precisa de frames)
   realtime: { tickMs: 500, broadcastEvery: 4 },

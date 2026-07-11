@@ -15,6 +15,13 @@ export interface GameModule<S = unknown, A = unknown> {
   /** dupla perdedora sai para a fila; próxima entra; vencedores ficam */
   rotation?: boolean
   /**
+   * jogo PÚBLICO CONTÍNUO (Páreo/Cisco): a sala começa sozinha com o 1º
+   * jogador, quem chega entra JOGANDO no meio (sem sala de espera), sair
+   * não encerra a partida dos outros, salas privadas não existem e o
+   * matchmaking (room:quickjoin) abre outra sala quando a atual enche.
+   */
+  dropIn?: boolean
+  /**
    * jogo em TEMPO REAL: o manager roda tick() a cada tickMs e transmite o
    * snapshot a cada `broadcastEvery` ticks. Ações não são retransmitidas
    * individualmente. `perSeatView` = getStateFor filtra por assento (mão

@@ -62,6 +62,8 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
   const rooms = (roomsData?.rooms ?? []).filter((r) => r.game.slug === slug)
   const isCoop = slug === 'esquadrao-coop'
   const isRace = slug === 'corrida'
+  // jogos públicos CONTÍNUOS: sem criar sala/código — entra jogando na hora
+  const isDropIn = slug === 'pareo' || slug === 'cisco'
   // jogos que já jogam contra o robô (cresce a cada lote)
   const hasBot = [
     'damas', 'xadrez', 'domino', 'one', 'pife', 'gira-genio', 'magnata',
@@ -88,6 +90,16 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
     })
     setBusy(false)
     if (!res.ok) return setError(res.error ?? 'Não deu para criar a sala')
+    navigate(`/sala/${res.data!.code}`)
+  }
+
+  /** entrada rápida dos jogos contínuos: 1ª sala com vaga ou uma nova */
+  async function quickJoin() {
+    setBusy(true)
+    setError('')
+    const res = await emitAck<RoomView>('room:quickjoin', { gameSlug: slug })
+    setBusy(false)
+    if (!res.ok) return setError(res.error ?? 'Não deu para entrar agora')
     navigate(`/sala/${res.data!.code}`)
   }
 
@@ -223,6 +235,27 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
         </button>
       )}
 
+      {/* jogos públicos contínuos: UM botão — entra jogando na hora */}
+      {isDropIn && (
+        <button
+          onClick={() => void quickJoin()}
+          disabled={busy}
+          className="card mt-8 flex w-full items-center gap-4 p-6 text-left transition hover:-translate-y-1 hover:ring-pop-yellow/60 disabled:opacity-60"
+        >
+          <span className="text-4xl" aria-hidden="true">{slug === 'cisco' ? '🐔' : '🐎'}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-2xl font-extrabold text-pop-yellow">
+              {busy ? 'Entrando…' : 'Entrar agora'}
+            </span>
+            <span className="block text-sm text-text-muted">
+              Jogo público e contínuo: você cai direto na corrida que está rolando — sem esperar
+              ninguém. Quando uma sala enche (16), outra abre sozinha.
+            </span>
+          </span>
+        </button>
+      )}
+
+      {!isDropIn && (
       <div className={`${isCoop || isRace || hasBot ? 'mt-4' : 'mt-8'} grid gap-4 sm:grid-cols-2`}>
         <button
           onClick={() => void createRoom(false)}
@@ -247,7 +280,9 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
           </p>
         </button>
       </div>
+      )}
 
+      {!isDropIn && (
       <form onSubmit={joinByCode} className="card mt-4 flex items-center gap-3 p-4">
         <span className="text-2xl" aria-hidden="true">🎟️</span>
         <input
@@ -262,7 +297,10 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
           Entrar
         </button>
       </form>
+      )}
 
+      {!isDropIn && (
+      <>
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-xl font-extrabold">Salas esperando jogadores</h2>
         <button onClick={() => void reload()} className="btn-pop px-3 py-1.5 text-xs ring-1 ring-ink-700 hover:ring-pop-cyan">
@@ -297,6 +335,8 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
 
       <AdSlot className="mt-8" />

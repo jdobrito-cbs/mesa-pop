@@ -55,6 +55,8 @@ export const ciscoModule: GameModule<CiscoState, unknown> = {
   minPlayers: 1,
   maxPlayers: 16,
   allowSpectators: true,
+  // público contínuo: entra jogando, sem espera; sala cheia → outra sala
+  dropIn: true,
   realtime: { tickMs: 500, broadcastEvery: 4 },
 
   init() {

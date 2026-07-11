@@ -92,6 +92,8 @@ export interface ClientEvents {
     ack: (res: Ack<RoomView>) => void,
   ) => void
   'room:join': (input: { code: string }, ack: (res: Ack<RoomView>) => void) => void
+  /** jogos públicos contínuos: entra na 1ª sala com vaga (ou abre outra) */
+  'room:quickjoin': (input: { gameSlug: string }, ack: (res: Ack<RoomView>) => void) => void
   'room:leave': (ack: (res: Ack) => void) => void
   'room:start': (ack: (res: Ack) => void) => void
   /** escolher assento OU dupla (dupla cheia → vai para a outra) */

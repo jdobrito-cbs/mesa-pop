@@ -144,6 +144,12 @@ export default fp(async (app) => {
       void withAck(() => rooms.join(user, socket.id, String(input?.code ?? '')))(ack)
     })
 
+    // jogos públicos contínuos (Páreo/Cisco): entra na primeira sala com
+    // vaga, jogando na hora; todas cheias → abre outra automaticamente
+    socket.on('room:quickjoin', (input, ack) => {
+      void withAck(() => rooms.quickJoin(user, socket.id, String(input?.gameSlug ?? '')))(ack)
+    })
+
     socket.on('room:leave', (ack) => {
       void withAck(async () => {
         await rooms.leave(user.id)

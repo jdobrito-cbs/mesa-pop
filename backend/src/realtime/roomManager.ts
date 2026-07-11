@@ -205,6 +205,9 @@ export class RoomManager {
     const module = getGameModule(gameSlug)
     if (!module) throw new Error('Jogo indisponível')
 
+    // jogos públicos contínuos não têm sala privada — todo mundo pode entrar
+    if (module.dropIn) isPrivate = false
+
     const game = await this.prisma.game.findUnique({ where: { slug: gameSlug } })
     if (!game || !game.isEnabled) throw new Error('Este jogo não está aceitando novas salas')
 
@@ -260,8 +263,43 @@ export class RoomManager {
     this.roomsByCode.set(code, room)
     this.roomCodeByUser.set(user.id, code)
     this.io.sockets.sockets.get(socketId)?.join(room.id)
+
+    // drop-in: a sala não espera ninguém — o ciclo começa com o 1º jogador
+    if (module.dropIn) {
+      await this.beginMatch(room)
+      return this.toView(room)
+    }
+
     this.broadcast(room)
     return this.toView(room)
+  }
+
+  /**
+   * Matchmaking dos jogos públicos contínuos (Páreo/Cisco): entra na
+   * primeira sala pública com vaga — JOGANDO, mesmo no meio da corrida —
+   * ou abre uma sala nova quando todas estiverem cheias.
+   */
+  async quickJoin(user: RoomUser, socketId: string, gameSlug: string) {
+    const module = getGameModule(gameSlug)
+    if (!module?.dropIn) throw new Error('Este jogo não tem entrada rápida')
+
+    // já está numa sala deste mesmo jogo → só reconecta nela
+    const existing = this.roomOf(user.id)
+    if (existing && existing.gameSlug === gameSlug && existing.status !== 'CLOSED') {
+      return this.join(user, socketId, existing.code)
+    }
+    // sair de um jogo contínuo é sempre seguro (não derruba os outros)
+    if (existing && existing.module.dropIn) await this.leave(user.id)
+
+    const aberta = [...this.roomsByCode.values()].find(
+      (r) =>
+        r.gameSlug === gameSlug &&
+        !r.isPrivate &&
+        (r.status === 'PLAYING' || r.status === 'WAITING') &&
+        r.players.size < r.maxPlayers,
+    )
+    if (aberta) return this.join(user, socketId, aberta.code)
+    return this.create(user, socketId, gameSlug, false)
   }
 
   async join(user: RoomUser, socketId: string, code: string) {
@@ -332,6 +370,44 @@ export class RoomManager {
         update: { isConnected: true, leftAt: null },
       })
       this.broadcast(room)
+      return this.toView(room)
+    }
+
+    // drop-in (Páreo/Cisco): a corrida está rolando e há vaga → entra
+    // JOGANDO agora, com o próximo assento livre — sem sala de espera
+    if (room.module.dropIn && room.status === 'PLAYING' && room.players.size < room.maxPlayers) {
+      const usados = new Set([...room.players.values()].map((p) => p.seat))
+      let seat = 0
+      while (usados.has(seat)) seat++
+      room.players.set(user.id, {
+        userId: user.id,
+        displayName: user.displayName,
+        socketId,
+        seat,
+        isGuest: user.isGuest,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin,
+      })
+      this.roomCodeByUser.set(user.id, room.code)
+      socket?.join(room.id)
+      this.io.to(socketId).emit('chat:history', room.chat)
+      await this.prisma.roomPlayer.upsert({
+        where: { roomId_userId: { roomId: room.id, userId: user.id } },
+        create: { roomId: room.id, userId: user.id },
+        update: { isConnected: true, leftAt: null },
+      })
+      // entra também na partida corrente (participação conta nos rankings)
+      if (room.matchId && !user.isGuest) {
+        await this.prisma.matchPlayer
+          .upsert({
+            where: { matchId_userId: { matchId: room.matchId, userId: user.id } },
+            create: { matchId: room.matchId, userId: user.id },
+            update: {},
+          })
+          .catch(() => {})
+      }
+      this.broadcast(room)
+      this.sendState(room)
       return this.toView(room)
     }
 
@@ -670,6 +746,34 @@ export class RoomManager {
     const player = room.players.get(userId)
     if (!player) return
 
+    if (room.status === 'PLAYING' && room.module.dropIn) {
+      // jogo público contínuo: sair NÃO derruba a corrida dos outros —
+      // só remove; a sala fecha limpa quando o último for embora
+      room.players.delete(userId)
+      this.clearTimer(room, userId)
+      await this.prisma.roomPlayer.updateMany({
+        where: { roomId: room.id, userId },
+        data: { leftAt: new Date(), isConnected: false },
+      })
+      if (room.players.size === 0 && room.spectators.size === 0) {
+        // encerra a partida corrente de forma limpa (as apostas pendentes
+        // liquidam pela seed no sweep — nenhuma ficha fica presa)
+        if (room.matchId) {
+          await this.prisma.match.update({
+            where: { id: room.matchId },
+            data: { status: 'FINISHED', endedAt: new Date() },
+          }).catch(() => {})
+        }
+        await this.closeRoom(room)
+        return
+      }
+      if (room.hostId === userId) {
+        room.hostId = [...room.players.keys()][0] ?? [...room.spectators.keys()][0]!
+      }
+      this.broadcast(room)
+      return
+    }
+
     if (room.status === 'PLAYING') {
       // abandono no meio da partida: W.O. — os demais vencem
       const others = [...room.players.values()]
@@ -729,12 +833,18 @@ export class RoomManager {
       const timer = setTimeout(() => void this.leave(userId), WAITING_GRACE_MS)
       room.disconnectTimers.set(userId, timer)
     } else if (room.status === 'PLAYING') {
+      // jogos públicos contínuos: fechou o navegador → libera a vaga RÁPIDO
+      // (15s cobrem um refresh; sair não derruba a corrida dos outros).
+      // Jogos de partida normal mantêm o minuto de W.O.
+      const grace = room.module.dropIn
+        ? Number(process.env.DROPIN_GRACE_MS ?? WAITING_GRACE_MS)
+        : RECONNECT_GRACE_MS
       const timer = setTimeout(() => {
         const still = room.players.get(userId)
         if (still && still.socketId === null && room.status === 'PLAYING') {
           void this.leave(userId)
         }
-      }, RECONNECT_GRACE_MS)
+      }, grace)
       room.disconnectTimers.set(userId, timer)
     }
   }
