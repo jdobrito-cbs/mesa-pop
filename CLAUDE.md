@@ -21,6 +21,47 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-11
+- **PÁREO · FASE 2 ENTREGUE — APOSTAS AUTORITATIVAS NA CARTEIRA
+  (2026-07-11, OK do usuário: "pode continuar"; decisões: carteira =
+  fichas da plataforma, sem bônus interno; stakes 10/25/50/100/250; UMA
+  aposta por corrida)**: model `PareoBet` (migração
+  `20260711100000_pareo_bets`) é o LEDGER do jogo — guarda
+  roomId+numero+seed+lane+valor+odds+resultado+payout+liquidaEm, com
+  UNIQUE (roomId,numero,userId). `lib/pareoApostas.ts`:
+  `registrarAposta` valida fase/páreo/valor/unicidade e DEBITA a
+  carteira atomicamente (updateMany fichas>=valor; corrida rara na PK →
+  reembolsa); `liquidarApostas` roda num sweep de 2,5s no server.ts —
+  o vencedor é recalculado DA SEED gravada na aposta (determinístico:
+  liquida mesmo se a sala morreu; nenhuma ficha presa) e o pagamento é
+  IDEMPOTENTE (linha só sai de 'pendente' uma vez; payout = valor×odds).
+  Rotas REST `POST /api/pareo/apostar` (resolve a sala pelo
+  RoomManager.roomOf; convidado 403) e `GET /api/pareo/minha` (saldo +
+  aposta atual + última liquidada). AuditLog 'pareo.aposta'. UI:
+  saldo no painel, chips habilitados, confirmar → card "● valor" +
+  título "Apostou X em Y (odds)", resultado pessoal na cerimônia
+  (ganhou +payout / perdeu). 322 testes (6 novos de apostas: débito,
+  rejeições sem mexer no saldo, liquidação idempotente, pendente futuro
+  não liquida, convidado 403). Demo real (2 apostadores): saldo
+  1000→900 nas duas janelas, aposta travada, Trovão venceu → A recebeu
+  260 (saldo 1160) e B ficou em 900. **LIÇÃO (bug real da demo)**:
+  guard de "fase mudou" por ref DENTRO de useEffect quebra no
+  StrictMode (dupla montagem cancela o 1º fetch e pula o 2º — saldo
+  nunca hidratava); as deps do efeito já fazem esse papel — sem ref.
+  Faltam FASES 3 (sincronia fina/reconexão/salas) e 4 (leaderboards/
+  admin/polimento), cada uma com OK prévio.
+- **AJUSTES DO DIA (pedidos do usuário 2026-07-11)**: (a) moeda do
+  Milionário virou **POP$** (era R$ — cenográfica); (b) **Desafio
+  Diário SORTEIA os jogos do dia** — `desafiosDoDia(date)` embaralha
+  os 4 seedáveis com seed=data e pega `DESAFIOS_POR_DIA`=2 (iguais p/
+  todos; servidor recusa jogo fora do sorteio; hub/despachante só
+  mostram os sorteados); (c) FIX Milionário: partida ENCERRADA não
+  gruda mais ao reabrir (o /estado só retoma partida em andamento) e a
+  tela final explica as fichas proporcionais ("a partir de POP$
+  10.000"); VERIFICADO de ponta a ponta que pontos/fichas SÃO gravados
+  (parar com POP$ 10.000 → 500 pts no Score/MatchPlayer/leaderboard +
+  1 ficha na carteira) — o reporte de "não insere" era a regra
+  proporcional (prêmios < 10k = 0 fichas) + cache de 60s dos rankings
+  gerais + servidor em build antiga.
 - **NOVO JOGO — PÁREO (O "Corre" do Yvens) · FASE 1 ENTREGUE
   (2026-07-11; plano de 4 fases aprovado pelo usuário — B=apostas na
   carteira, C=sincronia/reconexão fina, D=leaderboards/admin — cada
