@@ -179,10 +179,14 @@ export default async function milhaoRoutes(app: FastifyInstance) {
     return reply.code(201).send(view(s))
   })
 
-  /** retomada (refresh/reconexão): devolve a MESMA pergunta */
+  /** retomada (refresh/reconexão): devolve a MESMA pergunta — só de
+   *  partida EM ANDAMENTO (encerrada não "gruda": reabrir = tela nova) */
   app.get('/api/milhao/estado', { preHandler: [app.authenticate] }, async (req, reply) => {
     const s = SESSOES.get(req.auth!.sub)
-    if (!s) return reply.code(404).send({ error: 'NO_GAME', message: 'Nenhuma partida em andamento' })
+    if (!s || s.fim) {
+      if (s?.fim) SESSOES.delete(req.auth!.sub)
+      return reply.code(404).send({ error: 'NO_GAME', message: 'Nenhuma partida em andamento' })
+    }
     return view(s)
   })
 

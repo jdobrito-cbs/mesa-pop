@@ -122,6 +122,13 @@ describe('Tio Mário Milionário (servidor autoritativo)', () => {
     expect((r.json() as MilhaoView).pergunta!.texto).toBe(v.pergunta!.texto)
   })
 
+  it('partida ENCERRADA não gruda: /estado devolve 404 (reabrir = jogo novo)', async () => {
+    await start()
+    await app.inject({ method: 'POST', url: '/api/milhao/parar', headers: auth() }) // encerra
+    const r = await app.inject({ method: 'GET', url: '/api/milhao/estado', headers: auth() })
+    expect(r.statusCode).toBe(404)
+  })
+
   it('escada completa: o MILHÃO vale 50.000 pontos + 100 fichas de avatar', async () => {
     const antes = await app.prisma.user.findUnique({ where: { email: `${runId}@t.local` } })
     let v = await start()
