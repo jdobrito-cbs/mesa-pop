@@ -26,6 +26,7 @@ import { giraGenioModule } from '../games/giraGenio'
 import { slitherModule } from '../games/slither'
 import { magnataModule } from '../games/magnata'
 import { pareoModule } from '../games/pareo'
+import { ciscoModule } from '../games/cisco'
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -55,6 +56,7 @@ registerGame(giraGenioModule)
 registerGame(slitherModule)
 registerGame(magnataModule)
 registerGame(pareoModule)
+registerGame(ciscoModule)
 
 /** Transforma handlers async em acks {ok, error, data}. */
 function withAck<T>(fn: () => Promise<T>) {

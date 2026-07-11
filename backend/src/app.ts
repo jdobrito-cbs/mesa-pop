@@ -19,6 +19,7 @@ import rankingsRoutes from './routes/rankings'
 import fichasRoutes from './routes/fichas'
 import milhaoRoutes from './routes/milhao'
 import pareoRoutes from './routes/pareo'
+import ciscoRoutes from './routes/cisco'
 import adminRoutes from './routes/admin/index'
 import socketPlugin from './realtime/socket'
 import staticPlugin from './plugins/static'
@@ -78,6 +79,7 @@ export async function buildApp(opts: BuildAppOptions = {}) {
   await app.register(fichasRoutes)
   await app.register(milhaoRoutes)
   await app.register(pareoRoutes)
+  await app.register(ciscoRoutes)
   await app.register(adminRoutes)
   await app.register(socketPlugin)
   await app.register(staticPlugin)

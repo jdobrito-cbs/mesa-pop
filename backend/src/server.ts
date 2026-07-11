@@ -4,6 +4,7 @@ import { reapOldGuests } from './lib/guests'
 import { abandonarPartidasOrfas, fecharSalasOrfas, reapSoloParadas } from './lib/matches'
 import { creditarSegundos } from './lib/fichas'
 import { liquidarApostas } from './lib/pareoApostas'
+import { liquidarApostasCisco } from './lib/ciscoApostas'
 
 const app = await buildApp()
 
@@ -45,15 +46,17 @@ const fichasSweep = setInterval(
 )
 fichasSweep.unref()
 
-// Páreo: liquida as apostas assim que cada corrida termina (determinístico
-// pela seed; idempotente — nenhuma ficha fica presa nem paga em dobro).
-const pareoSweep = setInterval(
+// Corridas (Páreo e Cisco): liquida as apostas assim que cada corrida
+// termina (determinístico pela seed; idempotente — nenhuma ficha fica
+// presa nem paga em dobro).
+const corridasSweep = setInterval(
   () => {
     liquidarApostas(app.prisma).catch((err) => app.log.warn({ err }, 'liquidação do Páreo falhou'))
+    liquidarApostasCisco(app.prisma).catch((err) => app.log.warn({ err }, 'liquidação do Cisco falhou'))
   },
   2500, // logo após a chegada, ainda dentro da cerimônia
 )
-pareoSweep.unref()
+corridasSweep.unref()
 
 try {
   await app.listen({ port: config.port, host: config.host })

@@ -77,6 +77,7 @@ model User {
   desafioPlays  DesafioPlay[]
   avataresOwned AvatarOwned[]
   pareoBets     PareoBet[]
+  ciscoBets     CiscoBet[]
 }
 
 model RefreshToken {
@@ -313,6 +314,29 @@ model PareoBet {
   resultado String   @default("pendente")
   payout    Int      @default(0)
   /// quando a corrida termina e a aposta pode ser liquidada
+  liquidaEm DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, numero, userId])
+  @@index([resultado, liquidaEm])
+  @@index([userId, createdAt])
+}
+
+/// Aposta do Cisco (corrida de galinhas) — MESMO ledger/regras do Páreo:
+/// débito no confirmar, liquidação determinística pela seed, idempotente.
+model CiscoBet {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId    String
+  numero    Int
+  seed      Int
+  lane      Int
+  valor     Int
+  odds      Float
+  /// pendente | ganhou | perdeu
+  resultado String   @default("pendente")
+  payout    Int      @default(0)
   liquidaEm DateTime
   createdAt DateTime @default(now())
 
