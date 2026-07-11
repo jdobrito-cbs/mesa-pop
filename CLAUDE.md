@@ -21,6 +21,22 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-11
+- **CORRIDAS · CONTADOR DE PESSOAS + LISTA DE SALAS (pedidos do usuário
+  2026-07-11)**: (a) o cabeçalho da SALA do Páreo/Cisco mostra
+  "👥 N/16 na sala" (do RoomView, ao vivo via room:update); (b) o LOBBY
+  drop-in ganhou a seção "Salas abertas agora" — o GET /api/rooms passou
+  a listar também as salas PLAYING de pareo/cisco (jogos contínuos ficam
+  PLAYING o tempo todo) com contagem 👥 N/16, chips das pessoas e botão
+  "Entrar nesta" (cheia → desabilitado) — dá para escolher uma sala mais
+  vazia em vez do matchmaking. Verificado ao vivo: contador 1/16 → 2/16
+  nas duas janelas quando o 2º entrou pela lista.
+- **FIX TELA CHEIA das corridas (Páreo/Cisco, reporte com print
+  2026-07-11)**: em fullscreen o palco ficava pequeno num canto — os
+  roots dos dois jogos têm `max-w-3xl` e a regra genérica não os
+  alcançava. Marcados com a classe `mp-corrida` + regra no global.css:
+  em `:fullscreen`/fake o container solta o max-width e o CANVAS da
+  pista vira `width:100%` (teto 62vh). Verificado real: canvas 624px →
+  1308px nos DOIS jogos.
 - **MILIONÁRIO · FICHAS ×100 (pedido do usuário 2026-07-11)**: o milhão
   agora vale **10.000 fichas** (era 100) — `milhaoFichas = premio/100`
   (`MILHAO_FICHAS_MAX` 10.000), proporcional DESDE a 1ª pergunta
