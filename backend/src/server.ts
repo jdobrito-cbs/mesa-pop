@@ -3,6 +3,7 @@ import { config } from './config'
 import { reapOldGuests } from './lib/guests'
 import { abandonarPartidasOrfas, fecharSalasOrfas, reapSoloParadas } from './lib/matches'
 import { creditarSegundos } from './lib/fichas'
+import { liquidarApostas } from './lib/pareoApostas'
 
 const app = await buildApp()
 
@@ -43,6 +44,16 @@ const fichasSweep = setInterval(
   60 * 1000, // a cada 1 min
 )
 fichasSweep.unref()
+
+// Páreo: liquida as apostas assim que cada corrida termina (determinístico
+// pela seed; idempotente — nenhuma ficha fica presa nem paga em dobro).
+const pareoSweep = setInterval(
+  () => {
+    liquidarApostas(app.prisma).catch((err) => app.log.warn({ err }, 'liquidação do Páreo falhou'))
+  },
+  2500, // logo após a chegada, ainda dentro da cerimônia
+)
+pareoSweep.unref()
 
 try {
   await app.listen({ port: config.port, host: config.host })

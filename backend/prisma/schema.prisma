@@ -76,6 +76,7 @@ model User {
   termoPlays    TermoPlay[]
   desafioPlays  DesafioPlay[]
   avataresOwned AvatarOwned[]
+  pareoBets     PareoBet[]
 }
 
 model RefreshToken {
@@ -288,6 +289,36 @@ model Announcement {
   updatedAt DateTime @updatedAt
 
   @@index([isActive, createdAt])
+}
+
+/// Aposta do Páreo — o LEDGER do jogo: débito no confirmar, crédito na
+/// liquidação (valor × odds), tudo pelo servidor. `resultado` garante a
+/// idempotência do pagamento (pendente → ganhou/perdeu uma única vez).
+/// `seed` + `liquidaEm` tornam a liquidação determinística mesmo se a
+/// sala morrer no meio (nenhuma ficha fica presa).
+model PareoBet {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId    String
+  /// nº do páreo dentro da sala
+  numero    Int
+  /// seed da corrida (resultado determinístico)
+  seed      Int
+  /// raia apostada (0..3)
+  lane      Int
+  valor     Int
+  odds      Float
+  /// pendente | ganhou | perdeu
+  resultado String   @default("pendente")
+  payout    Int      @default(0)
+  /// quando a corrida termina e a aposta pode ser liquidada
+  liquidaEm DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, numero, userId])
+  @@index([resultado, liquidaEm])
+  @@index([userId, createdAt])
 }
 
 /// Entrada de leaderboard — sempre gravada pelo servidor, nunca pelo cliente.
