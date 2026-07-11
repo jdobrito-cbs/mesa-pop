@@ -21,6 +21,31 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-11
+- **PÁREO/CISCO · MODO DROP-IN (jogo público contínuo — pedidos do
+  usuário 2026-07-11)**: os dois jogos de corrida viraram PÚBLICOS de
+  entrada livre — nada de sala privada, código ou "Começar":
+  - Nova flag `GameModule.dropIn` + `RoomManager.quickJoin` (evento
+    `room:quickjoin` no protocolo): entra na 1ª sala pública com vaga —
+    JOGANDO na hora, mesmo no meio da corrida (recebe o próximo assento
+    livre + matchPlayer p/ contar nos rankings) — e quando TODAS estão
+    cheias (16) abre outra sala automaticamente.
+  - `create` de jogo drop-in FORÇA pública e já faz `beginMatch` (o
+    ciclo começa com o 1º jogador; sem sala de espera).
+  - **Sair NÃO derruba a corrida** dos outros (branch próprio no
+    `leave` — sem W.O.; sala esvaziou → Match FINISHED + closeRoom
+    limpos; apostas pendentes liquidam pela seed no sweep).
+  - **Fechar o navegador libera a vaga rápido**: carência de
+    desconexão de 15s p/ drop-in (era 60s de W.O.) — um refresh
+    reconecta sem perder a vaga; quem fechou de verdade sai sozinho
+    (env de teste `DROPIN_GRACE_MS`).
+  - Lobby: Páreo/Cisco mostram só o botão "🐎/🐔 Entrar agora"
+    (criar pública/privada, código e lista de salas somem).
+  - 335 testes (6 novos de integração com sockets REAIS: quickjoin cria
+    já PLAYING, 2º entra JOGANDO na mesma sala com assento 0/1, privada
+    vira pública, sala cheia → sala nova, sair sem W.O., desconexão
+    libera a vaga na carência). Demo real: lobby sem privada/código,
+    A caiu direto na corrida, B caiu na MESMA sala no meio como
+    jogador, B fechou o navegador e a vaga liberou.
 - **NOVO JOGO — CISCO (Fazenda do Bruno) · COMPLETO (ciclo + apostas)
   (2026-07-11, OK do usuário: "faça tudo até o final"; protótipo dele em
   Downloads/cisco-galinhas.html)**: corrida de GALINHAS com apostas — a
