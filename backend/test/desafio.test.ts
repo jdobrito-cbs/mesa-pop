@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
+import { DESAFIOS_POR_DIA, DESAFIO_SLUGS, desafiosDoDia } from '@mesapop/shared'
 import { buildApp } from '../src/app'
 
 /**
@@ -58,8 +59,28 @@ describe('Desafio Diário', () => {
     expect(res.statusCode).toBe(200)
     const body = res.json()
     expect(body.date).toBe(hoje())
-    expect(body.jogos.length).toBe(4)
+    // os jogos do dia são SORTEADOS pela data (iguais para todos)
+    expect(body.jogos.length).toBe(DESAFIOS_POR_DIA)
+    expect(body.jogos.map((j: { slug: string }) => j.slug)).toEqual(
+      desafiosDoDia(hoje()).map((d) => d.slug),
+    )
     expect(body.jogos.every((j: { done: boolean }) => j.done === false)).toBe(true)
+  })
+
+  it('o sorteio é determinístico pela data e varia entre dias', () => {
+    expect(desafiosDoDia('2026-07-11')).toEqual(desafiosDoDia('2026-07-11'))
+    const dias = ['2026-07-11', '2026-07-12', '2026-07-13', '2026-07-14', '2026-07-15']
+    const combos = new Set(dias.map((d) => desafiosDoDia(d).map((x) => x.slug).join(',')))
+    expect(combos.size).toBeGreaterThan(1) // dias diferentes sorteiam duplas diferentes
+  })
+
+  it('recusa jogo do catálogo que NÃO foi sorteado hoje', async () => {
+    const doDia = new Set(desafiosDoDia(hoje()).map((d) => d.slug))
+    const fora = DESAFIO_SLUGS.find((s) => !doDia.has(s))!
+    const res = await app.inject({
+      method: 'POST', url: '/api/desafio/start', headers: auth(), body: { gameSlug: fora },
+    })
+    expect(res.statusCode).toBe(400)
   })
 
   it('recusa slug fora do desafio diário', async () => {
@@ -77,14 +98,14 @@ describe('Desafio Diário', () => {
       method: 'POST',
       url: '/api/desafio/finish',
       headers: auth(),
-      body: { gameSlug: 'cruzadinha', points: 500 },
+      body: { gameSlug: desafiosDoDia(hoje())[1]!.slug, points: 500 },
     })
     expect(res.statusCode).toBe(400)
     expect(res.json().error).toBe('NOT_STARTED')
   })
 
   it('fluxo completo: começa, valida duração, fecha uma vez, entra no ranking', async () => {
-    const slug = 'sudoku'
+    const slug = desafiosDoDia(hoje())[0]!.slug // um jogo SORTEADO hoje
     const start = await app.inject({
       method: 'POST',
       url: '/api/desafio/start',

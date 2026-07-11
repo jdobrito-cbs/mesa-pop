@@ -5,6 +5,7 @@
  * tabuleiro. Fonte de verdade única, usada pelo cliente (hub + geração) e
  * pelo servidor (whitelist de slugs que valem desafio).
  */
+import { hashSeed, intAte, mulberry32 } from './seed.js'
 
 export interface DesafioDef {
   slug: string
@@ -24,6 +25,29 @@ export const DESAFIOS_DIARIOS: DesafioDef[] = [
 ]
 
 export const DESAFIO_SLUGS: string[] = DESAFIOS_DIARIOS.map((d) => d.slug)
+
+/** quantos jogos entram no sorteio de cada dia */
+export const DESAFIOS_POR_DIA = 2
+
+/**
+ * Os jogos DO DIA são SORTEADOS pela data (pedido do usuário 2026-07-11):
+ * embaralhamento determinístico com seed = data → todo mundo vê os MESMOS
+ * jogos sorteados, e amanhã vem outra dupla.
+ */
+export function desafiosDoDia(date: string): DesafioDef[] {
+  const rnd = mulberry32(hashSeed(`desafio:${date}`))
+  const idx = DESAFIOS_DIARIOS.map((_, i) => i)
+  for (let i = idx.length - 1; i > 0; i--) {
+    const j = intAte(rnd, i + 1)
+    ;[idx[i], idx[j]] = [idx[j]!, idx[i]!]
+  }
+  return idx.slice(0, DESAFIOS_POR_DIA).map((i) => DESAFIOS_DIARIOS[i]!)
+}
+
+/** o jogo vale desafio HOJE? (sorteio do dia, não o catálogo inteiro) */
+export function ehDesafioDoDia(slug: string, date: string): boolean {
+  return desafiosDoDia(date).some((d) => d.slug === slug)
+}
 
 export function ehDesafioDiario(slug: string): boolean {
   return DESAFIO_SLUGS.includes(slug)

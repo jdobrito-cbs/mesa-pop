@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { DESAFIOS_DIARIOS, ehDesafioDiario } from '@mesapop/shared'
+import { DESAFIOS_DIARIOS, desafioDef, ehDesafioDiario } from '@mesapop/shared'
 import { useFetch } from '../lib/useFetch'
 import { useAuth } from '../lib/auth'
 import AdSlot from '../components/AdSlot'
@@ -49,16 +49,19 @@ export default function DesafioHub() {
             <span aria-hidden="true">📅</span> Desafio Diário
           </h1>
           <p className="mt-1 text-text-muted">
-            O mesmo tabuleiro para toda a mesa hoje — {data ? dataLonga(data.date) : '…'}. Volte amanhã para novos.
+            Os jogos de hoje são SORTEADOS — {data ? dataLonga(data.date) : '…'} — e o tabuleiro é o
+            mesmo para toda a mesa. Amanhã o sorteio traz outros!
           </p>
         </div>
         <span className="rounded-full bg-pop-green/15 px-3 py-1 text-sm font-bold text-pop-green">
-          {feitos}/{DESAFIOS_DIARIOS.length} feitos hoje
+          {feitos}/{data?.jogos.length ?? '…'} feitos hoje
         </span>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {DESAFIOS_DIARIOS.map((d) => {
+        {(data?.jogos ?? []).map(({ slug }) => {
+          const d = desafioDef(slug)
+          if (!d) return null
           const st = statusDe(d.slug)
           return (
             <button
@@ -126,8 +129,21 @@ export function DesafioJogo() {
     return <main className="mx-auto max-w-3xl px-4 py-16 text-center text-text-muted">Carregando o desafio…</main>
   }
 
+  // o jogo precisa ter sido SORTEADO para hoje (o servidor também barra)
   const st = data.jogos.find((j) => j.slug === slug)
-  if (st?.done) return <DesafioFeito slug={slug} pontos={st.points} />
+  if (!st) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <p className="text-4xl" aria-hidden="true">🎲</p>
+        <h1 className="mt-4 text-2xl font-extrabold">Esse jogo não foi sorteado hoje</h1>
+        <p className="mt-2 text-text-muted">O sorteio muda todo dia — veja quais estão valendo!</p>
+        <button onClick={() => navigate('/desafio')} className="btn-pop mt-6 px-6 py-3 ring-2 ring-ink-700 hover:ring-pop-cyan">
+          Ver desafios de hoje
+        </button>
+      </main>
+    )
+  }
+  if (st.done) return <DesafioFeito slug={slug} pontos={st.points} />
   return PAGINAS[slug]!(data.date)
 }
 

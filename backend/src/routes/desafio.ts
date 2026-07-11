@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
-import { DESAFIO_SLUGS, ehDesafioDiario } from '@mesapop/shared'
+import { desafiosDoDia, ehDesafioDiario, ehDesafioDoDia } from '@mesapop/shared'
 import { PLAUSIBILITY } from '../lib/plausibility'
 
 /**
@@ -23,16 +23,18 @@ const finishBody = z.object({
 })
 
 export default async function desafioRoutes(app: FastifyInstance) {
-  // status do dia: a data (seed) + o que este usuário já fechou hoje
+  // status do dia: a data (seed) + os jogos SORTEADOS de hoje + o que este
+  // usuário já fechou (pedido do usuário: os jogos do desafio mudam por dia)
   app.get('/api/desafio/hoje', { preHandler: [app.authenticate] }, async (req) => {
     const date = hoje()
+    const doDia = desafiosDoDia(date).map((d) => d.slug)
     const plays = await app.prisma.desafioPlay.findMany({
-      where: { userId: req.auth!.sub, date, gameSlug: { in: DESAFIO_SLUGS } },
+      where: { userId: req.auth!.sub, date, gameSlug: { in: doDia } },
     })
     const byslug = new Map(plays.map((p) => [p.gameSlug, p]))
     return {
       date,
-      jogos: DESAFIO_SLUGS.map((slug) => {
+      jogos: doDia.map((slug) => {
         const p = byslug.get(slug)
         return { slug, done: p?.done ?? false, points: p?.points ?? 0 }
       }),
@@ -44,8 +46,8 @@ export default async function desafioRoutes(app: FastifyInstance) {
       return reply.code(403).send({ error: 'LOGIN_REQUIRED', message: 'Crie sua conta para pontuar no desafio' })
     }
     const { gameSlug } = slugBody.parse(req.body)
-    if (!ehDesafioDiario(gameSlug) || !PLAUSIBILITY[gameSlug]) {
-      return reply.code(400).send({ error: 'INVALID_GAME', message: 'Jogo fora do desafio diário' })
+    if (!ehDesafioDoDia(gameSlug, hoje()) || !PLAUSIBILITY[gameSlug]) {
+      return reply.code(400).send({ error: 'INVALID_GAME', message: 'Esse jogo não foi sorteado para o desafio de hoje' })
     }
     const game = await app.prisma.game.findUnique({ where: { slug: gameSlug } })
     if (!game || !game.isEnabled) {
@@ -77,8 +79,8 @@ export default async function desafioRoutes(app: FastifyInstance) {
     }
     const { gameSlug, points } = finishBody.parse(req.body)
     const rules = PLAUSIBILITY[gameSlug]
-    if (!ehDesafioDiario(gameSlug) || !rules) {
-      return reply.code(400).send({ error: 'INVALID_GAME', message: 'Jogo fora do desafio diário' })
+    if (!ehDesafioDoDia(gameSlug, hoje()) || !rules) {
+      return reply.code(400).send({ error: 'INVALID_GAME', message: 'Esse jogo não foi sorteado para o desafio de hoje' })
     }
 
     const userId = req.auth!.sub
