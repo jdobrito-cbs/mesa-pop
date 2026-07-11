@@ -119,14 +119,13 @@ export default function PareoGame({ view }: { view: PareoView }) {
     setApostaAtual(null)
   }
 
-  // busca GET /minha no mount e a cada MUDANÇA de fase (cobre reconexão e o
-  // início de cada páreo); ao ENTRAR na cerimônia, repete uma vez ~2,5s
-  // depois se o resultado ainda não tiver sido liquidado a tempo
-  const prevFaseRef = useRef<string | null>(null)
+  // busca GET /minha no mount e a cada MUDANÇA de fase (as próprias deps do
+  // efeito garantem isso — nada de guard por ref, que quebrava no StrictMode:
+  // a dupla montagem do dev cancelava o 1º fetch e pulava o 2º, deixando o
+  // saldo sem hidratar). Ao ENTRAR na cerimônia, repete uma vez ~2,5s depois
+  // se o resultado ainda não tiver sido liquidado a tempo.
   useEffect(() => {
-    const mudou = prevFaseRef.current !== view.fase
-    prevFaseRef.current = view.fase
-    if (!mudou || isGuest) return
+    if (isGuest) return
     let cancelado = false
     ;(async () => {
       const r = await api<PareoMinhaResp>('/api/pareo/minha').catch(() => null)
