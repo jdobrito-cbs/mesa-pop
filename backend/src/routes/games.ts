@@ -64,7 +64,15 @@ export default async function gamesRoutes(app: FastifyInstance) {
   app.get('/api/rooms', async (req) => {
     const userId = optionalUserId(req)
     const rooms = await app.prisma.room.findMany({
-      where: { status: 'WAITING', isPrivate: false },
+      where: {
+        isPrivate: false,
+        OR: [
+          { status: 'WAITING' },
+          // corridas públicas contínuas (Páreo/Cisco) ficam PLAYING o tempo
+          // todo — entram na lista p/ quem quer escolher uma sala mais vazia
+          { status: 'PLAYING', game: { slug: { in: ['pareo', 'cisco'] } } },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: {

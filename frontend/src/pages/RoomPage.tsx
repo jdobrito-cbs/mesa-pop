@@ -243,6 +243,14 @@ export default function RoomPage() {
           >
             {room.code}
           </button>
+          {(room.gameSlug === 'pareo' || room.gameSlug === 'cisco') && (
+            <span
+              className="ml-3 rounded-full bg-pop-cyan/15 px-3 py-1 align-middle text-xs font-bold text-pop-cyan"
+              title="Pessoas nesta sala"
+            >
+              👥 {room.players.length}/{room.maxPlayers} na sala
+            </span>
+          )}
           {!iAmPlayer && (
             <span className="ml-3 rounded-full bg-pop-yellow/15 px-3 py-1 align-middle text-xs font-bold text-pop-yellow">
               👀 assistindo

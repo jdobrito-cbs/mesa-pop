@@ -299,6 +299,51 @@ function MultiplayerLobby({ slug }: { slug: string | undefined }) {
       </form>
       )}
 
+      {/* drop-in: dá para VER as salas abertas (com quantas pessoas) e
+          escolher uma mais vazia, em vez do matchmaking automático */}
+      {isDropIn && (
+        <>
+          <div className="mt-8 flex items-center justify-between">
+            <h2 className="text-xl font-extrabold">Salas abertas agora</h2>
+            <button onClick={() => void reload()} className="btn-pop px-3 py-1.5 text-xs ring-1 ring-ink-700 hover:ring-pop-cyan">
+              Atualizar
+            </button>
+          </div>
+          {rooms.length === 0 ? (
+            <p className="mt-3 text-sm text-text-muted">
+              Nenhuma sala rolando agora — clique em “Entrar agora” e seja o primeiro!
+            </p>
+          ) : (
+            <div className="mt-3 grid gap-3">
+              {rooms.map((r) => (
+                <div key={r.id} className="card flex items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display font-bold">
+                      Sala {r.code}{' '}
+                      <span className="rounded-full bg-pop-cyan/15 px-2.5 py-0.5 text-xs font-bold text-pop-cyan">
+                        👥 {r.players}/{r.maxPlayers}
+                      </span>
+                    </p>
+                    <RoomPeople names={r.playerNames} maxPlayers={r.maxPlayers} />
+                  </div>
+                  <button
+                    onClick={() => {
+                      void emitAck<RoomView>('room:join', { code: r.code }).then((res) =>
+                        res.ok ? navigate(`/sala/${r.code}`) : setError(res.error ?? 'Erro'),
+                      )
+                    }}
+                    disabled={r.players >= r.maxPlayers}
+                    className="btn-pop bg-gradient-to-br from-pop-purple to-pop-magenta px-5 py-2 text-sm text-white disabled:opacity-50"
+                  >
+                    {r.players >= r.maxPlayers ? 'Cheia' : 'Entrar nesta'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
       {!isDropIn && (
       <>
       <div className="mt-8 flex items-center justify-between">
