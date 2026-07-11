@@ -12,16 +12,33 @@ import {
   type PareoCorrida,
   type PareoView,
 } from '@mesapop/shared'
+import { api, ApiRequestError } from '../lib/api'
+import { useAuth } from '../lib/auth'
 
 /**
  * Páreo (O "Corre" do Yvens) — porte fiel do protótipo do usuário.
- * FASE 1: sem ações do cliente — o servidor é dono do ciclo (apostas →
- * pré-largada → corrida → cerimônia) e da seed; este componente só
- * REPRODUZ a timeline localmente, com o relógio sincronizado pelo
- * offset `view.agora - Date.now()`. Nada de setInterval no servidor:
- * cada view chega a cada ~2s + na troca de fase, e a animação roda por
- * requestAnimationFrame lendo o relógio sincronizado.
+ * FASE 2: apostas em fichas ligadas na UI. O servidor segue dono do ciclo
+ * (apostas → pré-largada → corrida → cerimônia) e da seed; este componente
+ * REPRODUZ a timeline localmente (relógio sincronizado pelo offset
+ * `view.agora - Date.now()`) e fala com o backend só por REST
+ * (POST /api/pareo/apostar, GET /api/pareo/minha) — o socket segue
+ * carregando apenas o estado da corrida.
  */
+
+/** aposta enxuta como devolvida por GET /api/pareo/minha */
+interface PareoApostaResumo {
+  numero: number
+  lane: number
+  valor: number
+  odds: number
+  resultado: 'pendente' | 'ganhou' | 'perdeu'
+  payout: number
+}
+interface PareoMinhaResp {
+  fichas: number
+  atual: PareoApostaResumo | null
+  ultima: PareoApostaResumo | null
+}
 
 const W = 960
 const H = 260
@@ -49,6 +66,8 @@ interface ConfettiParticle {
 }
 
 export default function PareoGame({ view }: { view: PareoView }) {
+  const { user } = useAuth()
+  const isGuest = !!user?.isGuest
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // relógio sincronizado: offset suavizado a cada view recebida
@@ -82,6 +101,78 @@ export default function PareoGame({ view }: { view: PareoView }) {
   if (prevNumeroRef.current !== view.numero) {
     prevNumeroRef.current = view.numero
     setSelectedHorse(null)
+  }
+
+  // ===== carteira de fichas (FASE 2) =====
+  const [fichas, setFichas] = useState<number | null>(null)
+  const [apostaAtual, setApostaAtual] = useState<PareoApostaResumo | null>(null)
+  const [ultimaAposta, setUltimaAposta] = useState<PareoApostaResumo | null>(null)
+  const [valorEscolhido, setValorEscolhido] = useState<number | null>(null)
+  const [enviando, setEnviando] = useState(false)
+  const [avisoErro, setAvisoErro] = useState<string | null>(null)
+
+  // páreo novo (numero mudou): limpa a aposta local otimisticamente — o
+  // efeito de troca de fase abaixo (que dispara junto) re-hidrata do servidor
+  const prevNumeroApostaRef = useRef(view.numero)
+  if (prevNumeroApostaRef.current !== view.numero) {
+    prevNumeroApostaRef.current = view.numero
+    setApostaAtual(null)
+  }
+
+  // busca GET /minha no mount e a cada MUDANÇA de fase (cobre reconexão e o
+  // início de cada páreo); ao ENTRAR na cerimônia, repete uma vez ~2,5s
+  // depois se o resultado ainda não tiver sido liquidado a tempo
+  const prevFaseRef = useRef<string | null>(null)
+  useEffect(() => {
+    const mudou = prevFaseRef.current !== view.fase
+    prevFaseRef.current = view.fase
+    if (!mudou || isGuest) return
+    let cancelado = false
+    ;(async () => {
+      const r = await api<PareoMinhaResp>('/api/pareo/minha').catch(() => null)
+      if (cancelado || !r) return
+      setFichas(r.fichas)
+      setApostaAtual(r.atual)
+      setUltimaAposta(r.ultima)
+      if (view.fase === 'cerimonia' && r.ultima?.numero !== view.numero) {
+        await new Promise((resolve) => setTimeout(resolve, 2500))
+        if (cancelado) return
+        const r2 = await api<PareoMinhaResp>('/api/pareo/minha').catch(() => null)
+        if (cancelado || !r2) return
+        setFichas(r2.fichas)
+        setApostaAtual(r2.atual)
+        setUltimaAposta(r2.ultima)
+      }
+    })()
+    return () => {
+      cancelado = true
+    }
+  }, [view.fase, view.numero, isGuest])
+
+  async function confirmarAposta() {
+    if (isGuest || enviando || apostaAtual || selectedHorse === null || valorEscolhido === null) return
+    setEnviando(true)
+    setAvisoErro(null)
+    try {
+      const r = await api<{ aposta: { lane: number; valor: number; odds: number }; fichas: number }>(
+        '/api/pareo/apostar',
+        { body: { numero: view.numero, lane: selectedHorse, valor: valorEscolhido } },
+      )
+      setFichas(r.fichas)
+      setApostaAtual({
+        numero: view.numero,
+        lane: r.aposta.lane,
+        valor: r.aposta.valor,
+        odds: r.aposta.odds,
+        resultado: 'pendente',
+        payout: 0,
+      })
+    } catch (e) {
+      setAvisoErro(e instanceof ApiRequestError ? e.message : 'Algo deu errado. Tente de novo.')
+      setTimeout(() => setAvisoErro(null), 3000)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   // overlay "«nome» venceu" — aparece ao entrar na cerimônia e some sozinho
@@ -157,8 +248,11 @@ export default function PareoGame({ view }: { view: PareoView }) {
         : view.fase === 'corrida'
           ? 'E LARGARAM!'
           : 'Chegada!'
-  const painelTitulo =
-    view.fase === 'apostas'
+  const apostaConfirmadaAgora =
+    view.fase === 'apostas' && apostaAtual && apostaAtual.numero === view.numero ? apostaAtual : null
+  const painelTitulo = apostaConfirmadaAgora
+    ? `Apostou ${apostaConfirmadaAgora.valor} em ${PAREO_CAVALOS[apostaConfirmadaAgora.lane]!.nome} (${apostaConfirmadaAgora.odds.toFixed(1)}×) · boa sorte!`
+    : view.fase === 'apostas'
       ? 'Escolha seu favorito'
       : view.fase === 'prelargada'
         ? 'Preparando a largada…'
@@ -170,6 +264,13 @@ export default function PareoGame({ view }: { view: PareoView }) {
     view.fase === 'apostas' || view.fase === 'prelargada' ? fmt(Math.max(0, view.largadaEm - now)) : '0:00'
   const vencedorCavalo = view.vencedor !== null ? PAREO_CAVALOS[view.vencedor] : null
   const vencedorOdds = view.vencedor !== null ? PAREO_ODDS[view.vencedor]! : null
+  const resultadoPessoal =
+    ultimaAposta && ultimaAposta.numero === view.numero && ultimaAposta.resultado !== 'pendente'
+      ? ultimaAposta
+      : null
+  const podeApostar = view.fase === 'apostas' && !isGuest && !apostaAtual
+  const podeConfirmar =
+    podeApostar && selectedHorse !== null && valorEscolhido !== null && fichas !== null && valorEscolhido <= fichas
 
   return (
     <div className="mx-auto w-full max-w-3xl">
@@ -200,9 +301,21 @@ export default function PareoGame({ view }: { view: PareoView }) {
               >
                 {vencedorCavalo.nome} venceu
               </p>
-              <p className="mt-2 font-mono text-sm text-[#a08a6f]">
-                Cavalo #{view.vencedor! + 1} · pagou {vencedorOdds.toFixed(1)}×
-              </p>
+              {resultadoPessoal ? (
+                resultadoPessoal.resultado === 'ganhou' ? (
+                  <p className="mt-3 font-mono text-sm font-bold text-pop-green">
+                    Você acertou e ganhou <b>+{resultadoPessoal.payout}</b> fichas 🎉
+                  </p>
+                ) : (
+                  <p className="mt-3 font-mono text-sm font-bold text-[#ff5747]">
+                    Você perdeu suas <b>{resultadoPessoal.valor}</b> fichas — próximo páreo em instantes!
+                  </p>
+                )
+              ) : (
+                <p className="mt-2 font-mono text-sm text-[#a08a6f]">
+                  Cavalo #{view.vencedor! + 1} · pagou {vencedorOdds.toFixed(1)}×
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -216,11 +329,22 @@ export default function PareoGame({ view }: { view: PareoView }) {
             </p>
           </div>
 
+          {isGuest ? (
+            <p className="mb-3 rounded-field border border-dashed border-[#3a2e23] px-3 py-2 text-center text-xs text-[#a08a6f]">
+              🎟️ Convidado assiste e torce — crie sua conta para apostar
+            </p>
+          ) : (
+            <p className="mb-3 font-mono text-sm text-[#ffc04d] tabular-nums">
+              Saldo: 🪙 {fichas ?? '—'}
+            </p>
+          )}
+
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {PAREO_CAVALOS.map((h, i) => {
-              const podeEscolher = view.fase === 'apostas'
+              const podeEscolher = podeApostar
               const selecionado = selectedHorse === i && podeEscolher
               const venceu = view.fase === 'cerimonia' && view.vencedor === i
+              const apostouAqui = apostaAtual && apostaAtual.numero === view.numero && apostaAtual.lane === i
               return (
                 <button
                   key={h.nome}
@@ -235,7 +359,10 @@ export default function PareoGame({ view }: { view: PareoView }) {
                   <span className="size-3.5 shrink-0 rounded-md" style={{ background: h.cor }} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-cream">{h.nome}</span>
-                    <span className="font-mono text-[10px] text-[#a08a6f]">#{i + 1}</span>
+                    <span className="font-mono text-[10px] text-[#a08a6f]">
+                      #{i + 1}
+                      {apostouAqui && <span className="ml-1.5 text-pop-yellow">● {apostaAtual!.valor}</span>}
+                    </span>
                   </span>
                   <span className="shrink-0 text-right font-display text-xl leading-none font-extrabold text-[#ffc04d]">
                     {PAREO_ODDS[i]!.toFixed(1)}
@@ -246,30 +373,56 @@ export default function PareoGame({ view }: { view: PareoView }) {
             })}
           </div>
 
-          {/* fila de fichas — desabilitada nesta fase */}
+          {/* fila de fichas — habilitada em 'apostas' para quem tem conta e ainda não apostou */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="font-mono text-[11px] tracking-wide text-[#a08a6f] uppercase">Aposta</span>
             <div className="flex flex-wrap gap-1.5">
-              {PAREO_APOSTAS_FICHAS.map((v) => (
-                <span
-                  key={v}
-                  className="cursor-not-allowed rounded-full px-3 py-1.5 font-mono text-xs text-cream opacity-40 ring-1 ring-[#3a2e23]"
-                >
-                  {v}
-                </span>
-              ))}
+              {PAREO_APOSTAS_FICHAS.map((v) => {
+                const ativo = podeApostar && valorEscolhido === v
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    disabled={!podeApostar}
+                    onClick={() => setValorEscolhido(v)}
+                    className={`rounded-full px-3 py-1.5 font-mono text-xs ring-1 transition ${
+                      !podeApostar
+                        ? 'cursor-not-allowed text-cream opacity-40 ring-[#3a2e23]'
+                        : ativo
+                          ? 'cursor-pointer bg-pop-yellow text-[#1e1813] ring-pop-yellow'
+                          : 'cursor-pointer text-cream ring-[#3a2e23] hover:ring-pop-yellow/60'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                )
+              })}
             </div>
             <button
               type="button"
-              disabled
-              className="btn-pop ml-auto cursor-not-allowed bg-[#3a2e23] px-6 py-2 text-sm text-cream opacity-50"
+              disabled={!podeConfirmar || enviando}
+              onClick={confirmarAposta}
+              className={`btn-pop ml-auto px-6 py-2 text-sm text-cream ${
+                !podeConfirmar || enviando ? 'cursor-not-allowed bg-[#3a2e23] opacity-50' : ''
+              }`}
             >
-              Confirmar
+              {apostaAtual && apostaAtual.numero === view.numero
+                ? 'Aposta confirmada'
+                : enviando
+                  ? 'Enviando…'
+                  : 'Confirmar aposta'}
             </button>
           </div>
-          <p className="mt-3 rounded-field border border-dashed border-[#3a2e23] px-3 py-2 text-center text-xs text-[#a08a6f]">
-            🎰 As apostas em fichas chegam na FASE 2 — por ora escolha seu favorito e torça!
-          </p>
+
+          {avisoErro ? (
+            <p className="mt-3 rounded-field border border-pop-yellow/50 bg-pop-yellow/10 px-3 py-2 text-center text-xs font-semibold text-pop-yellow">
+              {avisoErro}
+            </p>
+          ) : view.fase !== 'apostas' ? (
+            <p className="mt-3 rounded-field border border-dashed border-[#3a2e23] px-3 py-2 text-center text-xs text-[#a08a6f]">
+              Apostas encerradas — reabrem no próximo páreo
+            </p>
+          ) : null}
 
           {view.historico.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-center gap-1.5 font-mono text-[10px]">
