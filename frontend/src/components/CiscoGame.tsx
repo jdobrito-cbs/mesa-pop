@@ -277,7 +277,7 @@ export default function CiscoGame({ view }: { view: CiscoView }) {
     podeApostar && selectedGalinha !== null && valorEscolhido !== null && fichas !== null && valorEscolhido <= fichas
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mp-corrida mx-auto w-full max-w-3xl">
       <div className="card overflow-hidden p-3 sm:p-4">
         {/* pista */}
         <div className="relative overflow-hidden rounded-field ring-1 ring-[#3a2e23]" style={{ background: '#1e1813' }}>

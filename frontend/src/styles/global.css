@@ -636,6 +636,21 @@
 .game-fs.mp-fs--fake .mp-fs-fit {
   max-width: min(96vw, 88vh) !important;
 }
+/* corridas (Páreo/Cisco): na tela cheia o palco cresce até encher a tela —
+   o container solta o max-width e a PISTA (canvas) ocupa a largura toda */
+.game-fs:fullscreen .mp-corrida,
+.game-fs:-webkit-full-screen .mp-corrida,
+.game-fs.mp-fs--fake .mp-corrida {
+  max-width: none !important;
+}
+.game-fs:fullscreen .mp-corrida canvas,
+.game-fs:-webkit-full-screen .mp-corrida canvas,
+.game-fs.mp-fs--fake .mp-corrida canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 62vh !important;
+}
+
 /* na tela cheia, o painel lateral do Magnata não precisa encolher o tabuleiro */
 .game-fs:fullscreen .mp-magnata,
 .game-fs:-webkit-full-screen .mp-magnata,
