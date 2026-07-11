@@ -21,6 +21,34 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-11
+- **NOVO JOGO — CISCO (Fazenda do Bruno) · COMPLETO (ciclo + apostas)
+  (2026-07-11, OK do usuário: "faça tudo até o final"; protótipo dele em
+  Downloads/cisco-galinhas.html)**: corrida de GALINHAS com apostas — a
+  versão cômica do Páreo. **Mecânica** (`shared/cisco.ts`, portada
+  fiel): cada galinha alterna CORRER e CISCAR (peckChance/peckMin/
+  peckMax por galinha; favorita corre mais e cisca menos; janela 5%–92%
+  da corrida) — o padrão de ciscadas decide; OVOS botados por distância
+  (com o passo p/ o efeito "plim"); timeline com `stateTraj`
+  (correndo/ciscando); Cocota/Penosa/Ryca/Turbina 34/28/22/16; pista
+  10.800/chegada 9.520. **ABSTRAÇÃO COMUM adotada** (sugerida no plano e
+  aprovada): `games/corridaCiclo.ts` (ciclo genérico de fases por sala,
+  seed oculta até a largada, jogo contínuo) e `lib/corridaApostas.ts`
+  (motor de apostas: débito atômico, uma por corrida, liquidação
+  determinística pela seed, idempotente) — o PÁREO foi refatorado para
+  usá-los SEM mudar comportamento (14 testes intactos) e o Cisco pluga
+  `CiscoBet` (migração `20260711120000_cisco_bets`, MESMO formato do
+  PareoBet — os delegates casam estruturalmente no `BetDelegate`).
+  Rotas `/api/cisco/apostar|minha`; sweep único de 2,5s liquida os DOIS
+  jogos; auditoria 'cisco.aposta'. UI `CiscoGame.tsx` espelha o
+  PareoGame (galinha com pose de ciscar bicando o chão, ovos com plim,
+  cerimônia da campeã pulando ao lado do OVO DE OURO, "E LÁ VÃO ELAS!",
+  "Últimas campeãs"). Envs de demo `CISCO_APOSTAS_MS`/
+  `CISCO_PRELARGADA_MS`. Catálogo: 39 jogos. 330 testes (8 novos).
+  Demo real (2 janelas): apostas Cocota×Penosa (1000→900 cada), corrida
+  1 = Cocota venceu → apostador recebeu 260 (saldo 1160) e o outro 900;
+  corrida 2 = "Turbina venceu · pagou 5.5×" IDÊNTICA nas duas janelas
+  com histórico sincronizado. Ledger conferido no banco (ganhou/perdeu/
+  payout + vencedor recalculado da seed bateu 100%).
 - **PÁREO · FASE 2 ENTREGUE — APOSTAS AUTORITATIVAS NA CARTEIRA
   (2026-07-11, OK do usuário: "pode continuar"; decisões: carteira =
   fichas da plataforma, sem bônus interno; stakes 10/25/50/100/250; UMA
