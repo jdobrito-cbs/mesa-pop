@@ -28,7 +28,7 @@ interface Reveal {
 
 const LETRAS = ['A', 'B', 'C', 'D'] as const
 
-const fmt = (n: number) => `R$ ${n.toLocaleString('pt-BR')}`
+const fmt = (n: number) => `POP$ ${n.toLocaleString('pt-BR')}`
 
 const AJUDAS: { tipo: Ajuda; icon: string; label: string }[] = [
   { tipo: 'cartas', icon: '🃏', label: 'Cartas' },
@@ -174,7 +174,7 @@ export default function TioMarioPage() {
               <p className="text-4xl" aria-hidden="true">🎙️</p>
               <h2 className="mt-3 font-display text-2xl font-extrabold">Bem-vindo ao palco!</h2>
               <p className="mx-auto mt-3 max-w-md text-sm text-text-muted">
-                16 perguntas separam você de R$ 1.000.000.
+                16 perguntas separam você de POP$ 1.000.000.
                 <br />
                 Pare a qualquer momento e leve o que já acumulou.
                 <br />
@@ -201,7 +201,7 @@ export default function TioMarioPage() {
                 <>
                   <p className="text-5xl" aria-hidden="true">🏆🎉</p>
                   <h2 className="mt-3 font-display text-3xl font-extrabold text-pop-yellow">
-                    R$ 1.000.000! VOCÊ É O NOVO MILIONÁRIO!
+                    POP$ 1.000.000! VOCÊ É O NOVO MILIONÁRIO!
                   </h2>
                 </>
               ) : view.resultado === 'parou' ? (
