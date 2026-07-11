@@ -42,11 +42,14 @@ function corridaMs(winCrossT: number): number {
 export function novoPareo(numero: number, historico: string[], agora = Date.now()): PareoState {
   const seed = crypto.randomInt(1, 2147483646)
   const corrida = pareoBuildRace(seed)
+  // envs de teste/demo (padrão do projeto): encurtam as fases de espera
+  const apostasMs = Number(process.env.PAREO_APOSTAS_MS ?? PAREO_APOSTAS_MS)
+  const prelargadaMs = Number(process.env.PAREO_PRELARGADA_MS ?? PAREO_PRELARGADA_MS)
   return {
     numero,
     fase: 'apostas',
-    faseFimEm: agora + PAREO_APOSTAS_MS,
-    largadaEm: agora + PAREO_APOSTAS_MS + PAREO_PRELARGADA_MS,
+    faseFimEm: agora + apostasMs,
+    largadaEm: agora + apostasMs + prelargadaMs,
     seed,
     vencedor: corrida.vencedor,
     winCrossT: corrida.winCrossT,

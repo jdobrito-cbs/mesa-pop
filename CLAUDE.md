@@ -20,7 +20,41 @@ Base sólida primeiro; os jogos plugam nela.
   (Modo Conforto 60+: fontes grandes, alto contraste, timers
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
-- **Última atualização**: 2026-07-10
+- **Última atualização**: 2026-07-11
+- **NOVO JOGO — PÁREO (O "Corre" do Yvens) · FASE 1 ENTREGUE
+  (2026-07-11; plano de 4 fases aprovado pelo usuário — B=apostas na
+  carteira, C=sincronia/reconexão fina, D=leaderboards/admin — cada
+  fase espera OK)**: corrida de cavalos com apostas, integrada como
+  GameModule realtime a partir do PROTÓTIPO DO USUÁRIO
+  (Downloads/corrida-cavalos_6.html; a versão mais recente é a _6).
+  **Simulação determinística portada para `shared/pareo.ts`**:
+  `pareoBuildRace(seed)` pré-computa a timeline (600 passos,
+  traj/legTraj Float32Array), vencedor por cruzamento interpolado
+  (visual == real), favoritismo 34/28/22/16, odds com margem 0.88,
+  `pareoHorseAt` p/ animação. **Servidor dono do ciclo**
+  (`backend/games/pareo.ts`): fases por SALA — apostas 123s →
+  pré-largada 30s → corrida ~20s (encurta ao cruzamento + 1,1s) →
+  cerimônia (absorve o resto; ciclo ~180s) — via `avancaCiclo` movido a
+  timestamps oficiais (atravessa fases se o tick atrasar); a SEED só
+  trafega na largada (resultado já fixado; view nunca vaza
+  seed/vencedor antes — teste garante); jogo CONTÍNUO
+  (result.finished sempre false; sala esvaziou → manager encerra);
+  realtime {500ms, broadcastEvery 4}; minPlayers 1, até 16 +
+  espectadores. Envs de demo/teste `PAREO_APOSTAS_MS`/
+  `PAREO_PRELARGADA_MS`. **Cliente** (`PareoGame.tsx`): canvas do
+  protótipo portado (pista, cavalos com jóquei, cerimônia com troféu +
+  confete, overlay de vencedor, relógios "Fecha em"/"Início da
+  corrida", cards com odds, fichas desabilitadas com nota "apostas na
+  FASE 2", histórico) com RELÓGIO SINCRONIZADO (offset = view.agora −
+  Date.now()) e corrida reproduzida localmente da seed. Catálogo: 38
+  jogos. 313 testes (8 novos: determinismo, vencedor cruza,
+  favoritismo em 600 seeds, odds, ciclo completo de fases, atravessa
+  fases, não-vazamento da seed, jogo contínuo). Demo real (Playwright,
+  2 janelas na MESMA sala): apostas abertas nas duas, "E LARGARAM!"
+  nas duas, e a MESMA cerimônia ("Relâmpago venceu · pagou 3.1×") +
+  próximo páreo abrindo sozinho. DECISÕES do usuário p/ FASE 2:
+  carteira = fichas da plataforma (sem bônus interno; stakes
+  10/25/50/100/250), UMA aposta por corrida por jogador, salas de 16.
 - **BOB MAGNATA (rename) + NOVO JOGO — TIO MÁRIO MILIONÁRIO (pedidos do
   usuário 2026-07-10)**:
   - **Rename (AJUSTE FINAL, pedido 2026-07-10)**: nomes COMPOSTOS no
