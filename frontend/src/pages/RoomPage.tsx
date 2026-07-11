@@ -10,6 +10,7 @@ import type {
   DominoAction,
   DominoView,
   BingoView,
+  CiscoView,
   ForcaView,
   GameEndView,
   GGView,
@@ -43,6 +44,7 @@ import RacingGame from '../components/RacingGame'
 import DominoTable from '../components/DominoTable'
 import OneTable from '../components/OneTable'
 import PareoGame from '../components/PareoGame'
+import CiscoGame from '../components/CiscoGame'
 import PifeTable from '../components/PifeTable'
 import MemoriaBoard from '../components/MemoriaBoard'
 import ForcaGame from '../components/ForcaGame'
@@ -465,6 +467,7 @@ export default function RoomPage() {
                 />
               )}
               {room.gameSlug === 'pareo' && <PareoGame view={game.state as PareoView} />}
+              {room.gameSlug === 'cisco' && <CiscoGame view={game.state as CiscoView} />}
             </div>
           )}
         </div>
