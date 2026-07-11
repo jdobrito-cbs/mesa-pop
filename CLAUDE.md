@@ -21,6 +21,12 @@ Base sólida primeiro; os jogos plugam nela.
   relaxados) — aguardando decisão do usuário. Roadmap original 0–8 ✅
   (23 jogos). **32 jogos jogáveis.**
 - **Última atualização**: 2026-07-11
+- **MILIONÁRIO · FICHAS ×100 (pedido do usuário 2026-07-11)**: o milhão
+  agora vale **10.000 fichas** (era 100) — `milhaoFichas = premio/100`
+  (`MILHAO_FICHAS_MAX` 10.000), proporcional DESDE a 1ª pergunta
+  (POP$ 1.000 → 10 fichas; 100.000 → 1.000; 500.000 → 5.000). A nota
+  "fichas a partir de 10.000" saiu da tela final (toda pergunta vencida
+  rende). Pontos do ranking inalterados (premio/20). 336 testes.
 - **PÁREO/CISCO · MODO DROP-IN (jogo público contínuo — pedidos do
   usuário 2026-07-11)**: os dois jogos de corrida viraram PÚBLICOS de
   entrada livre — nada de sala privada, código ou "Começar":

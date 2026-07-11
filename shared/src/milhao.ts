@@ -62,19 +62,19 @@ export interface MilhaoView {
 /**
  * O ranking é em PONTOS: o milhão vale 50.000 e cada prêmio parcial
  * (parou/errou no meio) leva a fração proporcional — idem as FICHAS
- * de avatar (o milhão vale 100).
+ * de avatar (o milhão vale 10.000; toda pergunta vencida já rende).
  */
 export const MILHAO_PONTOS_MAX = 50_000
-export const MILHAO_FICHAS_MAX = 100
+export const MILHAO_FICHAS_MAX = 10_000
 
-/** pontos de ranking pelo prêmio em R$ (1.000.000 → 50.000) */
+/** pontos de ranking pelo prêmio em POP$ (1.000.000 → 50.000) */
 export function milhaoPontos(premio: number): number {
   return Math.floor(premio / 20)
 }
 
-/** fichas de avatar pelo prêmio em R$ (1.000.000 → 100) */
+/** fichas de avatar pelo prêmio em POP$ (1.000.000 → 10.000; 1.000 → 10) */
 export function milhaoFichas(premio: number): number {
-  return Math.floor(premio / 10_000)
+  return Math.floor(premio / 100)
 }
 
 /** quanto o jogador leva se ERRAR tendo `acumulado` no nível `nivel` */

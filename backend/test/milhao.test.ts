@@ -129,26 +129,26 @@ describe('Tio Mário Milionário (servidor autoritativo)', () => {
     expect(r.statusCode).toBe(404)
   })
 
-  it('escada completa: o MILHÃO vale 50.000 pontos + 100 fichas de avatar', async () => {
+  it('escada completa: o MILHÃO vale 50.000 pontos + 10.000 fichas de avatar', async () => {
     const antes = await app.prisma.user.findUnique({ where: { email: `${runId}@t.local` } })
     let v = await start()
     for (let i = 0; i < 16; i++) v = await responder(idxCorreta(v))
     expect(v.fase).toBe('fim')
     expect(v.resultado).toBe('milhao')
-    expect(v.premio).toBe(1_000_000) // o R$ é cenográfico…
+    expect(v.premio).toBe(1_000_000) // o POP$ é cenográfico…
     expect(v.pontosGanhos).toBe(50_000) // …o ranking recebe PONTOS
-    expect(v.fichasGanhas).toBe(100) // a view INFORMA o bônus para a tela final
+    expect(v.fichasGanhas).toBe(10_000) // a view INFORMA o bônus para a tela final
     const mp = await app.prisma.matchPlayer.findFirst({ where: { score: 50_000 }, include: { match: true } })
     expect(mp?.isWinner).toBe(true)
     const depois = await app.prisma.user.findUnique({ where: { email: `${runId}@t.local` } })
-    expect(depois!.fichas).toBe((antes!.fichas ?? 0) + 100) // fichas creditadas no banco
+    expect(depois!.fichas).toBe((antes!.fichas ?? 0) + 10_000) // fichas creditadas no banco
   })
 
-  it('desistir no meio leva a FRAÇÃO de pontos e fichas (prêmio baixo = 0 ficha)', async () => {
+  it('desistir no meio leva a FRAÇÃO de pontos e fichas (desde a 1ª pergunta)', async () => {
     let v = await start()
-    v = await responder(idxCorreta(v)) // acumulado R$ 1.000
+    v = await responder(idxCorreta(v)) // acumulado POP$ 1.000
     const fim = (await app.inject({ method: 'POST', url: '/api/milhao/parar', headers: auth() })).json() as MilhaoView
     expect(fim.pontosGanhos).toBe(50) // 1.000/20
-    expect(fim.fichasGanhas).toBe(0) // 1.000/10.000 → ainda não rende ficha
+    expect(fim.fichasGanhas).toBe(10) // 1.000/100 — toda pergunta vencida rende
   })
 })

@@ -229,13 +229,9 @@ export default function TioMarioPage() {
                   <span className="rounded-full bg-pop-cyan/15 px-5 py-2 font-display font-extrabold text-pop-cyan">
                     🏁 +{view.pontosGanhos.toLocaleString('pt-BR')} pontos no ranking
                   </span>
-                  {view.fichasGanhas > 0 ? (
+                  {view.fichasGanhas > 0 && (
                     <span className="rounded-full bg-pop-yellow/15 px-5 py-2 font-display font-extrabold text-pop-yellow">
-                      🪙 +{view.fichasGanhas} fichas para a máquina de avatares!
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-ink-900 px-4 py-2 text-xs font-semibold text-text-muted ring-1 ring-ink-700">
-                      🪙 fichas a partir de POP$ 10.000 (1 a cada 10 mil de prêmio)
+                      🪙 +{view.fichasGanhas.toLocaleString('pt-BR')} fichas para a máquina de avatares!
                     </span>
                   )}
                 </div>
